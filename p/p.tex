@@ -1,0 +1,82 @@
+\documentclass[]{llncs}
+\pagestyle{plain}
+
+\let\proof\relax
+\let\endproof\relax
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{amsfonts}
+
+\usepackage{cleveref}
+% cleveref config
+\crefname{lemma}{lemma}{lemmas}
+\Crefname{lemma}{Lemma}{Lemmas}
+\crefname{theorem}{theorem}{theorems}
+\Crefname{theorem}{Theorem}{Theorems}
+\crefname{algocfline}{line}{lines}
+\Crefname{algocfline}{Line}{Lines}
+
+\usepackage{url}
+
+\usepackage[linesnumbered,noend,noline]{algorithm2e}
+
+\usepackage{changepage} % adjustwidth
+\usepackage{comment}
+
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+
+% Algorithm settings
+\SetAlFnt{\small}
+\SetKwInput{KwInput}{In}
+\SetKwInput{KwOutput}{Out}
+\SetKwProg{Fn}{}{:}{}
+\SetInd{0.5em}{0.5em}
+\SetKwFor{For}{for}{:}{}
+\SetKwSwitch{Switch}{Case}{Other}{switch}{:}{case}{otherwise}{}
+
+
+% theorem environments
+\newtheorem{protocol}{Protocol}%[section]
+\newtheorem{construction}{Construction}%[section]
+
+\title{%
+  Title
+}
+\subtitle{Subtitle}
+\titlerunning{Running Title}
+\author{Anonymous Author(s)}
+\institute{Anonymous Institution}
+
+\author{}
+\institute{}
+
+\input{macros}
+
+\begin{document}
+\maketitle
+\input{abstract}
+\input{intro}
+\input{relwork}
+\input{prelims}
+\input{notation}
+\input{overview}
+\input{approach}
+\input{proof}
+\input{instantiation}
+\input{evaluation}
+
+\bibliographystyle{alpha}
+\bibliography{bib/abbrev3,bib/crypto,custom}
+
+\newpage
+
+{\LARGE \bf \verb+    + Supplementary Material}
+
+\begin{appendix}
+\input{supplementary}
+\end{appendix}
+
+\end{document}
