@@ -1,8 +1,33 @@
 \begin{abstract}
-  \begin{itemize}
-    \item What is the problem?
-    \item What is the solution?
-    \item Why is it exciting?
-    \item 1-2 sentence technical explanation, if appropriate.
-  \end{itemize}
+  Secure two party computation (2PC) of arbitrary programs can be
+  efficiently achieved using garbled circuits (GC).
+  Until recently, it was widely believed that a GC
+  proportional to the entire program, including parts of the program
+  which are entirely discarded due to conditional branching, must
+  be transmitted over a network.
+  Recent work shows that this belief is \emph{false}, and that instead
+  an encryption proportional only to the longest program execution
+  path suffices (Heath and Kolesnikov, CRYPTO 20).
+  Although this recent work reduces the communication needed to evaluate
+  conditionals, it \emph{increases} the amount of computation
+  performed by the players.
+  For a circuit with conditional branching factor $b$, the players
+  require $O(b^2)$ computation.
+
+  We extend the work of Heath and Kolesnikov by reducing
+  the computation overhead from $O(b^2)$ to $O(b \log b)$.
+  We observe that the primary cause of the increased computation is the
+  oblivious collection of \emph{garbage labels} that emerge during the
+  evaluation of inactive conditional branches.
+  Garbage is collected by a \emph{multiplexer} component whose
+  instantiation is costly to generate.
+  At a high level, our extension carefully places the multiplexer such
+  that we avoid quadratic behavior.
+
+  TODO are we doing this?
+  With this extension in place, we then study the concrete constants
+  associated with stacked garbling and with our extension.
+  We demonstrate that the cheapest stacking strategies involve
+  compromising between so-called \emph{vectorized} branching and
+  nested branching.
 \end{abstract}
