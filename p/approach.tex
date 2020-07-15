@@ -1,5 +1,40 @@
 \section{Approach}\label{sec:approach}
 
+\begin{figure*}[t]
+  \centering
+  \input{fig/nested}
+  \caption{%
+    The na\"ive stacking of four circuits.
+    Conditionals are nested two levels deep; per the \stack algorithm,
+    this forces the players to recursively emulate themselves which
+    leads to quadratic cost in the number of branches for both players.
+  }\label{fig:nested}
+\end{figure*}
+
+
+\begin{figure*}[t]
+  \centering
+  \input{fig/vector}
+  \caption{%
+    The vectorized stacking of four circuits.
+    The evaluator pays only linear cost to evaluate all four branches,
+    but the generator pays quadratic cost in the number of branches.
+  }\label{fig:vector}
+\end{figure*}
+
+\begin{figure*}[t]
+  \centering
+  \input{fig/optimized}
+  \caption{%
+    Our stacking optimization.
+    The four conditional branches are stacked by nesting, but the
+    multiplexer is not stacked.
+    By leaving the multiplexer unstacked, we prevent the players from
+    recursively emulating themselves at quadratic cost.
+  }\label{fig:optimized}
+\end{figure*}
+
+
 \begin{itemize}
   \item Present in formal detail.
 \end{itemize}
