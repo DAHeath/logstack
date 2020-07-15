@@ -1,14 +1,76 @@
 \section{Introduction}\label{sec:intro}
 
+Secure two party computation (2PC) of arbitrary programs can be
+efficiently achieved using garbled circuits (GC).
+%
+Representing programs as circuits is problematic because doing so
+requires compiling conditional control flow into circuits.
+This translation loses a key benefit of the program representation:
+in the cleartext program, only the taken execution is computed whereas in
+the circuit \emph{all} branches must be computed.
+%
+Until recently, it was assumed that the players must not only compute
+all branches, but also transmit a string of \emph{material}
+proportional to all branches.
+Since communication is the bottleneck in GC, this large encryption was
+problematic for programs with extensive conditional behavior.
+
+Stacked Garbling~\cite{EPRINT:HeaKol20b} shows that
+this expensive communication is unnecessary: the players need only
+send enough material for the single longest branch. This single
+piece of \emph{stacked} material can be re-used across all conditional branches, thus
+dramatically reducing communication cost.
+%
+This improvement does come with one important downside:
+Stacked Garbling requires the players to compute far more than they
+would have without stacking.
+In particular, the players pay $O(b^2)$ computation where $b$ is the
+branching factor.
+
+We briefly explain the source of this added computation.
+At a high level, Stacked Garbling requires the evaluator to
+``guess'' which branch is taken (she in fact makes all possible
+guesses) and evaluates this guessed branch.
+When she guesses right, she simply evaluates the taken branch and
+computes valid GC output labels for that branch.
+However, when she guesses wrong, she ends up evaluating the branch
+with so-called garbage material (material that is a random string, not
+an encryption of many circuit truth tables), and ends up computing
+\emph{garbage output labels} (i.e., labels that are not the encryption
+of $0$ or $1$, but are instead random strings).
+%
+To proceed past the exit of the conditional, it is necessary to
+`collect' these garbage labels and discard them in favor of the valid
+labels.
+%
+\cite{EPRINT:HeaKol20b} show how to collect this garbage without
+interaction, but doing so requires the generator to construct a
+garbled gadget called a multiplexer.
+Building the multiplexer requires the generator to know all possible
+garbage labels the evaluator might construct.
+%
+It is possible for generator to acquire these garbage labels, but
+doing so requires the generator to `emulate' the actions of the
+evaluator on all non-taken branches.
+It turns out there are $b(b-1)$ garbage label sets that the evaulator
+could arrive at: one for combination of actually taken branch and
+incorrectly guessed branch.
+%
+To build the multiplexer, the generator must construct all $b(b-1)$
+sets of garbage labels, requiring him to evaluate $b(b-1)$ circuits
+using garbage material.
+This is the source of the $O(b^2)$ computation.
+
+In this work, we drive the added computation down from $O(b^2)$ to
+$O(b \log b)$.
+At a high level, our approach carefully arranges the following:
 \begin{itemize}
-  \item What is the problem/setting?
-  \item What is the solution?
-  \item Why is the solution awesome?
-  \item What are the key ideas?
-  \item What are the details of the solution \emph{at a very high level}?
+  \item The conditional branches are \emph{nested}. TODO how to
+    explain
+  \item The multiplexer is \emph{not stacked}.
+    As we will see, this is key trick in reducing computation.
 \end{itemize}
 
-\subsection{Contribution}
-\begin{itemize}
-  \item Itemized list of contributions, if appropriate.
-\end{itemize}
+
+% At a high level, the circuit generator, i.e. the player who constructs
+% the material,
