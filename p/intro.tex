@@ -64,10 +64,29 @@ In this work, we drive the added computation down from $O(b^2)$ to
 $O(b \log b)$.
 At a high level, our approach builds on two key ideas:
 \begin{enumerate}
-  \item The conditional branches are \emph{nested}. TODO how to
-    explain
+  \item The conditional branches are \emph{nested}.
+    That is, instead of organizing $b$ branches as a vector, we
+    organize them into a binary tree.
+    Suppose \E guesses that a particular branch $\cir_i$ is taken,
+    while in fact $\cir_j$, a member of a different subtree, is taken.
+    The key idea of our approach is that we ensure that when \ev
+    garbles the entire subtree containg $\cir_j$ but not $\cir_i$, she
+    computes the same material, regardless of $j$.
   \item The multiplexer is \emph{not stacked}.
-    As we will see, this is key trick in reducing computation.
+    The careful reader familiar with \cite{EPRINT:HeaKol20b} may be
+    confused about our key idea: Stacked Garbling first presents a
+    recursive binary tree approach to branching that they later
+    discard in favor of a more efficient vector approach.
+    So why is our binary tree approach better?
+    The problem with \cite{EPRINT:HeaKol20b}'s recursive construction
+    is that the evaluator recursively computes the multiplexer for
+    nested sub-conditionals.
+    However, doing so leads to a recursive emulation whereby \E
+    emulates herself (and hence \G emulates himself as well).
+    This recursion leads to quadratic cost for both players.
+    The way out is to treat the multiplexer separately, and to opt not
+    to stack it.
+    If multiplexers are not stacked, then \E need not compute them.
 \end{enumerate}
 
 

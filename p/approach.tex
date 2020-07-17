@@ -16,8 +16,8 @@
     &~~~~~~S \gets \vec{X}[0]\\
     &~~~~~~\vec{X}' \gets \vec{X}[1..]\\
     &~~~~~~\codecomment{Garble both subtrees.}\\
-    &~~~~~~M_0,\cdot,\cdot,\cdot \gets \gbcond((\cir_1..\cir_{\frac{b}{2}}), S)\\
-    &~~~~~~M_1,\cdot,\cdot,\cdot \gets \gbcond((\cir_{\frac{b}{2}+1}..\cir_b), S)\\
+    &~~~~~~M_0,\cdot \gets \gbcond'((\cir_1..\cir_{\frac{b}{2}}), S)\\
+    &~~~~~~M_1,\cdot \gets \gbcond'((\cir_{\frac{b}{2}+1}..\cir_b), S)\\
     &~~~~~~\codecomment{Demultiplex based on the branch condition.}\\
     &~~~~~~\codecomment{One resultant vector is garbage and the other is valid.}\\
     &~~~~~~\vec{X}_0, \vec{X}_1 \gets dem.\ev(M_{dem}, S, \vec{X}')\\
@@ -25,6 +25,13 @@
     &~~~~~~Y_1 \gets \evcond((\cir_{\frac{b}{2}+1}..\cir_b), M \oplus M_0, \vec{X}_1)\\
     &~~~~~~\creturn~Y_0, Y_1
   \end{align*}
+  \caption{%
+    The algorithm for evaluating a conditional vector.
+    Given $b$ branches, \evcond returns $b$ output label vectors.
+    $b-1$ of these vectors will be garbage which must be captured by
+    the multiplexer.
+    One vector will be valid labels.
+  }
 \end{figure}
 \begin{figure}
   \begin{align*}
@@ -39,14 +46,13 @@
     &~~~~~~\codecomment{General case of $b$ branches.}\\
     &~~~~~~\codecomment{Split material into demultiplexer and body of subtrees.}\\
     &~~~~~~e \gets \genprojection(n)\\
-    &~~~~~~d \gets \genprojection(m)\\
     &~~~~~~S^0, S^1 \gets e[0]\\
     &~~~~~~\codecomment{Garble both subtrees.}\\
     &~~~~~~M_0,e_0,d_0,junk_0 \gets \gbcond((\cir_1..\cir_{\frac{b}{2}}), S^1)\\
     &~~~~~~M_1,e_1,d_1,junk_1 \gets \gbcond((\cir_{\frac{b}{2}+1}..\cir_b), S^0)\\
     &~~~~~~\codecomment{Garble both subtrees with ``bad'' seeds.}\\
-    &~~~~~~M_0',\cdot,\cdot \gets \gbcond((\cir_1..\cir_{\frac{b}{2}}), S^0)\\
-    &~~~~~~M_1',\cdot,\cdot \gets \gbcond((\cir_{\frac{b}{2}+1}..\cir_b), S^1)\\
+    &~~~~~~M_0',\cdot \gets \gbcond'((\cir_1..\cir_{\frac{b}{2}}), S^0)\\
+    &~~~~~~M_1',\cdot \gets \gbcond'((\cir_{\frac{b}{2}+1}..\cir_b), S^1)\\
     &~~~~~~M_{dem},\bot_0, \bot_1 \gets dem.\gb(S^0, S^1, e, e_0, e_1)\\
     &~~~~~~\bot_0' \gets \evcond((\cir_1..\cir_{\frac{b}{2}}), (M_0 \oplus M_1) \oplus M_1', \bot_0)\\
     &~~~~~~\bot_1' \gets \evcond((\cir_{\frac{b}{2}+1}..\cir_b), (M_0 \oplus M_1) \oplus M_0', \bot_1)\\
@@ -56,7 +62,36 @@
     The algorithm for garbling a conditional vector.
     Given $b$ branches, \gbcond returns (1) the stacked material, (2)
     the input encoding string, (3) all $b$ output decoding strings,
-    and (4) all $b\log b$ possible garbage output label sets.
+    and (4) all $b\log b$ possible garbage output label vectors.
+  }
+\end{figure}
+
+\begin{figure}
+  \begin{align*}
+    &\gbcond'(\vec{\cir}, S):\\
+    &~~\switch~\vec{\cir}:\\
+    &~~~~\ccase~(\cir):\\
+    &~~~~~~\codecomment{Base case of $1$ branch.}\\
+    &~~~~~~M, e, \cdot \gets \gb(\cir, S)\\
+    &~~~~~~\creturn~M, e\\
+    &~~~~\ccase~(\cir_1..\cir_b):\\
+    &~~~~~~\codecomment{General case of $b$ branches.}\\
+    &~~~~~~\codecomment{Split material into demultiplexer and body of subtrees.}\\
+    &~~~~~~e \gets \genprojection(n)\\
+    &~~~~~~S^0, S^1 \gets e[0]\\
+    &~~~~~~\codecomment{Garble both subtrees.}\\
+    &~~~~~~M_0,e_0 \gets \gbcond'((\cir_1..\cir_{\frac{b}{2}}), S^1)\\
+    &~~~~~~M_1,e_1 \gets \gbcond'((\cir_{\frac{b}{2}+1}..\cir_b), S^0)\\
+    &~~~~~~M_{dem},\cdot, \cdot \gets dem.\gb(S^0, S^1, e, e_0, e_1)\\
+    &~~~~~~\creturn~M_{dem}|(M_0\oplus M_1), e
+  \end{align*}
+  \caption{%
+    The helper algorithm $\gbcond'$ garbles all $b$ branches, but does
+    not construct garbage material.
+    Notice that $\gbcond'$ is significantly cheaper than $\gbcond$:
+    $\gbcond'$ does not invoke $\evcond$ and hence has only linear
+    complexity.
+    This low complexity is central to our improved performance.
   }
 \end{figure}
 
