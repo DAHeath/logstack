@@ -1,48 +1,69 @@
 \section{Approach}\label{sec:approach}
 
-\begin{figure*}[t]
-  \centering
-  \input{fig/nested}
+
+\begin{figure}
+  \begin{align*}
+    &\evcond(\vec{\cir}, M, \vec{X}):\\
+    &~~\switch~\vec{\cir}:\\
+    &~~~~\ccase~(\cir):\\
+    &~~~~~~\codecomment{Base case of $1$ branch.}\\
+    &~~~~~~\creturn~\ev(\cir, M, \vec{X})\\
+    &~~~~\ccase~(\cir_1..\cir_b):\\
+    &~~~~~~\codecomment{General case of $b$ branches.}\\
+    &~~~~~~\codecomment{Split material into demultiplexer and body of subtrees.}\\
+    &~~~~~~(M_{dem}, M_{cond}) \gets M\\
+    &~~~~~~\codecomment{Split input into the branch condition and remaining wires.}\\
+    &~~~~~~S \gets \vec{X}[0]\\
+    &~~~~~~\vec{X}' \gets \vec{X}[1..]\\
+    &~~~~~~\codecomment{Garble both subtrees.}\\
+    &~~~~~~M_0,\cdot,\cdot,\cdot \gets \gbcond((\cir_1..\cir_{\frac{b}{2}}), S)\\
+    &~~~~~~M_1,\cdot,\cdot,\cdot \gets \gbcond((\cir_{\frac{b}{2}+1}..\cir_b), S)\\
+    &~~~~~~\codecomment{Demultiplex based on the branch condition.}\\
+    &~~~~~~\codecomment{One resultant vector is garbage and the other is valid.}\\
+    &~~~~~~\vec{X}_0, \vec{X}_1 \gets dem.\ev(M_{dem}, S, \vec{X}')\\
+    &~~~~~~Y_0 \gets \evcond((\cir_1..\cir_{\frac{b}{2}}), M \oplus M_1, \vec{X}_0)\\
+    &~~~~~~Y_1 \gets \evcond((\cir_{\frac{b}{2}+1}..\cir_b), M \oplus M_0, \vec{X}_1)\\
+    &~~~~~~\creturn~Y_0, Y_1
+  \end{align*}
+\end{figure}
+\begin{figure}
+  \begin{align*}
+    &\gbcond(\vec{\cir}, S):\\
+    &~~\switch~\vec{\cir}:\\
+    &~~~~\ccase~(\cir):\\
+    &~~~~~~\codecomment{Base case of $1$ branch.}\\
+    &~~~~~~M, e, d \gets \gb(\cir, S)\\
+    &~~~~~~\codecomment{Return material, encoding string, decoding string, and empty garbage outputs.}\\
+    &~~~~~~\creturn~M, e, d, \lambda\\
+    &~~~~\ccase~(\cir_1..\cir_b):\\
+    &~~~~~~\codecomment{General case of $b$ branches.}\\
+    &~~~~~~\codecomment{Split material into demultiplexer and body of subtrees.}\\
+    &~~~~~~e \gets \genprojection(n)\\
+    &~~~~~~d \gets \genprojection(m)\\
+    &~~~~~~S^0, S^1 \gets e[0]\\
+    &~~~~~~\codecomment{Garble both subtrees.}\\
+    &~~~~~~M_0,e_0,d_0,junk_0 \gets \gbcond((\cir_1..\cir_{\frac{b}{2}}), S^1)\\
+    &~~~~~~M_1,e_1,d_1,junk_1 \gets \gbcond((\cir_{\frac{b}{2}+1}..\cir_b), S^0)\\
+    &~~~~~~\codecomment{Garble both subtrees with ``bad'' seeds.}\\
+    &~~~~~~M_0',\cdot,\cdot \gets \gbcond((\cir_1..\cir_{\frac{b}{2}}), S^0)\\
+    &~~~~~~M_1',\cdot,\cdot \gets \gbcond((\cir_{\frac{b}{2}+1}..\cir_b), S^1)\\
+    &~~~~~~M_{dem},\bot_0, \bot_1 \gets dem.\gb(S^0, S^1, e, e_0, e_1)\\
+    &~~~~~~\bot_0' \gets \evcond((\cir_1..\cir_{\frac{b}{2}}), (M_0 \oplus M_1) \oplus M_1', \bot_0)\\
+    &~~~~~~\bot_1' \gets \evcond((\cir_{\frac{b}{2}+1}..\cir_b), (M_0 \oplus M_1) \oplus M_0', \bot_1)\\
+    &~~~~~~\creturn~M_{dem}|(M_0\oplus M_1), e, (d_0,d_1), (junk_0,\bot_0',junk_1,\bot_1')
+  \end{align*}
   \caption{%
-    The na\"ive stacking of four circuits.
-    Conditionals are nested two levels deep; per the \stack algorithm,
-    this forces the players to recursively emulate themselves which
-    leads to quadratic cost in the number of branches for both players.
-  }\label{fig:nested}
-\end{figure*}
+    The algorithm for garbling a conditional vector.
+    Given $b$ branches, \gbcond returns (1) the stacked material, (2)
+    the input encoding string, (3) all $b$ output decoding strings,
+    and (4) all $b\log b$ possible garbage output label sets.
+  }
+\end{figure}
 
 
-\begin{figure*}[t]
-  \centering
-  \input{fig/vector}
-  \caption{%
-    The vectorized stacking of four circuits.
-    The evaluator pays only linear cost to evaluate all four branches,
-    but the generator pays quadratic cost in the number of branches.
-  }\label{fig:vector}
-\end{figure*}
-
-\begin{figure*}[t]
-  \centering
-  \input{fig/optimized}
-  \caption{%
-    Our stacking optimization.
-    The four conditional branches are stacked by nesting, but the
-    multiplexer is not stacked.
-    By leaving the multiplexer unstacked, we prevent the players from
-    recursively emulating themselves at quadratic cost.
-  }\label{fig:optimized}
-\end{figure*}
 
 
-\begin{itemize}
-  \item Present in formal detail.
-\end{itemize}
 
-\begin{construction}\label{cnstr:ourapproach}
-  \ourapproach~is something or other.
-  Probably an algorithm(s).
-\end{construction}
 
 \begin{theorem}\label{thm:key}
   If $H$ is modeled as a Random Oracle, then \Cref{cnstr:ourapproach} satisfies some key property.
