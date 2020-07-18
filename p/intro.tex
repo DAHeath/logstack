@@ -73,6 +73,14 @@ At a high level, our approach builds on two key ideas:
     The key idea of our approach is that we ensure that when \ev
     garbles the entire subtree containg $\cir_j$ but not $\cir_i$, she
     computes the same material, regardless of $j$.\todo{intuition still unclear}
+    
+  \item (Assume we talked about sources of uncertainty for \G, including inputs that we set to 0 and $b$ choices for \guess and $b$ choices for \truth -- maybe \guess and \truth are variables. So there was $b^2$ choices in prior work. To note, uncertainty of \E doesn't matter.). Once \guess and \truth are fixed, \G has fully deterministic view of what is going on.  Our intuition is to reduce the number of \truth choices in this approach {\em wrt  \guess}. 
+  
+  Wlog, consider a balanced binary tree with $b$ branches as leaves. 
+  For each leaf $b$, define $b$-th {\em sibling subtree at level $i$} to be the subtree rooted in a sibling of $i$-th node on the path to $b$.
+  
+  Consider at each level of the tree the dichotomy of whether \guess and \truth are in the same subtree. Our idea is to, given fixed \guess, enforce that \E identically processes \guess for all values of \truth which belong to the same sibling subtree of guess. This narrows \G’s uncertainty for each value of \guess: each value of \guess has only $\log b$ possible \truth options, one for each sibling subtree of \guess.
+    
   \item The multiplexer is \emph{not stacked}.
     The careful reader familiar with \cite{EPRINT:HeaKol20b} may be
     confused about our key idea: Stacked Garbling first presents a
