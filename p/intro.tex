@@ -1,21 +1,22 @@
 \section{Introduction}\label{sec:intro}
 
-Secure two party computation (2PC) of arbitrary programs can be
-efficiently achieved using garbled circuits (GC).
+Secure two party computation (2PC) of programs representable as Boolean circuits can be efficiently achieved using garbled circuits (GC).
 %
-Representing programs as circuits is problematic because conditional
+However,  circuit-based MPC in general is problematic because conditional
 control flow does not have an efficient circuit representation:
 in the cleartext program, only the taken execution is computed whereas in
 the circuit \emph{all} branches must be computed.
+%While this creates obvious relative overheads in conditional statements, the most significant impact is on general control flow, such as a sequence of loops.
+
 %
 Until recently, it was assumed that the players must not only compute
-all branches, but also transmit a string of \emph{material}
-proportional to all branches.
-Since communication is the bottleneck in GC, this large string was
+all branches, but also transmit a string of \emph{material} (e.g., the garbled circuit itself) 
+proportional to all branches.  
+Since communication is the bottleneck in GC, transmission of this large string was
 problematic for programs with conditional behavior.
 
 Stacked Garbling~\cite{EPRINT:HeaKol20b} shows that
-this expensive communication is unnecessary: the players need only
+this expensive branching-based communication blow-up is unnecessary: the players need only
 send enough material for the single longest branch. This single
 piece of \emph{stacked} material can be re-used across all conditional branches, thus
 dramatically reducing communication cost.
@@ -23,20 +24,20 @@ dramatically reducing communication cost.
 This improvement does come with one important downside:
 Stacked Garbling requires the players to compute far more than they
 would have without stacking.
-In particular, the players pay $O(b^2)$ computation where $b$ is the
+In particular, the players\todo{both players?} pay $O(b^2)$ computation where $b$ is the
 branching factor.
 
 We briefly explain the source of this added computation.
 At a high level, Stacked Garbling requires the evaluator to
 ``guess'' which branch is taken (she in fact makes all possible
-guesses) and evaluates this guessed branch.
+guesses) and evaluate this guessed branch.
 When she guesses right, she simply evaluates the taken branch and
 computes valid GC output labels for that branch.
 However, when she guesses wrong, she ends up evaluating the branch
-with so-called garbage material (material that is a random string, not
+with so-called garbage material (material that is a random-looking string\todo{isn't material correct, we just evaluate on (fixed) garbage input values and on the wrong plaintext circuit?}, not
 an encryption of circuit truth tables), and ends up computing
 \emph{garbage output labels} (i.e., labels that are not the encryption
-of $0$ or $1$, but are instead random strings).
+of $0$ or $1$, but are instead random-looking strings).
 %
 To proceed past the exit of the conditional, it is necessary to
 `collect' these garbage labels and discard them in favor of the valid
@@ -49,9 +50,9 @@ Building the multiplexer requires the generator to know all possible
 garbage labels the evaluator might construct.
 %
 It is possible for generator to acquire these garbage labels, but
-doing so requires the generator to `emulate' the actions of the
+doing so requires the generator to emulate the actions of the
 evaluator on all non-taken branches.
-It turns out there are $b(b-1)$ garbage label sets that the evaulator
+It turns out there are $b(b-1)$ garbage label sets that the evaluator
 could arrive at: one for each combination of actually taken branch and
 incorrectly guessed branch.
 %
@@ -71,7 +72,7 @@ At a high level, our approach builds on two key ideas:
     while in fact $\cir_j$, a member of a different subtree, is taken.
     The key idea of our approach is that we ensure that when \ev
     garbles the entire subtree containg $\cir_j$ but not $\cir_i$, she
-    computes the same material, regardless of $j$.
+    computes the same material, regardless of $j$.\todo{intuition still unclear}
   \item The multiplexer is \emph{not stacked}.
     The careful reader familiar with \cite{EPRINT:HeaKol20b} may be
     confused about our key idea: Stacked Garbling first presents a
