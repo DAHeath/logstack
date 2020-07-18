@@ -28,6 +28,7 @@ In particular, the players\todo{both players?} pay $O(b^2)$ computation where $b
 branching factor.
 
 \subsection{Source of $O(b^2)$ Computation Cost of Stacked Garbling }
+\label{sec:bsquaredcost}
 
 It is instructive to explain the source of this $O(b^2)$ added computation, to help explain our work.
 
@@ -54,24 +55,24 @@ Building the \HK multiplexer requires \G to {\em know all possible
 garbage labels} the evaluator might obtain.  Once this is satisfied, it is easy to see how \G can produce a gadget (e.g., an appropriately wired set of garbled translation tables) eliminating garbage and propagating true values.
 
 
-{\bf Uncertainty of \G.}
+{\bf The Uncertainty of \G.}
 It is possible for generator to acquire these garbage labels.  \HK achieve this by having \G  emulate the actions of the
 evaluator \E on all non-taken branches.  To see how this can be done, let's consider \G's knowledge and uncertainty about the garbled evaluation.  There are three sources of \G's uncertainty:
 \begin{itemize}
-	\item Wire inputs.  This is the largest uncertainty (exponential number of possibilities in the number of inputs to the conditional), and the easiest to deal with.  \HK introduce a simple and elegant trick of the circuit simply setting to a fixed value, e.g., all zeros, all the inputs to the inactive branches.  This fully resolves this kind of uncertainty wrt \G.
+	\item True wire inputs.  This is the largest uncertainty (exponential number of possibilities in the number of inputs to the conditional), and the easiest to deal with.  \HK introduce a simple and elegant trick of the circuit simply setting to a fixed value, e.g., all zeros, all the inputs to the inactive branches.  This fully resolves this kind of uncertainty wrt \G.\todo{concisely clarify here what happens  when true branch is executed under a wrong guess, i.e. how we have 0 uncertainty.}
 	\item True index of the actually taken branch, which we denote by \truth.
 	\item \E's guess of value of \truth, which we denote by \guess.
 \end{itemize}
 
-Thus, there are $b(b-1)$ garbage label sets that the evaluator
-could arrive at: one for each combination of (\truth,\guess), the  actually taken branch and
-incorrectly guessed branch.
+Thus, there are $b^2$ pairs of labels (including  $b(b-1)$ garbage pairs of labels)  that the evaluator
+could arrive at: one for each combination of (\truth,\guess), the  actually taken  and
+the incorrectly guessed branches.
 %
 
 
-To build the multiplexer, the generator must construct all $b(b-1)$
-sets of garbage labels, requiring him to evaluate $b(b-1)$ circuits
-using garbage material.
+To build the multiplexer for garbage collection, the \HK generator assumes all-zero inputs for non-taken branches, and emulates ``in its head'' \E's evaluation under all possible (\truth,\guess) combinations.  
+% must construct all $b(b-1)$ sets of garbage labels,
+This requires \G to evaluate $b(b-1)$ circuits using garbage material.
 This is the source of the $O(b^2)$ computation.
 
 
@@ -79,9 +80,30 @@ This is the source of the $O(b^2)$ computation.
 
 In this work, we drive the added computation down from $O(b^2)$ to
 $O(b \log b)$.
-At a high level, our approach builds on two key ideas:
-\begin{enumerate}
-  \item The conditional branches are \emph{nested}.
+At a high level, our approach builds on the following key idea.  We reduce \G's uncertainty regarding \E's garbled evaluation and hence achieve $O(b\log b)$ cost:
+
+\medskip
+ 
+   Recall from discussion in~\Cref{sec:bsquaredcost} the  sources of \G's uncertainty, which results in $b^2$ garblings inside emulation of \E: $b$ possible options for each \truth and \guess ($\truth \in\{0,b-1\}, \guess\in\{0,b-1\})$.
+   Once the pair  (\truth,\guess) are fixed, \G has fully deterministic view of the evaluation of the garbage (\truth,\guess)  combinations inside conditional.
+   
+   Our idea  is to reduce the number of \truth choices in this approach {\em wrt  \guess}. 
+  
+  Wlog, consider a balanced binary tree with $b$ branches as leaves. 
+  For each leaf $b$, define $b$-th {\em sibling subtree at level $i$} to be the subtree rooted in a sibling of $i$-th node on the path to $b$. Thus, each branch has $\lceil \log b \rceil$ sibling subtrees.
+  
+  Consider at each level of the tree the dichotomy of whether \guess and \truth are in the same subtree. Our idea is to, given fixed \guess, enforce that \E identically processes \guess for all values of \truth which belong to the same sibling subtree of guess. This narrows \G’s uncertainty for each value of \guess: each value of \guess has only $\log b$ possible \truth options, one for each sibling subtree of \guess.
+    
+\medskip
+
+
+\subsection{Next Sect}
+
+
+the following is to move to technical intuition maybe.
+\begin{itemize}
+
+      \item The conditional branches are \emph{nested}.
     That is, instead of organizing $b$ branches as a vector, we
     organize them into a binary tree.
     Suppose \E guesses that a particular branch $\cir_i$ is taken,
@@ -89,14 +111,6 @@ At a high level, our approach builds on two key ideas:
     The key idea of our approach is that we ensure that when \ev
     garbles the entire subtree containg $\cir_j$ but not $\cir_i$, she
     computes the same material, regardless of $j$.\todo{intuition still unclear}
-    
-  \item (Assume we talked about sources of uncertainty for \G, including inputs that we set to 0 and $b$ choices for \guess and $b$ choices for \truth -- maybe \guess and \truth are variables. So there was $b^2$ choices in prior work. To note, uncertainty of \E doesn't matter.). Once \guess and \truth are fixed, \G has fully deterministic view of what is going on.  Our intuition is to reduce the number of \truth choices in this approach {\em wrt  \guess}. 
-  
-  Wlog, consider a balanced binary tree with $b$ branches as leaves. 
-  For each leaf $b$, define $b$-th {\em sibling subtree at level $i$} to be the subtree rooted in a sibling of $i$-th node on the path to $b$.
-  
-  Consider at each level of the tree the dichotomy of whether \guess and \truth are in the same subtree. Our idea is to, given fixed \guess, enforce that \E identically processes \guess for all values of \truth which belong to the same sibling subtree of guess. This narrows \G’s uncertainty for each value of \guess: each value of \guess has only $\log b$ possible \truth options, one for each sibling subtree of \guess.
-    
   \item The multiplexer is \emph{not stacked}.
     The careful reader familiar with \cite{EPRINT:HeaKol20b} may be
     confused about our key idea: Stacked Garbling first presents a
@@ -112,7 +126,7 @@ At a high level, our approach builds on two key ideas:
     The way out is to treat the multiplexer separately, and to opt not
     to stack it.
     If multiplexers are not stacked, then \E need not compute them.
-\end{enumerate}
+\end{itemize}
 
 
 % At a high level, the circuit generator, i.e. the player who constructs
