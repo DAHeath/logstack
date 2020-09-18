@@ -150,27 +150,27 @@ because \Eval\ is limited to $O(b)$ invocations to \Gb).
     More formally: suppose not.
     That is, suppose that $\Omega(b)$ correct materials are used only a
     sub-linear number of times.
-    That is, a constant fraction of correct materials are used only a
+    That is, at least a constant fraction of correct materials are used only a
     sub-linear number of times.
     Then there exists a distinguisher with a non-negligible advantage
     in identifying the taken branch.
     Consider those pools with
     only $O(1)$ materials (by Claim 1, almost all pools have this
-    property). By the pigeonhole principle, a constant fraction of
+    property). At least a constant fraction of
     these pools have a correct material used only a sub-linear
     number of times.
     % Consider one of these pools.
     Suppose the distinguisher uniformly draws one of these pools.
     By Claim 2, this pool has a material that is used $\Omega(b)$
     times, but our supposition this highly used material can be the
-    correct one with only \emph{constant probability}.
+    correct one with at most \emph{constant probability}.
     Thus, the distinguisher can guess that this highly used material
     is not correct, and guess that all branches that do use the
     material to unstack are not taken (a sensible strategy because the
     taken branch must use the correct material).
     %
-    With \emph{constant probability} this guess will be correct,
-    giving the distinguisher a constant advantage in distinguishing
+    With at least \emph{constant probability} this guess will be correct,
+    giving the distinguisher at least a constant advantage in distinguishing
     the taken branch.
     %
     Thus if $\Omega(b)$ correct materials are used only a
