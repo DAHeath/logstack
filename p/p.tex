@@ -10,6 +10,7 @@
 \usepackage{amsfonts}
 \usepackage{tikz}
 \usepackage{todonotes}
+\usepackage{xspace}
 
 \usepackage{cleveref}
 % cleveref config
@@ -44,6 +45,13 @@
 \newtheorem{protocol}{Protocol}%[section]
 \newtheorem{construction}{Construction}%[section]
 
+\newenvironment{subproof}[1][\proofname]{%
+  \renewcommand{\qedsymbol}{$\blacksquare$}%
+  \begin{proof}[#1]%
+}{%
+  \end{proof}%
+}
+
 \title{%
   Improved Stacked Garbling
 }
@@ -67,6 +75,7 @@
 \input{overview}
 \input{approach}
 \input{proof}
+\input{lowerbound}
 \input{instantiation}
 \input{evaluation}
 

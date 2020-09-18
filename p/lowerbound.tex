@@ -1,0 +1,181 @@
+\section{Lower Bound}\label{sec:lowerbound}
+\begin{theorem}
+Consider a circuit with $b$ branches.  Suppose \Eval\ and \Gen\ issue only
+$O(b)$ calls to \Gb. If \Gen\ sends to \Eval\ the stacking of material from
+the $b$ branches, then \Gen\ must issue $\Omega(b^2)$  calls to \Ev.
+\end{theorem}
+\begin{proof}
+Consider an arbitrary execution where branch $b_t$  is taken. \Eval\
+garbles each branch at least once (for security), but beyond this the
+scheme may instruct \Eval\ to garble each branch an arbitrary number of
+times, so long as there are only $O(b)$ total garblings.
+Recall,
+\Eval\
+must garble the non-taken branches (i.e., each branch $b_{i\neq t}$ using a
+`good' seed (in order to correctly unstack material to evaluate $b_t$).
+Thus, \Eval\ garbles  $b-1$ `good' seeds, one for each branch
+$b_{i\neq t}$,
+and garbles  $O(b)$ total seeds.
+
+\Eval\ uses these garblings to
+unstack $b$ materials: one per `guessed' branch. That is, for each
+branch $b_j$, \Eval\ selects one garbling of every other branch
+$b_{k\neq j}$, XORs these garblings with the stacked material, and
+evaluates $b_j$ on the unstacked material. Recall that in the case of $b_t$,
+%
+\Eval\ must unstack using the $b-1$ `good' materials (or else the scheme
+is not correct). When a garbling is used to evaluate a branch in this
+manner, we henceforth simply say that the material is \emph{used}.
+Other than using all `good' materials to evaluate the taken branch, a
+priori there are no other restrictions on how these $O(b)$ garblings
+are used.
+%
+Said another way, each branch has a `pool' of garblings that are
+given, via seed, to \Eval. The garbling scheme instructs \Eval\ to
+XOR together $b-1$ of these garblings (one from each pool) to evaluate each
+branch.
+
+\begin{itemize}
+  \item \textbf{Claim 1.} At most a sub-linear number of branches have more than
+    $O(1)$ garblings.
+    \begin{subproof}
+      By pigeonhole principle.
+      If this were not the case, then there
+      would be more than $O(b)$ total garblings.
+
+      Informally, this claim says that the pools of garblings are
+      generally small, because if they were `too large', then the
+      number of garblings would exceed the allowed number of calls to
+      \Gb.
+    \end{subproof}
+
+  \item \textbf{Claim 2.}
+    All except a sub-linear number of branches have a garbling that is
+    used $\Omega(b)$ times.
+    \begin{subproof}
+      By Claim 1 and pigeonhole principle. To evaluate each guessed
+      branch, \Eval\ uses one garbling from every other branch.  Thus,
+      \Eval\ uses $b-1$ total garblings of each branch. If a branch
+      has only $O(1)$ available garblings, at least one of them must
+      be chosen by \Eval\ $\Omega(b)$ times. Claim 1 indicates that all
+      except a sub-linear number of branches have this property.
+
+      Said less formally, since \Eval\ draws from each pool a `large number'
+      (i.e., linear number) of times (once per evaluated branch),
+      if a pool is `small', \Eval\ must choose at least one item  a
+      large number of times. Since most pools are small, she draws
+      some garbling a large number of times from most pools.
+    \end{subproof}
+
+  \item \textbf{Claim 3.} At most a sub-linear number of
+`good' garblings are used only a sub-linear number of times.
+  \begin{subproof}
+    Suppose not.
+    That is, suppose that $\Omega(b)$ `good' garblings are used only a
+    sub-linear number of times.
+    Then there exists a distinguisher with a non-negligible advantage
+    in identifying the taken branch.
+    Consider those branches with
+    only $O(1)$ garblings (by Claim 1, almost all branches have this
+    property). By the pigeonhole principle, a constant fraction of
+    these branches have a `good' garbling used only a sub-linear
+    number of times. Consider one of these branches. The distinguisher
+    can uniformly sample from the sub-linearly used garblings of this
+    branch, and guess that this garbling is the `good' one. Since one
+    of the constant number of garblings must be used $\Omega(b)$ times
+    (Claim 2), this gives the distinguisher a constant advantage in
+    distinguishing which garbling is the `good' one. Recall that the
+    distinguisher wishes to guess which branch is taken, and that the
+    taken branch uses the `good' garbling. If the distinguisher rules
+    out those branches that do not use the guessed `good' garbling,
+    then it has a constant advantage in indeed ruling out a non-taken
+    branch.
+
+    Less formally, this proof observes the fact that if a large number
+    of the `good' garblings are used a small number of times, an
+    adversarial evaluator can simply look at which garblings are used
+    only a small number of times to help her determine which seeds are
+    good.
+    %
+    This strategy gives constant advantage because most pools (1) have
+    one `good' garbling, (2) have only constant elements, and (3) have
+    at least element with `high usage'.
+    %
+    Determining which garblings are `good' gives information about which
+    branch is taken, since only the taken branch uses all the `good'
+    garblings.
+  \end{subproof}
+\end{itemize}
+
+By Claim 3, all but a sub-linear number of `good'
+garblings are used $\Omega(b)$ times. That is, the `good' garblings are used a
+total of $\Omega(b^2)$ times. Equivalently, consider the evaluation of each
+branch (each of which uses $b-1$ garblings to unstack). Since each of these
+evaluations uses only one garbling of each branch, $\Omega(b)$ evaluations
+must use $\Omega(b)$ `good' garblings.  Call the execution we have thus far
+considered $A$.
+Now, consider a different execution where branch
+$b_{s\neq t}$  is taken, and call this new execution $B$. Because $b_s$ is
+not taken in $A$, the `good' garbling must be given to \Eval\ in $A$. Suppose
+that this garbling is used $\Omega(b)$ times (By claim 3, almost all such
+`good' garblings are). Now, for security, the `good' garbling of $b_s$ is
+not available to \Eval\ in $B$, because $b_s$ is taken in $B$. Thus, those
+$\Omega(b)$ branches that were evaluated using the `good' garbling of $b_s$
+in $A$
+must be evaluated using a different garbling in $B$ (the `good' garbling
+simply isn’t available). So, when \Eval\ evaluates these $\Omega(b)$ branches
+in $A$ and when she evaluates the same branches in $B$, she will compute
+different per-branch output labels. By extending this argument to
+consider all pairs of possibly executed branches, there are $\Omega(b^2)$
+possible output labels \Eval\ might compute. By the “evaluation axiom”,
+\Gen\ can only eliminate output labels by precomputing them himself.
+Thus, he must issue $\Omega(b^2)$ calls to \Ev.
+\end{proof}
+
+
+\begin{theorem}
+Consider a circuit with $b$ branches.  Suppose \Gen\ issues only
+$O(b)$ calls to \Ev. If \Gen\ sends to \Eval\ the stacking of material from
+the $b$ branches, then \Gen\ must issue $O(b^2)$  calls to \Gb.
+\end{theorem}
+\begin{proof}
+
+\textbf{Claim 1.} At most a sub-linear number of
+`good' garblings are used only a sub-linear number of times.
+  \begin{subproof}
+    Suppose not.
+    That is, suppose that $O(b)$ `good' garblings are used only a
+    sub-linear number of times.
+    Then there exists a distinguisher with a non-negligible advantage
+    in identifying the taken branch.
+    Consider those branches with
+    only $O(1)$ garblings (by Claim 1, almost all branches have this
+    property). By the pigeonhole principle, a constant fraction of
+    these branches have a `good' garbling used only a sub-linear
+    number of times. Consider one of these branches. The distinguisher
+    can uniformly sample from the sub-linearly used garblings of this
+    branch, and guess that this garbling is the `good' one. Since one
+    of the constant number of garblings must be used $O(b)$ times
+    (Claim 2), this gives the distinguisher a constant advantage in
+    distinguishing which garbling is the `good' one. Recall that the
+    distinguisher wishes to guess which branch is taken, and that the
+    taken branch uses the `good' garbling. If the distinguisher rules
+    out those branches that do not use the guessed `good' garbling,
+    then it has a constant advantage in indeed ruling out a non-taken
+    branch.
+
+    Less formally, this proof observes the fact that if a large number
+    of the `good' garblings are used a small number of times, an
+    adversarial evaluator can simply look at which garblings are used
+    only a small number of times to help her determine which seeds are
+    good.
+    %
+    This strategy gives constant advantage because most pools (1) have
+    one `good' garbling, (2) have only constant elements, and (3) have
+    at least element with `high usage'.
+    %
+    Determining which garblings are `good' gives information about which
+    branch is taken, since only the taken branch uses all the `good'
+    garblings.
+  \end{subproof}
+\end{proof}

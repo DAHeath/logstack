@@ -1,23 +1,16 @@
 \section{Proofs}\label{sec:proof}
 
-\begin{itemize}
-  \item Present proofs of the theorems related to the approach.
-\end{itemize}
-
-Often:
-
-\begin{definition}
-  A (something or other) is correct if it implements the semantics defined somewhere.
-\end{definition}
-
-\begin{theorem}
-  \ourapproach~is correct.
-\end{theorem}
-\begin{proof}
-\end{proof}
-
-\begin{theorem}
-  \ourapproach~is secure.
-\end{theorem}
+\begin{lemma}
+  Let \GS be an arbitrary stackable garbling scheme.
+  Consider $b$ circuits $\cir_1...\cir_b$ and suppose each circuit,
+  when encrypted by $\GS.\gb$ generates a garbling of size $n$. Assume
+  $b << n$.
+  %
+  Let $\GS'$ be a garbling scheme given only oracle access to
+  $\GS.\ev$ and $\GS.\gb$ to evaluate/garble the $b$ branches, and let
+  the material from $\GS'.\gb$ be $O(n)$.
+  $\GS'.\gb$ and $\GS'.\ev$ together make $\Omega(b \log b)$ combined oracle calls
+  to $\GS.\gb/\GS.\ev$.
+\end{lemma}
 \begin{proof}
 \end{proof}

@@ -10,3 +10,6 @@ clean:
 	rm *.blg
 	rm *.pdf
 	rm *.bbl
+
+fast:
+	pdflatex p
