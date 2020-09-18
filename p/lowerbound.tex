@@ -1,7 +1,7 @@
 \section{Lower Bound}\label{sec:lowerbound}
 \begin{theorem}
 Consider a circuit with $b$ branches $\cir_1,..., \cir_b$.  Suppose
-\Eval\ and \Gen\ each issue only
+\Eval\ and \Gen\ each issue
 $O(b)$ calls to \Gb. If \Gen\ sends to \Eval\ the stacking of material from
 the $b$ branches $\mat = \mat_1 \oplus ... \oplus \mat_b$, then \Gen\ must issue $\Omega(b^2)$  calls to \Ev.
 \end{theorem}
@@ -14,19 +14,19 @@ requiring her to reconstruct all materials $\mat_{i\neq t}$.
 Reconstructing these materials requires \Eval\ to call \Gb\ using the
 same seeds as \Gen.
 %
-To begin, note the following facts:
+Note the following facts:
 \begin{itemize}
   \item
     The scheme must instruct \Eval\ to `attempt' to
     evaluate \emph{every} branch $\cir_i$. If not,
-    \Eval\ can trivially observe that some branch is not taken.
+    \Eval\ observes that some branch is not taken.
     Specifically, any branch she does not evaluate must not be
     taken.
   \item
-    Because \Eval\ must invoke \Gb\ on each non-taken branch for
-    correctness, she must also invoke \Gb\ on the taken branch.
-    If not, \Eval\ can observe that the branch that the
-    scheme does not instruct her to garble must be taken.
+    Because \Eval\ invokes \Gb\ on each non-taken branch for
+    correctness, the scheme must also instruct \Eval\ to invoke \Gb\ on the taken branch.
+    If not, \Eval\ observes that the branch that she does not to
+    garble must be taken.
   \item
     \Eval\ cannot reconstruct material $\mat_t$
     through an invocation of \Gb. If she could, she would
@@ -35,20 +35,20 @@ To begin, note the following facts:
     Instead, she must reconstruct some `incorrect' material $\mat_t'
     \neq \mat_t$ that does not compromise security.
 \end{itemize}
-Putting these facts together, we can informally see that
+Putting these facts together, we informally observe that
 \Eval\ must evaluate all non-taken branches $\cir_{i\neq t}$ on some
-material $\mat_i' \neq \mat_i$: she cannot successfully unstack $\mat_i$
-from $\mat$ because she cannot reconstruct $\mat_t$ via \Gb.
+material $\mat_i' \neq \mat_i$: she cannot unstack $\mat_i$
+from $\mat$ because she cannot reconstruct $\mat_t$.
 %
 We refer to such material as `incorrect': it is not the same material
 as constructed by \Gen.
-Material that \emph{is} in the XOR expression for $M$ is correspondingly called
+Material that \emph{is} in the formal expresion for $M$ is correspondingly called
 `correct' material.
 
 Evaluations on incorrect material lead to garbage output values that,
 by the `garbage axiom', can only be eliminated by having \Gen\ invoke
 \Ev.
-At a high level, the following proof demonstrates that there are
+At a high level, we demonstrate that there are
 necessarily $\Omega(b^2)$ possible garbage outputs that \Eval\ might
 compute, and thus \Gen\ must invoke \Ev\ $\Omega(b^2)$ times to
 predict all garbage outputs.
@@ -59,24 +59,28 @@ times, so long as there are only $O(b)$ total garblings.
 %
 We refer to the collection of different materials for a single branch
 as that branch's \emph{pool} of materials.
-That is, a pool contains multiple materials, each for the same branch,
+That is, a pool contains one or more materials, each for the same branch,
 and at most one of which is correct (since $M$ contains only one
 garbling of each branch, only one pool material can possibly be
-correct).
+correct). Note that the pool for $\cir_t$ does not contain a correct
+material, because, again, it is insecure for \Eval\ to reconstruct
+$\mat_t$.
 %
 To evaluate a given branch $\cir_i$, \Eval\ selects one element from
 each pool except the pool corresponding to $\cir_i$, XORs these
+selected
 elements with $\mat$ to attempt to extract $\mat_i$, and evaluates
 $\cir_i$ on the unstacked material.
 %
-Informally, increasing the size of pools can help to reduce
+Informally, increasing the size of pools can reduce
 the number of possible ways that \Eval\ might unstack incorrect
-material, and hence reduces the number of possible garbage outputs.
+material, and hence can reduce the number of possible garbage outputs.
 %
-We show that if the total combined size of all pools
-is $O(b)$, the number of possible garbage outputs is $\Omega(b^2)$
-(the total combined size of all pools cannot exceed $O(b)$,
-because \Eval\ is limited to $O(b)$ invocations to \Gb).
+However, the total combined size of all pools is bounded to $O(b)$,
+because \Eval\ may only issue $O(b)$ calls to \Gb.
+We use this fact, combined with implications of the security of the
+scheme, to show that the number of possible garbage outputs is
+$\Omega(b^2)$.
 
 %\Eval\ uses these garblings to
 %unstack $b$ materials: one per `guessed' branch. That is, for each
@@ -112,7 +116,7 @@ because \Eval\ is limited to $O(b)$ invocations to \Gb).
     \end{subproof}
 
   \item \textbf{Claim 2.}
-    All pools with size $O(1)$ contain a material that is used to
+    All pools with $O(1)$ size contain a material that is used to
     unstack $\Omega(b)$ times.
     \begin{subproof}
       Informally, since \Eval\ draws from each pool a `large number'
@@ -120,7 +124,7 @@ because \Eval\ is limited to $O(b)$ invocations to \Gb).
       if a pool is `small', \Eval\ must choose at least one item  a
       large number of times.
 
-      More formally: by Claim 1 and pigeonhole principle. To evaluate
+      More formally: by pigeonhole principle. To evaluate
       each guessed branch, \Eval\ unstacks using one material from every other
       branch.  Thus, \Eval\ uses $b-1$ total materials from each pool.
       If a pool has only $O(1)$ available materials, at least one
@@ -135,22 +139,22 @@ because \Eval\ is limited to $O(b)$ invocations to \Gb).
     Informally, we observe that if a large number
     of correct materials are used a small number of times, an
     adversarial evaluator can simply look at which materials are used
-    a small number of times to help her determine which materials are
-    correct.
+    a large number of times to help her determine which branches are
+    not taken.
     %
-    This strategy gives the adversary a constant advantage in
+    This strategy gives the adversary at least a constant advantage in
     distinguishing which branch is taken because most pools (1) have
     one correct material, (2) have only constant elements, and (3) have
-    at least element with `high usage'.
+    at least element with `high usage' (Claim 2).
     %
-    Determining which materials are correct gives information about
+    Determining which materials are likely not correct gives information about
     which branch is taken, since only the taken branch unstacks using
-    all of the correct materials.
+    only correct materials.
 
     More formally: suppose not.
     That is, suppose that $\Omega(b)$ correct materials are used only a
     sub-linear number of times.
-    That is, at least a constant fraction of correct materials are used only a
+    Put another way, at least a constant fraction of correct materials are used only a
     sub-linear number of times.
     Then there exists a distinguisher with a non-negligible advantage
     in identifying the taken branch.
@@ -162,12 +166,12 @@ because \Eval\ is limited to $O(b)$ invocations to \Gb).
     % Consider one of these pools.
     Suppose the distinguisher uniformly draws one of these pools.
     By Claim 2, this pool has a material that is used $\Omega(b)$
-    times, but our supposition this highly used material can be the
-    correct one with at most \emph{constant probability}.
+    times, but by our supposition this highly used material is
+    \emph{correct with at most constant probability}.
     Thus, the distinguisher can guess that this highly used material
     is not correct, and guess that all branches that do use the
     material to unstack are not taken (a sensible strategy because the
-    taken branch must use the correct material).
+    taken branch must use only correct materials).
     %
     With at least \emph{constant probability} this guess will be correct,
     giving the distinguisher at least a constant advantage in distinguishing
@@ -191,10 +195,10 @@ because \Eval\ is limited to $O(b)$ invocations to \Gb).
   \end{subproof}
 \end{itemize}
 
-By Claim 3, all but a sub-linear number of correct
+By Claim 3, $\Omega(b)$ correct
 materials are used $\Omega(b)$ times. Thus, together the correct materials are used a
-total of $\Omega(b^2)$ times. Equivalently, consider the evaluation of each
-branch (each of which uses $b-1$ materials to unstack). Since each of these
+total of $\Omega(b^2)$ times. Equivalently, consider the evaluation
+from each pool (each of which uses $b-1$ materials to unstack). Since each of these
 evaluations uses only one material of each branch, $\Omega(b)$ evaluations
 must use $\Omega(b)$ correct materials.  Call the execution we have thus far
 considered $A$.
