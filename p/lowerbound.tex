@@ -227,47 +227,37 @@ Thus, he must issue $\Omega(b^2)$ calls to \Ev.
 \begin{theorem}
 Consider a circuit with $b$ branches.  Suppose \Gen\ issues only
 $O(b)$ calls to \Ev. If \Gen\ sends to \Eval\ the stacking of material from
-the $b$ branches, then \Gen\ must issue $O(b^2)$  calls to \Gb.
+the $b$ branches, then \Gen\ must issue $\Omega(b^2)$  calls to \Gb.
 \end{theorem}
 \begin{proof}
 
-\textbf{Claim 1.} At most a sub-linear number of
-`good' garblings are used only a sub-linear number of times.
-  \begin{subproof}
-    Suppose not.
-    That is, suppose that $O(b)$ `good' garblings are used only a
-    sub-linear number of times.
-    Then there exists a distinguisher with a non-negligible advantage
-    in identifying the taken branch.
-    Consider those branches with
-    only $O(1)$ garblings (by Claim 1, almost all branches have this
-    property). By the pigeonhole principle, a constant fraction of
-    these branches have a `good' garbling used only a sub-linear
-    number of times. Consider one of these branches. The distinguisher
-    can uniformly sample from the sub-linearly used garblings of this
-    branch, and guess that this garbling is the `good' one. Since one
-    of the constant number of garblings must be used $O(b)$ times
-    (Claim 2), this gives the distinguisher a constant advantage in
-    distinguishing which garbling is the `good' one. Recall that the
-    distinguisher wishes to guess which branch is taken, and that the
-    taken branch uses the `good' garbling. If the distinguisher rules
-    out those branches that do not use the guessed `good' garbling,
-    then it has a constant advantage in indeed ruling out a non-taken
-    branch.
 
-    Less formally, this proof observes the fact that if a large number
-    of the `good' garblings are used a small number of times, an
-    adversarial evaluator can simply look at which garblings are used
-    only a small number of times to help her determine which seeds are
-    good.
-    %
-    This strategy gives constant advantage because most pools (1) have
-    one `good' garbling, (2) have only constant elements, and (3) have
-    at least element with `high usage' (i.e., that is used to unstack
-    $\Omega(b)$ times).
-    %
-    Determining which garblings are `good' gives information about which
-    branch is taken, since only the taken branch uses all the `good'
-    garblings.
-  \end{subproof}
+  \begin{itemize}
+    \item
+      By garbage axiom and because \Gen\ invokes \Ev\ $O(b)$
+      times, \Eval\ is limited to computing $O(b)$ possible garbage
+      outputs.
+    \item
+      All but a sublinear number of branches evaluate to $O(1)$
+      different garbage outputs.
+    \item
+      Consider an arbitrary fixed evaluation where $\cir_t$ is taken.
+      The attempted evaluation of all but a sublinear number of
+      branches must be done by unstacking $O(1)$ correct materials.
+      Due to a counting argument involving the number of garbage
+      outputs appearing across executions.
+    \item
+      All but a sublinear number of correct materials are used
+      $O(1)$ times. By a distinguishability argument.
+    \item
+      All but a sublinear number of all pool materials must be used
+      $O(1)$ times.
+      By a distinguishability argument.
+  \end{itemize}
+
+  A total of $b(b-1)$ selections are made from the pools. Since all
+  but a sublinear number of materials are used $O(1)$ times most pools
+  have materials that are all used $O(1)$ times.
+  %
+  Thus, the total combined pool size must be $\Omega(b^2)$.
 \end{proof}
