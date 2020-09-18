@@ -112,22 +112,19 @@ because \Eval\ is limited to $O(b)$ invocations to \Gb).
     \end{subproof}
 
   \item \textbf{Claim 2.}
-    All except a sub-linear number of pools contain a material that is
-    used to unstack $\Omega(b)$ times.
+    All pools with size $O(1)$ contain a material that is used to
+    unstack $\Omega(b)$ times.
     \begin{subproof}
       Informally, since \Eval\ draws from each pool a `large number'
       (i.e., linear number) of times (once per evaluated branch),
       if a pool is `small', \Eval\ must choose at least one item  a
-      large number of times. Since most pools are small, she draws
-      some materials a large number of times from most pools.
+      large number of times.
 
       More formally: by Claim 1 and pigeonhole principle. To evaluate
       each guessed branch, \Eval\ unstacks using one material from every other
       branch.  Thus, \Eval\ uses $b-1$ total materials from each pool.
       If a pool has only $O(1)$ available materials, at least one
-      must be chosen by \Eval\ $\Omega(b)$ times. Claim 1
-      indicates that all except a sub-linear number of branches have
-      this property.
+      must be chosen by \Eval\ $\Omega(b)$ times.
     \end{subproof}
 
   \item \textbf{Claim 3.} At most a sub-linear number of
