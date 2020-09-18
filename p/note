@@ -3,9 +3,7 @@ explicitly say XOR of b material strings
 
 a large class of natural constructions have natural limitations
 
-variable to denote a branch function
 branch garbled circuit
-use \cal{C}_t
 
 \hat{\cal{C}} garbling you don't know
 
