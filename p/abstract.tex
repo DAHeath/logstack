@@ -6,25 +6,41 @@
   which are entirely discarded due to conditional branching, must
   be transmitted over a network.
   Recent work shows that this belief is \emph{false}, and that instead
-  an encryption proportional only to the longest program execution
-  path suffices (Heath and Kolesnikov, CRYPTO 20).
+  communication proportional only to the longest program execution
+  path suffices (Heath and Kolesnikov, CRYPTO 20, \HK).
   Although this recent work reduces the communication needed to evaluate
   conditionals, it \emph{increases} the amount of computation
   performed by the players.
   For a circuit with conditional branching factor $b$, the players
-  consume $O(b^2)$ computation.
+  perform $O(b^2)$ computation: GC generator garbles $b^2$ branches  instead of $b$ garbled in traditional GC.
 
-  We extend the work of Heath and Kolesnikov by reducing
+\smallskip
+  We extend 
+  %the work of Heath and Kolesnikov 
+  \HK 
+  by reducing
   the computation overhead from $O(b^2)$ to $O(b \log b)$.
   We observe that the primary cause of the increased computation is the
   oblivious collection of \emph{garbage labels} that emerge during the
-  evaluation of inactive conditional branches.
+  oblivious evaluation of inactive conditional branches.
   Garbage is collected by a \emph{multiplexer} component whose
   instantiation is costly to generate.
-  At a high level, our extension carefully places the multiplexer such
-  that we avoid quadratic behavior.
+  At a high level, we redesign the stacking and garbage collection,
+  %our extension carefully places the multiplexer 
+  such that we avoid quadratic behavior.
+  
+\smallskip
+\vlad{We should say smth in main about known schemes fitting into the assumptions we made.}
+	Further,  for a natural class of garbling schemes, which includes all popular schemes, such as half-gates, this performance is near optimal.  We show that stacked garbling schemes making a linear in $b$ number of calls to garble (resp. evaluate) must make a quadratic in $b$ number of calls to evaluate (resp. garble).
 
-  TODO are we doing this?
+\smallskip
+	\HK relies on the  random oracle (RO) assumption  in an essential way.  We design a Stacked Garbling  variant which does not require RO.
+
+\smallskip	
+	Finally, we implement our scheme (in the RO model, based on half-gates garbling) and report on its performance.  It improves over Heath and Kolesnikov by factor xx.
+	
+\bigskip
+  \todo{ are we doing this?}
   With this extension in place, we then study the concrete constants
   associated with stacked garbling and with our extension.
   We demonstrate that the cheapest stacking strategies involve
