@@ -24,16 +24,15 @@ dramatically reducing communication cost.
 This improvement does come with one important downside:
 Stacked Garbling requires the players to compute far more than they
 would have without stacking.
-In particular, the players\todo{both players?} pay $O(b^2)$ computation where $b$ is the
-branching factor.
+In particular, in a conditional with branching factor $b$, \HK GC generator garbles $b^2$ branches and hence pays $O(b^2)$ computation.  In contrast, standard garbling garbles each branch only once.
 
 \subsection{Source of $O(b^2)$ Computation Cost of Stacked Garbling }
 \label{sec:bsquaredcost}
 
-It is instructive to explain the source of this $O(b^2)$ added computation, to help explain our work.
+It is instructive to explain the source of quadratic SGC computation of \HK, to help explain our work.
 
 At a high level, Stacked Garbling requires the evaluator to
-``guess'' which branch is taken (she in fact tries  all $b$
+guess which branch is taken (she in fact tries  all $b$
 branches) and evaluate this guessed branch.
 When she guesses right, she simply evaluates the taken branch and
 computes valid GC output labels for that branch.
@@ -76,60 +75,3 @@ This requires \G to evaluate $b(b-1)$ circuits using garbage material.
 This is the source of the $O(b^2)$ computation.
 
 
-\subsection{Top-level Intuition of Our Approach}
-
-In this work, we reduce the added computation  from $O(b^2)$ to
-$O(b \log b)$.
-At a high level, our approach builds on the following key idea.  We reduce \G's uncertainty regarding \E's garbled evaluation and hence achieve $O(b\log b)$ cost:
-
-\medskip
- 
-   Recall from discussion in~\Cref{sec:bsquaredcost} the  sources of \G's uncertainty, which results in $b^2$ garblings inside emulation of \E: $b$ possible values for each variable \truth and \guess ($\truth \in\{0,b-1\}, \guess\in\{0,b-1\})$.
-   Once the pair  (\truth,\guess) is fixed, \G has a {\em fully deterministic view} of the evaluation of the garbage (\truth,\guess)  combinations inside conditional.
-   
-   Our idea  is to reduce the number of \truth choices in this approach {\em with respect to  \guess}. 
-  
-  Wlog, consider a balanced binary tree with $b$ branches as leaves. 
-  For each leaf $\ell$, define $i$-th {\em sibling subtree at level $i$} to be the subtree rooted in a sibling of $i$-th node on the path to $\ell$ from tree root.  Thus, each branch has $\lceil \log b \rceil$ sibling subtrees (exactly $\log b$ sibling subtrees in a balanced binary tree).
-  
-  Consider at each level of the tree the dichotomy of whether leaves indexed by \guess and \truth are in the same subtree. Our idea is, given fixed \guess, to  enforce that \E identically processes \guess for {\em all} values of \truth which belong to the same sibling subtree of guess. This narrows \G’s uncertainty for each value of \guess: each value of \guess has only $\log b$ possible \truth options, one for each sibling subtree of \guess.  In turn, this results in $b\log b$  sets of garbage labels, and $b\log b$ garblings required by \G. \todo{and by \E?}
-  
-  %In this work, we address the technical challenge of designing garbling gadgets and  the stacking  to support security and correctness 
-    
-\medskip
-
-
-\subsection{Next Sect}
-
-
-the following is to move to technical intuition maybe.
-\begin{itemize}
-
-      \item The conditional branches are \emph{nested}.
-    That is, instead of organizing $b$ branches as a vector, we
-    organize them into a binary tree.
-    Suppose \E guesses that a particular branch $\cir_i$ is taken,
-    while in fact $\cir_j$, a member of a different subtree, is taken.
-    The key idea of our approach is that we ensure that when \ev
-    garbles the entire subtree containg $\cir_j$ but not $\cir_i$, she
-    computes the same material, regardless of $j$.\todo{intuition still unclear}
-  \item The multiplexer is \emph{not stacked}.
-    The careful reader familiar with \cite{EPRINT:HeaKol20b} may be
-    confused about our key idea: Stacked Garbling first presents a
-    recursive binary tree approach to branching that they later
-    discard in favor of a more efficient vector approach.
-    So why is our binary tree approach better?
-    The problem with \cite{EPRINT:HeaKol20b}'s recursive construction
-    is that the evaluator recursively computes the multiplexer for
-    nested sub-conditionals.
-    However, doing so leads to a recursive emulation whereby \E
-    emulates herself (and hence \G emulates himself as well).
-    This recursion leads to quadratic cost for both players.
-    The way out is to treat the multiplexer separately, and to opt not
-    to stack it.
-    If multiplexers are not stacked, then \E need not compute them.
-\end{itemize}
-
-
-% At a high level, the circuit generator, i.e. the player who constructs
-% the material,
