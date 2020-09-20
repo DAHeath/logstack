@@ -26,18 +26,18 @@ Stacked Garbling requires the players to compute far more than they
 would have without stacking.
 In particular, in a conditional with branching factor $b$, \HK GC generator garbles $b^2$ branches and hence pays $O(b^2)$ computation.  In contrast, standard garbling garbles each branch only once.
 
-\subsection{Source of $O(b^2)$ Computation Cost of Stacked Garbling }
+\subsection{Source of $O(b^2)$ Computation Cost of \HK Stacked Garbling }
 \label{sec:bsquaredcost}
 
 It is instructive to explain the source of quadratic SGC computation of \HK, to help explain our work.
 
-At a high level, Stacked Garbling requires the evaluator to
-guess which branch is taken (she in fact tries  all $b$
-branches) and evaluate this guessed branch.
-When she guesses right, she simply evaluates the taken branch and
+At a high level, the fundamental idea of Stacked Garbling is that the evaluator \E
+guesses which branch is taken (she in fact tries  all $b$
+branches) and evaluates this guessed branch with the appropriately reconstructed material.  Of course, for security, the guess is unverifiable by \E. 
+Still, when she guesses right, she indeed evaluates the taken branch and
 computes valid GC output labels for that branch.
 However, when she guesses wrong, she ends up evaluating the branch
-with so-called garbage material (material that is a random-looking string\todo{isn't material correct, we just evaluate on (fixed) garbage input values and on the wrong plaintext circuit?}, not
+with so-called garbage material (material that is a random-looking string, not
 an encryption of circuit truth tables), and ends up computing
 \emph{garbage output labels} (i.e., labels that are not the encryption
 of $0$ or $1$, but are instead random-looking strings).
@@ -48,8 +48,9 @@ labels.  (Of course, the final output labels of the conditional will be fresh,  
 
 
 \HK show how to collect this garbage without
-interaction.  They do this by requiring  SGC Generator \G to construct a
-garbled gadget called a multiplexer.
+interaction using a 
+%.  The main idea is to require SGC Generator \G to construct 
+garbled gadget called a multiplexer, constructed by the SGC Generator \G.  
 Building the \HK multiplexer requires \G to {\em know all possible
 garbage labels} the evaluator might obtain.  Once this is satisfied, it is easy to see how \G can produce a gadget (e.g., an appropriately wired set of garbled translation tables) eliminating garbage and propagating true values.
 
@@ -58,20 +59,25 @@ garbage labels} the evaluator might obtain.  Once this is satisfied, it is easy 
 It is possible for generator to acquire these garbage labels.  \HK achieve this by having \G  emulate the actions of the
 evaluator \E on all non-taken branches.  To see how this can be done, let's consider \G's knowledge and uncertainty about the garbled evaluation.  There are three sources of \G's uncertainty:
 \begin{itemize}
-	\item True wire inputs.  This is the largest uncertainty (exponential number of possibilities in the number of inputs to the conditional), and the easiest to deal with.  \HK introduce a simple and elegant trick of the circuit simply setting to a fixed value, e.g., all zeros, all the inputs to the inactive branches.  This fully resolves this kind of uncertainty wrt \G.\todo{concisely clarify here what happens  when true branch is executed under a wrong guess, i.e. how we have 0 uncertainty.}
+	\item True values of inputs of all branches.  This is the largest uncertainty (exponential number of possibilities in the number of inputs to the conditional), and the easiest to deal with.  \HK introduce a simple and elegant trick of the circuit simply setting to a fixed value, e.g., all zeros, all the inputs to the inactive branches.  This fully resolves this kind of uncertainty wrt \G.
 	\item True index of the actually taken branch, which we denote by \truth.
 	\item \E's guess of value of \truth, which we denote by \guess.
 \end{itemize}
 
-Thus, there are $b^2$ pairs of labels (including  $b(b-1)$ garbage pairs of labels)  that the evaluator
+Thus, there are $b^2$ pairs of labels (including  $b(b-1)$ garbage sets of labels and $b$ valid sets of labels)  that the evaluator
 could arrive at: one for each combination of (\truth,\guess), the  actually taken  and
-the incorrectly guessed branches.
+the incorrectly guessed branches. \vlad{is this correct: we have $b$ valid sets of labels?  also call them sets or pairs? decide on notation here.}
 %
 
 
 To aquire all possible garbage labels (and hence build the multiplexer for garbage collection), the \HK generator assumes all-zero inputs for non-taken branches, and emulates ``in its head'' \E's evaluation under all possible (\truth,\guess) combinations.  
 % must construct all $b(b-1)$ sets of garbage labels,
-This requires \G to evaluate $b(b-1)$ circuits using garbage material.
+This requires \G evaluate GC (i.e. call \Ev) $b(b-1)$ times on garbage material.
 This is the source of the $O(b^2)$ computation.
 
 
+
+\input{intuition}
+
+
+\subsection{Our Contributions}
