@@ -1,0 +1,25 @@
+
+\subsection{Top-level Intuition of the $O(b \log b)$ Stacked Garbling}
+
+Our main contribution is reducing the computation associated with branch processing in SGC from $O(b^2)$ to $O(b \log b)$.
+To achieve this, we redesign stacking and reduce \G's uncertainty regarding \E's garbled evaluation.  
+%At a high level, our approach builds on the following key idea:
+
+%\medskip
+ 
+   Recall from discussion in~\Cref{sec:bsquaredcost} the  sources of \G's uncertainty, which results in $b^2$ garblings inside \G's emulation of \E: $b$ possible values for each variable \truth and \guess ($\truth \in\{0,b-1\}, \guess\in\{0,b-1\})$.
+   For each fixed pair  (\truth,\guess), \G has a {\em fully deterministic view} of how \E evaluates the material and exactly which of the garbage it obtains.  \G can then use the corresponding garbage labels in constructing the garbage collector gadget.
+   % (\truth,\guess)  combinations inside conditional.
+   
+   Our main idea  is to reduce the number of \truth choices in this approach {\em with respect to  \guess}. 
+  
+  Wlog, consider a balanced binary tree with $b$ branches as leaves. 
+  For each leaf $\ell$, define $i$-th {\em sibling subtree at level $i$} to be the subtree rooted in a sibling of $i$-th node on the path to $\ell$ from tree root.  Thus, each branch has $\lceil \log b \rceil$ sibling subtrees (exactly $\log b$ sibling subtrees in a balanced binary tree).
+  
+  Consider at each level of the tree the dichotomy of whether leaves indexed by \guess and \truth are in the same subtree. Our idea is, given a fixed \guess, to  enforce that \E identically processes \guess for {\em all} values of \truth which belong to the same sibling subtree of guess. This narrows \G’s uncertainty for each value of \guess: each value of \guess has only $\log b$ possible \truth options, one for each sibling subtree of \guess.  In turn, this results in $b\log b$  sets of garbage labels, and $b\log b$ garblings required by \G. \todo{and by \E?}
+  
+  %In this work, we address the technical challenge of designing garbling gadgets and  the stacking  to support security and correctness 
+    
+\medskip
+
+
