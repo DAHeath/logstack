@@ -1,0 +1,20 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/Users/david/Documents/MPC/blogb-stacked-garbling/src/main.cc
+vector
+-
+variant
+-
+memory
+-
+bitset
+-
+span
+-
+

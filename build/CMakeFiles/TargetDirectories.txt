@@ -1,0 +1,3 @@
+/Users/david/Documents/MPC/blogb-stacked-garbling/build/CMakeFiles/rebuild_cache.dir
+/Users/david/Documents/MPC/blogb-stacked-garbling/build/CMakeFiles/edit_cache.dir
+/Users/david/Documents/MPC/blogb-stacked-garbling/build/CMakeFiles/LogSGC.dir
