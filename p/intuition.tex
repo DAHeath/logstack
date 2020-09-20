@@ -1,5 +1,6 @@
 
 \subsection{Top-level Intuition of the $O(b \log b)$ Stacked Garbling}
+\label{sec:intuition}
 
 Our main contribution is reducing the computation associated with branch processing in SGC from $O(b^2)$ to $O(b \log b)$.
 To achieve this, we redesign stacking and reduce \G's uncertainty regarding \E's garbled evaluation.  
@@ -11,15 +12,17 @@ To achieve this, we redesign stacking and reduce \G's uncertainty regarding \E's
    For each fixed pair  (\truth,\guess), \G has a {\em fully deterministic view} of how \E evaluates the material and exactly which of the garbage it obtains.  \G can then use the corresponding garbage labels in constructing the garbage collector gadget.
    % (\truth,\guess)  combinations inside conditional.
    
-   Our main idea  is to reduce the number of \truth choices in this approach {\em with respect to  \guess}. 
+   Our main idea  is to ``consolidate''  processing of many (\truth,\guess) pairs by ensuring that \E's execution (garbling calls, reconstructed GCs and output garbage labels) is the {\em same} across these (\truth,\guess) pairs.  Clearly, this would result in corresponding computational savings. 
+   
+
   
-  Wlog, consider a balanced binary tree with $b$ branches as leaves. 
+  Here is how we approach this.  Wlog, consider a balanced binary tree with $b$ branches as leaves. 
   For each leaf $\ell$, define $i$-th {\em sibling subtree at level $i$} to be the subtree rooted in a sibling of $i$-th node on the path to $\ell$ from tree root.  Thus, each branch has $\lceil \log b \rceil$ sibling subtrees (exactly $\log b$ sibling subtrees in a balanced binary tree).
   
-  Consider at each level of the tree the dichotomy of whether leaves indexed by \guess and \truth are in the same subtree. Our idea is, given a fixed \guess, to  enforce that \E identically processes \guess for {\em all} values of \truth which belong to the same sibling subtree of guess. This narrows \G’s uncertainty for each value of \guess: each value of \guess has only $\log b$ possible \truth options, one for each sibling subtree of \guess.  In turn, this results in $b\log b$  sets of garbage labels, and $b\log b$ garblings required by \G. \todo{and by \E?}
-  
-  %In this work, we address the technical challenge of designing garbling gadgets and  the stacking  to support security and correctness 
     
-\medskip
-
+ We reduce the number of possible \truth choices  {\em with respect to  \guess}.  For this, we  change the semantics of variable \truth: it now will not mean which of $b$ branches is active; instead \truth will denote in which sibling subtree of \guess the executed branch resides.  There are $\log b$ choices for this \truth.  If \G and \E can efficiently process each of these $b\log b$  (\truth,\guess) combinations  (we show that they can!), we achieve the improved $O(b\log b)$ computation cost.
+  
+  
+  
+ 
 

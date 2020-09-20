@@ -1,5 +1,25 @@
 
 \section{Technical Overview of Our Approach}
+\label{sec:techOverview}
+
+We  now review in  our main contributions at high level, but with some technical detail.
+\subsection{$O(b\log b)$ Stacked Garbling}
+\label{sec:techOverviewSG}
+
+Our main contribution is reducing the computation associated with branch processing in SGC from $O(b^2)$ to $O(b \log b)$.
+
+We now continue the discussion of~\Cref{sec:intuition}.  
+Recall, we consider (\truth,\guess) combinations w.r.t. taken (active) branch.  Fix one of $b$ choices for \guess.  In contrast with previous work~\HK, which considers $b$ choices for \truth, we let \truth  denote in which sibling subtree of \guess the executed branch resides.  There are $\log b$ choices for this \truth.  If \G and \E can efficiently process each of these $b\log b$  (\truth,\guess) combinations  (we show that they can!), we achieve the improved $O(b\log b)$ computation cost.
+
+We reduce the number of possible \truth choices  {\em with respect to  \guess}.  For this, we  change the semantics of variable \truth: it now will not mean which of $b$ branches is active; instead 
+
+
+
+ Consider at each level of the tree the dichotomy of whether leaves indexed by \guess and \truth are in the same subtree. Our idea is, given a fixed \guess, to  enforce that \E identically processes \guess for {\em all} values of \truth which belong to the same sibling subtree of guess. This narrows \G’s uncertainty for each value of \guess: each value of \guess has only $\log b$ possible \truth options, one for each sibling subtree of \guess.  In turn, this results in $b\log b$  sets of garbage labels, and $b\log b$ garblings required by \G. \todo{and by \E?}
+
+%In this work, we address the technical challenge of designing garbling gadgets and  the stacking  to support security and correctness 
+
+\medskip
 
 
 
@@ -35,6 +55,20 @@ the following is to move to technical intuition maybe.
 % At a high level, the circuit generator, i.e. the player who constructs
 % the material,
 
+
+
+
+
+\subsection{Lower bound)}
+\label{sec:techOverviewLB}
+
+
+
+
+
+
+\subsection{Stacked garbling without Random Oracles)}
+\label{sec:techOverviewRO}
 
 
 
