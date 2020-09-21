@@ -28,7 +28,7 @@ if(OPENSSL_FOUND)
   endif()
 endif()
 
-set(sources src/main.cc)
+file(GLOB sources "src/*.cc")
 
 add_executable(${NAME} ${sources})
 target_include_directories(${NAME} PUBLIC src ${OPENSSL_INCLUDE_DIR})
