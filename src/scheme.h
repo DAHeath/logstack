@@ -64,6 +64,12 @@ struct Garbling {
 };
 
 
+struct CondGarbling {
+  Encoding inputEncoding;
+  Material material;
+};
+
+
 using Wiring = std::vector<Label>;
 
 
@@ -82,6 +88,8 @@ Labelling ev(const PRF&, const Circuit&, const Labelling&, std::span<Label>&);
 
 void gbGate(const PRF&, const Gate&, const Label& delta, NetlistCtxt&);
 void evGate(const PRF&, const Gate&, NetlistCtxt&);
+Encoding genEncoding(PRG&, std::size_t);
 
+std::vector<Labelling> evCond(const PRF&, std::span<Circuit>, const Labelling&, std::span<Label>&);
 
 #endif

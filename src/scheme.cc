@@ -96,6 +96,91 @@ void evGate(
   }
 }
 
+
+std::pair<Labelling, Labelling> evDem(std::span<const Label>, const Label&) {
+}
+
+std::tuple<Material, Labelling, Labelling> gbDem(
+    const PRF&,
+    const Label& s0,
+    const Label& s1,
+    const Encoding& e,
+    const Encoding& e0,
+    const Encoding& e1) {
+}
+
+
+CondGarbling gbCond_(const PRF& f, std::span<const Circuit> cs, const Label& seed) {
+
+  const auto n = cs.size();
+  PRG prg(seed);
+
+  if (n == 1) {
+    const auto g = garble(prg, f, cs[0]);
+    return { std::move(g.inputEncoding), std::move(g.material) };
+  } else {
+    // Generate a fresh encoding.
+    // All branches should have same number of inputs.
+    const auto e = genEncoding(prg, cs[0].nInp);
+    const auto s0 = e.zeros[0];
+    const auto s1 = e.zeros[0] ^ e.delta;
+
+    // split the vector of circuits
+    const std::span<const Circuit> cs0 = cs.subspan(0, n/2);
+    const std::span<const Circuit> cs1 = cs.subspan(n/2);
+
+    const auto g0 = gbCond_(f, cs0, s1);
+    const auto g1 = gbCond_(f, cs1, s0);
+
+    const auto [mdem, e0, e1] = gbDem(f, s0, s1, e, g0.inputEncoding, g1.inputEncoding);
+
+    // TODO stack material
+    return { e, mdem };
+  }
+}
+
+
+std::vector<Labelling> evCond(
+    const PRF& f,
+    std::span<const Circuit> cs,
+    const Labelling& inp,
+    std::span<Label>& material) {
+
+  const auto n = cs.size();
+
+  if (n == 1) {
+    return { ev(f, cs[0], inp, material) };
+  } else {
+    // TODO split material for demux
+    // split input into the branch condition and the remaining wires
+    const auto s = inp[0];
+    std::span<const Label> inp_(inp);
+    inp_ = inp_.subspan(1);
+
+
+    // split the vector of circuits
+    const std::span<const Circuit> cs0 = cs.subspan(0, n/2);
+    const std::span<const Circuit> cs1 = cs.subspan(n/2);
+
+    // garble both subtrees
+
+    const auto g0 = gbCond_(f, cs0, s);
+    const auto g1 = gbCond_(f, cs1, s);
+
+    const auto [inp0, inp1] = evDem(inp_, s);
+
+    // TODO unstack garbling
+    auto y0 = evCond(f, cs0, inp0, material);
+    auto y1 = evCond(f, cs1, inp1, material);
+
+    // concatenate the two vectors of results
+    // for efficiency, move the subvectors from the second vector into the first
+    for (auto& y: y1) { y0.emplace_back(std::move(y)); }
+    return y0;
+  }
+}
+
+
 Encoding gb(const PRF& f, const Circuit& c, const Encoding& inputEncoding, std::span<Label>& material) {
   return std::visit(overloaded {
     [&](const Netlist& n) {
@@ -145,11 +230,7 @@ Encoding gb(const PRF& f, const Circuit& c, const Encoding& inputEncoding, std::
 
 Garbling garble(PRG& seed, const PRF& f, const Circuit& c) {
   Garbling g;
-  g.inputEncoding.delta = seed();
-  g.inputEncoding.delta[0] = 1;
-  g.inputEncoding.zeros.resize(c.nInp);
-  for (auto& z: g.inputEncoding.zeros) { z = seed(); }
-
+  g.inputEncoding = genEncoding(seed, c.nInp);
   g.material.resize(c.nRow);
   std::span<Label> mat(g.material);
   g.outputEncoding = gb(f, c, g.inputEncoding, mat);
@@ -177,8 +258,8 @@ Labelling ev(const PRF& f, const Circuit& c, const Labelling& input, std::span<L
       return output;
     },
     [&](const Conditional& cond) {
+      evCond(f, std::span { cond.cs }, input, material);
       Labelling out;
-      // TODO
       return out;
     },
     [&](const Sequence& seq) {
@@ -189,4 +270,14 @@ Labelling ev(const PRF& f, const Circuit& c, const Labelling& input, std::span<L
       return labelling;
     },
   }, c.content);
+}
+
+
+Encoding genEncoding(PRG& prg, std::size_t n) {
+  Encoding out;
+  out.delta = prg();
+  out.delta[0] = 1;
+  out.zeros.resize(n);
+  for (auto& z: out.zeros) { z = prg(); }
+  return out;
 }
