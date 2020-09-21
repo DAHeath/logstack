@@ -72,6 +72,7 @@ struct NetlistCtxt {
   std::span<const Label> inp;
   std::span<Label> out;
   std::span<Label> material;
+  std::size_t nonce;
 };
 
 

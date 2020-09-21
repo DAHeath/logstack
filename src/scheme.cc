@@ -28,10 +28,12 @@ void gbGate(
       break;
 
     case GateType::AND: {
-      const auto hA0 = f(A0);
-      const auto hA1 = f(A0 ^ delta);
-      const auto hB0 = f(B0);
-      const auto hB1 = f(B0 ^ delta);
+      const auto nonce0 = Label { ctxt.nonce };
+      const auto nonce1 = Label { ctxt.nonce + 1 };
+      const auto hA0 = f(A0 ^ nonce0);
+      const auto hA1 = f(A0 ^ delta ^ nonce0);
+      const auto hB0 = f(B0 ^ nonce1);
+      const auto hB1 = f(B0 ^ delta ^ nonce1);
       const auto A0D = A0 & delta;
       const auto B0D = B0 & delta;
 
@@ -41,6 +43,7 @@ void gbGate(
       ctxt.material[0] = hA0 ^ hA1 ^ B0D;
       ctxt.material[1] = hB0 ^ hB1 ^ A0D;
 
+      ctxt.nonce += 2;
       ctxt.material = ctxt.material.subspan(2);
 
       C0 = A0&B0 ^ X ^ Y;
@@ -75,11 +78,14 @@ void evGate(
       break;
 
     case GateType::AND: {
-      const auto hA = f(A);
-      const auto hB = f(B);
+      const auto nonce0 = Label { ctxt.nonce };
+      const auto nonce1 = Label { ctxt.nonce + 1 };
+      const auto hA = f(A ^ nonce0);
+      const auto hB = f(B ^ nonce1);
       const auto X = A[0] ? hA ^ ctxt.material[0] : hA;
       const auto Y = B[0] ? hB ^ ctxt.material[1] : hB;
       ctxt.material = ctxt.material.subspan(2);
+      ctxt.nonce += 2;
       C = (A&B) ^ X ^ Y;
       break;
     }
@@ -103,6 +109,7 @@ Encoding gb(const PRF& f, const Circuit& c, const Encoding& inputEncoding, std::
       ctxt.material = material;
       ctxt.inp = std::span<const Label>(inputEncoding.zeros);
       ctxt.out = std::span<Label>(outputEncoding.zeros);
+      ctxt.nonce = 0;
 
       for (const auto& g: n) {
         gbGate(f, g, delta, ctxt);
@@ -160,6 +167,7 @@ Labelling ev(const PRF& f, const Circuit& c, const Labelling& input, std::span<L
       ctxt.material = material;
       ctxt.inp = std::span<const Label>(input);
       ctxt.out = std::span<Label>(output);
+      ctxt.nonce = 0;
 
       for (const auto& g: n) {
         evGate(f, g, ctxt);

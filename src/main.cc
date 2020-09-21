@@ -25,8 +25,8 @@ int main() {
   const auto delta = g.inputEncoding.delta;
 
   const Labelling inp = {
-    g.inputEncoding.zeros[0],
-    g.inputEncoding.zeros[1],
+    g.inputEncoding.zeros[0] ^ delta,
+    g.inputEncoding.zeros[1] ^ delta,
   };
   std::span<Label> mat(g.material);
   const auto out = ev(k, c, inp, mat);
