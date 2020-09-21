@@ -9,9 +9,24 @@ We  now review in  our main contributions at high level, but with some technical
 Our main contribution is reducing the computation associated with branch processing in SGC from $O(b^2)$ to $O(b \log b)$.
 
 We now continue the discussion of~\Cref{sec:intuition}.  
-Recall, we consider (\truth,\guess) combinations w.r.t. taken (active) branch.  Fix one of $b$ choices for \guess.  In contrast with previous work~\HK, which considers $b$ choices for \truth, we let \truth  denote in which sibling subtree of \guess the executed branch resides.  There are $\log b$ choices for this \truth.  If \G and \E can efficiently process each of these $b\log b$  (\truth,\guess) combinations  (we show that they can!), we achieve the improved $O(b\log b)$ computation cost.
+Recall, we consider (\truth,\guess) combinations w.r.t. taken (active) branch, where \guess is \E's guess of the active branch, and \truth defines the active branch.
 
-We reduce the number of possible \truth choices  {\em with respect to  \guess}.  For this, we  change the semantics of variable \truth: it now will not mean which of $b$ branches is active; instead 
+Fix one of $b$ choices for \guess.  In contrast with previous work~\HK, which considers $b$ choices for \truth independently from \guess, we let \truth  denote in which sibling subtree of \guess the executed branch resides.  There are $\log b$ choices for this \truth.  
+
+We now argue that \G and \E can efficiently process each of these $b\log b$  (\truth,\guess) combinations.   We acheve this as follows.  Recall, as part of GC branching evaluation, \E obtains $\lceil \log b \rceil$-long vector of labels defining the id of the active branch. As in \HK, our \E will make a guess $\guess\in\{0,b-1\}$ and use these labels as seeds to reconstruct branches guessed as {\em not} taken.  If the guess was correct, then correct branches will be unstacked, and \E will have obtained the correct garbling of the active branch. 
+
+
+
+By way of example, let's consider the special case of $\guess=0$ and $\truth = 010$ and refer to the illustration of~\Cref{fig:seed-tree} depicting the $b=8$ branches and the binary tree built on it.  It will be clear that it generalizes to any \guess.  \E starts on the root of the tree.  She made $\guess = 0$, while active branch is $C_2$.  Since \E guessed $0$, ... tbd
+
+
+
+ Key idea of our work and difference from~\HK is that:
+\begin{itemize}
+	\item for any tree level $i$, if active branch is 
+	\item 
+\end{itemize}
+
 
 
 
