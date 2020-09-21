@@ -1,3 +1,4 @@
+build/
 *.pdf
 *.aux
 *.log
