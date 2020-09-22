@@ -358,21 +358,89 @@ Labelling evCond(
 }
 
 
-CondGarbling gbCond(
+Encoding gbMux(
+    PRG& prg,
+    const PRF& f,
+    const Label& delta,
+    const Label& S0,
+    const Encoding& good0,
+    const Encoding& good1,
+    const Labelling& bad0,
+    const Labelling& bad1,
+    std::span<Label> mat) {
+
+  const auto n = good0.zeros.size();
+
+  const auto s = S0[0];
+  const auto hS0 = f(S0);
+  const auto hS1 = f(S0 ^ delta);
+
+  // evaluator should conditionally add on delta ^ delta0/delta ^ delta1 depending on S
+  // and if each label has a high lsb.
+  mat[0] ^= hS0 ^ hS1 ^ good0.delta ^ good1.delta;
+  mat = mat.subspan(1);
+  const auto diff = s ? (hS0 ^ delta ^ good0.delta) : (hS1 ^ delta ^ good1.delta);
+
+
+  Encoding e;
+  e.zeros.resize(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    // implement the following garbled truth table for arbitrary X:
+    // S0 -> Good0 ^ Bad1 ^ X
+    // S1 -> Good1 ^ Bad0 ^ X
+    mat[0] = hS0 ^ hS1 ^ good0.zeros[i] ^ good1.zeros[i] ^ bad0[i] ^ bad1[i];
+
+    e.zeros[i] = s ? (hS0 ^ good0.zeros[i] ^ bad1[i]) : (hS1 ^ good1.zeros[i] ^ bad0[i]);
+    e.zeros[i] ^= e.zeros[i][0] ? diff : 0;
+    mat = mat.subspan(1);
+  }
+
+  return e;
+}
+
+
+Labelling evMux(
+    const PRF& f,
+    const Label& S,
+    const Labelling& X,
+    const Labelling& Y,
+    std::span<Label> mat) {
+
+  const auto n = X.size();
+
+  const auto s = S[0];
+  const auto hS = f(S);
+
+  const auto diff = hS ^ (s ? mat[0] : 0);
+  mat = mat.subspan(1);
+
+  Labelling out(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    out[i] = X[i] ^ Y[i] ^ hS ^ (s ? mat[0] : 0);
+    out[i] ^= out[i][0] ? diff : 0;
+    mat = mat.subspan(1);
+  }
+  return out;
+}
+
+
+// Garble a vector of conditionally composed circuits, starting from a seed,
+// into the specified material.
+//
+// While the material for most of the circuit is stacked with XOR,
+// the multiplexer that collects garbage is not.
+// Thus, we reference the main material and the mux material by different spans.
+Interface gbCond(
     const PRF& f,
     std::span<const Circuit> cs,
     const Label& seed,
-    std::span<Label> mat) {
+    std::span<Label> mat,
+    std::span<Label> muxMat) {
   const auto n = cs.size();
   PRG prg(seed);
 
   if (n == 1) {
-    const auto g = garble(prg, f, cs[0], mat);
-    return {
-      std::move(g.inputEncoding),
-      { std::move(g.outputEncoding) },
-      { }
-    };
+    return garble(prg, f, cs[0], mat);
   } else {
     auto e = genEncoding(prg, cs[0].nInp);
     const auto s0 = e.zeros[0];
@@ -386,17 +454,17 @@ CondGarbling gbCond(
     const auto branchmat = mat.subspan(3*(e.zeros.size()-1) + 2);
 
 
-    CondGarbling g0, g1;
+    Interface i0, i1;
     // because garbling the conditional recursively involves unstacking and evaluating,
     // we cannot garble the material in place, and instead must garble into a fresh buffer.
     {
       Material mat0(branchmat.size());
-      g0 = gbCond(f, cs0, s1, mat0);
+      i0 = gbCond(f, cs0, s1, mat0, muxMat.subspan(0)); // TODO muxMat subspan
       branchmat ^= mat0;
     }
     {
       Material mat1(branchmat.size());
-      g1 = gbCond(f, cs1, s0, mat1);
+      i1 = gbCond(f, cs1, s0, mat1, muxMat.subspan(0)); // TODO muxMat subspan
       branchmat ^= mat1;
     }
 
@@ -404,35 +472,28 @@ CondGarbling gbCond(
     // into the front of the material
     std::span<Label> zeros { e.zeros };
     zeros = zeros.subspan(1);
-    auto [bad0, bad1] = gbDem(prg, f, e.delta, s0, zeros, g0.inputEncoding, g1.inputEncoding, mat);
+    auto [bad0, bad1] = gbDem(prg, f, e.delta, s0, zeros, i0.inputEncoding, i1.inputEncoding, mat);
 
-    Encoding g0_, g1_;
-    Labelling badout0, badout1;
-
+    Encoding e0_, e1_;
     // copy the stacked material so as not to trash it
     // then garble a branch incorrectly to emulate bad evaluation of the other
     // branch (note garbling in place is safe because gbCond_ does not
     // recursively involve evaluation).
     {
       Material mat0(branchmat.begin(), branchmat.end());
-      g0_ = gbCond_(f, cs0, s0, mat0);
-      badout0 = evCond(f, cs0, bad0, mat0);
+      e0_ = gbCond_(f, cs0, s0, mat0);
+      bad0 = evCond(f, cs0, bad0, mat0);
     }
     {
       Material mat1(branchmat.begin(), branchmat.end());
-      g1_ = gbCond_(f, cs1, s1, mat1);
-      badout1 = evCond(f, cs1, bad1, mat1);
+      e1_ = gbCond_(f, cs1, s1, mat1);
+      bad1 = evCond(f, cs1, bad1, mat1);
     }
 
+    const auto eout = gbMux(
+        prg, f, e.delta, s0, i0.outputEncoding, i1.outputEncoding, bad0, bad1, mat);
 
-    return {
-      e,
-      std::move(g0.outputEncodings) | std::move(g1.outputEncodings),
-      std::vector<Labelling> { std::move(badout0) }
-        | std::move(g0.bad)
-        | std::vector<Labelling> { std::move(badout1) }
-        | std::move(g1.bad)
-    };
+    return { e, eout };
   }
 }
 

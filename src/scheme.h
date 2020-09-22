@@ -63,13 +63,6 @@ struct Interface {
 };
 
 
-struct CondGarbling {
-  Encoding inputEncoding;
-  std::vector<Encoding> outputEncodings;
-  std::vector<Labelling> bad;
-};
-
-
 using Wiring = std::vector<Label>;
 
 
