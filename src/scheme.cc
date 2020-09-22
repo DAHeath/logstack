@@ -5,6 +5,7 @@ template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
 
+// TODO remove
 Material operator^(const Material& m0, const Material& m1) {
   const auto n = m0.size();
   assert(m1.size() == n);
@@ -18,28 +19,6 @@ Material operator^(const Material& m0, const Material& m1) {
 }
 
 
-Material& operator^=(Material& m0, const Material& m1) {
-  const auto n = m1.size();
-  assert(m0.size() >= n);
-
-  for (std::size_t i = 0; i < n; ++i) {
-    m0[i] ^= m1[i];
-  }
-  return m0;
-}
-
-
-Material& operator^=(Material& m0, std::span<Label> m1) {
-  const auto n = m1.size();
-  assert(m0.size() >= n);
-
-  for (std::size_t i = 0; i < n; ++i) {
-    m0[i] ^= m1[i];
-  }
-  return m0;
-}
-
-
 template <typename T>
 std::span<Label> operator^=(std::span<Label> m0, const T& m1) {
   const auto n = m1.size();
@@ -49,18 +28,6 @@ std::span<Label> operator^=(std::span<Label> m0, const T& m1) {
     m0[i] ^= m1[i];
   }
   return m0;
-}
-
-
-template <typename T>
-std::vector<T> operator|(std::vector<T> m0, std::vector<T> m1) {
-  const auto n0 = m0.size();
-  const auto n1 = m1.size();
-  std::vector<T> out(n0 + n1);
-
-  for (std::size_t i = 0; i < n0; ++i) { out[i] = std::move(m0[i]); }
-  for (std::size_t i = 0; i < n1; ++i) { out[i + n0] = std::move(m1[i]); }
-  return out;
 }
 
 
