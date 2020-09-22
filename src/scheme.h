@@ -92,4 +92,19 @@ Encoding genEncoding(PRG&, std::size_t);
 
 std::vector<Labelling> evCond(const PRF&, std::span<Circuit>, const Labelling&, std::span<Label>&);
 
+std::tuple<Material, Labelling, Labelling> gbDem(
+    PRG&,
+    const PRF&,
+    const Label& delta,
+    const Label& S0,
+    std::span<const Label>,
+    const Encoding&,
+    const Encoding&);
+
+std::pair<Labelling, Labelling> evDem(
+    const PRF& f,
+    const Label& S,
+    std::span<const Label>,
+    std::span<Label>&);
+
 #endif

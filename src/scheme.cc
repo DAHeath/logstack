@@ -5,6 +5,138 @@ template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
 
+std::tuple<Label, Label, Label> gbDem1(
+    const PRF& f,
+    const Label& delta,
+    const Label& S0,
+    const Label& A0) {
+
+  const auto s = S0[0];
+  const auto a = A0[0];
+
+  const auto hA0 = f(A0);
+  const auto hA1 = f(A0 ^ delta);
+
+  const auto row0 = hA0 ^ ((a != s) ? A0 : 0);
+  const auto row1 = hA1 ^ ((a != s) ? delta : A0);
+
+  const auto good = a ? row1 : row0;
+  const auto bad = good ^ A0;
+  const auto mat = row0 ^ row1;
+
+  return { good, bad, mat };
+}
+
+
+std::tuple<Material, Labelling, Labelling> gbDem(
+    PRG& seed,
+    const PRF& f,
+    const Label& delta,
+    const Label& S0,
+    std::span<const Label> zeros,
+    const Encoding& e0,
+    const Encoding& e1) {
+
+  const auto n = zeros.size();
+
+  Material material(3*n + 2);
+  std::span<Label> mat(material);
+
+  const auto hS0 = f(S0);
+  const auto hS1 = f(S0 ^ delta);
+
+
+  auto dd0 = delta ^ e0.delta;
+  auto dd1 = delta ^ e1.delta;
+  // some extra random bits to mask the definitely zero lsb of delta ^ delta0/delta1
+  const auto mask = seed();
+  dd0[0] = mask[0];
+  dd1[0] = mask[1];
+
+  mat[0] = hS0 ^ dd0;
+  mat[1] = hS1 ^ dd1;
+
+  auto bad_diff0 = hS1 ^ mat[0];
+  auto bad_diff1 = hS0 ^ mat[1];
+  // we know that the lsb of delta ^ delta0/delta1 should be 0
+  bad_diff0[0] = 0;
+  bad_diff1[0] = 0;
+
+  mat = mat.subspan(2);
+
+  Labelling bad0(n);
+  Labelling bad1(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    const auto [g, b, m] = gbDem1(f, delta, S0, zeros[i]);
+    mat[0] = m;
+    mat = mat.subspan(1);
+    const auto good0 = g ^ (g[0] ? (delta ^ e0.delta) : 0);
+    const auto good1 = g ^ (g[0] ? (delta ^ e1.delta) : 0);
+    bad0[i] = b ^ (b[0] ? bad_diff0 : 0);
+    bad1[i] = b ^ (b[0] ? bad_diff1 : 0);
+    mat[0] = hS0 ^ good0 ^ e0.zeros[i];
+    mat[1] = hS1 ^ good1 ^ e1.zeros[i];
+    bad0[i] ^= hS1 ^ mat[0];
+    bad1[i] ^= hS0 ^ mat[1];
+    mat = mat.subspan(2);
+  }
+
+  return { material, bad0, bad1 };
+}
+
+
+std::pair<Label, Label> evDem1(
+    const PRF& f,
+    const Label& S,
+    const Label& A,
+    const Label& mat) {
+  const auto s = S[0];
+  const auto a = A[0];
+
+  const auto hA = f(A);
+
+  const auto r0 = hA ^ (a ? mat : 0) ^ ((a != s) ? A : 0);
+  const auto r1 = hA ^ (a ? mat : 0) ^ ((a != s) ? 0 : A);
+
+  return { r0, r1 };
+}
+
+
+std::pair<Labelling, Labelling> evDem(
+    const PRF& f,
+    const Label& S,
+    std::span<const Label> inp,
+    std::span<Label>& mat) {
+
+  const auto n = inp.size();
+
+  const auto hS = f(S);
+  auto diff0 = hS ^ mat[0];
+  auto diff1 = hS ^ mat[1];
+  diff0[0] = 0;
+  diff1[0] = 0;
+
+  mat = mat.subspan(2);
+
+  Labelling inp0(n);
+  Labelling inp1(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    auto [i0, i1] = evDem1(f, S, inp[i], mat[0]);
+    inp0[i] = i0 ^ (i0[0] ? diff0 : 0);
+    inp1[i] = i1 ^ (i1[0] ? diff1 : 0);
+    mat = mat.subspan(1);
+
+    inp0[i] ^= hS ^ mat[0];
+    inp1[i] ^= hS ^ mat[1];
+    mat = mat.subspan(2);
+  }
+
+  return { inp0, inp1 };
+}
+
+
+
+
 void gbGate(
     const PRF& f,
     const Gate& g,
@@ -97,19 +229,6 @@ void evGate(
 }
 
 
-std::pair<Labelling, Labelling> evDem(std::span<const Label>, const Label&) {
-}
-
-std::tuple<Material, Labelling, Labelling> gbDem(
-    const PRF&,
-    const Label& s0,
-    const Label& s1,
-    const Encoding& e,
-    const Encoding& e0,
-    const Encoding& e1) {
-}
-
-
 CondGarbling gbCond_(const PRF& f, std::span<const Circuit> cs, const Label& seed) {
 
   const auto n = cs.size();
@@ -121,7 +240,7 @@ CondGarbling gbCond_(const PRF& f, std::span<const Circuit> cs, const Label& see
   } else {
     // Generate a fresh encoding.
     // All branches should have same number of inputs.
-    const auto e = genEncoding(prg, cs[0].nInp);
+    auto e = genEncoding(prg, cs[0].nInp);
     const auto s0 = e.zeros[0];
     const auto s1 = e.zeros[0] ^ e.delta;
 
@@ -132,7 +251,9 @@ CondGarbling gbCond_(const PRF& f, std::span<const Circuit> cs, const Label& see
     const auto g0 = gbCond_(f, cs0, s1);
     const auto g1 = gbCond_(f, cs1, s0);
 
-    const auto [mdem, e0, e1] = gbDem(f, s0, s1, e, g0.inputEncoding, g1.inputEncoding);
+    std::span<Label> zeros { e.zeros };
+    zeros = zeros.subspan(1);
+    const auto [mdem, e0, e1] = gbDem(prg, f, e.delta, s0, zeros, g0.inputEncoding, g1.inputEncoding);
 
     // TODO stack material
     return { e, mdem };
@@ -167,7 +288,7 @@ std::vector<Labelling> evCond(
     const auto g0 = gbCond_(f, cs0, s);
     const auto g1 = gbCond_(f, cs1, s);
 
-    const auto [inp0, inp1] = evDem(inp_, s);
+    const auto [inp0, inp1] = evDem(f, s, inp_, material);
 
     // TODO unstack garbling
     auto y0 = evCond(f, cs0, inp0, material);
