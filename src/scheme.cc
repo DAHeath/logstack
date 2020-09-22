@@ -31,29 +31,6 @@ std::span<Label> operator^=(std::span<Label> m0, const T& m1) {
 }
 
 
-std::tuple<Label, Label, Label> gbDem1(
-    const PRF& f,
-    const Label& delta,
-    const Label& S0,
-    const Label& A0) {
-
-  const auto s = S0[0];
-  const auto a = A0[0];
-
-  const auto hA0 = f(A0);
-  const auto hA1 = f(A0 ^ delta);
-
-  const auto row0 = hA0 ^ ((a != s) ? A0 : 0);
-  const auto row1 = hA1 ^ ((a != s) ? delta : A0);
-
-  const auto good = a ? row1 : row0;
-  const auto bad = good ^ A0;
-  const auto mat = row0 ^ row1;
-
-  return { good, bad, mat };
-}
-
-
 std::pair<Labelling, Labelling> gbDem(
     PRG& seed,
     const PRF& f,
@@ -66,9 +43,9 @@ std::pair<Labelling, Labelling> gbDem(
 
   const auto n = zeros.size();
 
+  const auto s = S0[0];
   const auto hS0 = f(S0);
   const auto hS1 = f(S0 ^ delta);
-
 
   auto dd0 = delta ^ e0.delta;
   auto dd1 = delta ^ e1.delta;
@@ -88,11 +65,25 @@ std::pair<Labelling, Labelling> gbDem(
 
   mat = mat.subspan(2);
 
+  const auto gbDem1 = [&](const Label& A0) -> std::pair<Label, Label> {
+    const auto a = A0[0];
+
+    const auto hA0 = f(A0);
+    const auto hA1 = f(A0 ^ delta);
+
+    const auto row0 = hA0 ^ ((a != s) ? A0 : 0);
+    const auto row1 = hA1 ^ ((a != s) ? delta : A0);
+
+    const auto good = a ? row1 : row0;
+    const auto bad = good ^ A0;
+    mat[0] ^= row0 ^ row1;
+    return { good, bad };
+  };
+
   Labelling bad0(n);
   Labelling bad1(n);
   for (std::size_t i = 0; i < n; ++i) {
-    const auto [g, b, m] = gbDem1(f, delta, S0, zeros[i]);
-    mat[0] ^= m;
+    const auto [g, b] = gbDem1(zeros[i]);
     mat = mat.subspan(1);
     const auto good0 = g ^ (g[0] ? (delta ^ e0.delta) : 0);
     const auto good1 = g ^ (g[0] ? (delta ^ e1.delta) : 0);
@@ -109,23 +100,6 @@ std::pair<Labelling, Labelling> gbDem(
 }
 
 
-std::pair<Label, Label> evDem1(
-    const PRF& f,
-    const Label& S,
-    const Label& A,
-    const Label& mat) {
-  const auto s = S[0];
-  const auto a = A[0];
-
-  const auto hA = f(A);
-
-  const auto r0 = hA ^ (a ? mat : 0) ^ ((a != s) ? A : 0);
-  const auto r1 = hA ^ (a ? mat : 0) ^ ((a != s) ? 0 : A);
-
-  return { r0, r1 };
-}
-
-
 std::pair<Labelling, Labelling> evDem(
     const PRF& f,
     const Label& S,
@@ -134,18 +108,27 @@ std::pair<Labelling, Labelling> evDem(
 
   const auto n = inp.size();
 
+  const auto s = S[0];
   const auto hS = f(S);
   auto diff0 = hS ^ mat[0];
   auto diff1 = hS ^ mat[1];
   diff0[0] = 0;
   diff1[0] = 0;
 
+  const auto& evDem1 = [&](const Label& A) -> std::pair<Label, Label> {
+    const auto a = A[0];
+    const auto hA = f(A);
+    const auto r0 = hA ^ (a ? mat[0] : 0) ^ ((a != s) ? A : 0);
+    const auto r1 = hA ^ (a ? mat[0] : 0) ^ ((a != s) ? 0 : A);
+    return { r0, r1 };
+  };
+
   mat = mat.subspan(2);
 
   Labelling inp0(n);
   Labelling inp1(n);
   for (std::size_t i = 0; i < n; ++i) {
-    auto [i0, i1] = evDem1(f, S, inp[i], mat[0]);
+    auto [i0, i1] = evDem1(inp[i]);
     inp0[i] = i0 ^ (i0[0] ? diff0 : 0);
     inp1[i] = i1 ^ (i1[0] ? diff1 : 0);
     mat = mat.subspan(1);

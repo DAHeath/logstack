@@ -21,7 +21,7 @@ int main() {
 
   mat = material;
   /* zeros[0] ^= e.delta; */
-  const auto [X, Y] = evDem(f, e.zeros[0] ^ e.delta, zeros, mat);
+  const auto [X, Y] = evDem(f, e.zeros[0], zeros, mat);
 
   const auto good00 = e0.zeros[0];
   const auto good10 = e1.zeros[0];
