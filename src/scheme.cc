@@ -5,6 +5,53 @@ template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
 
+Material operator^(const Material& m0, const Material& m1) {
+  const auto n = m0.size();
+  assert(m1.size() == n);
+
+  Material out(n);
+
+  for (std::size_t i = 0; i < n; ++i) {
+    out[i] = m0[i] ^ m1[i];
+  }
+  return out;
+}
+
+
+Material& operator^=(Material& m0, const Material& m1) {
+  const auto n = m1.size();
+  assert(m0.size() >= n);
+
+  for (std::size_t i = 0; i < n; ++i) {
+    m0[i] ^= m1[i];
+  }
+  return m0;
+}
+
+
+Material& operator^=(Material& m0, std::span<Label> m1) {
+  const auto n = m1.size();
+  assert(m0.size() >= n);
+
+  for (std::size_t i = 0; i < n; ++i) {
+    m0[i] ^= m1[i];
+  }
+  return m0;
+}
+
+
+template <typename T>
+std::vector<T> operator|(std::vector<T> m0, std::vector<T> m1) {
+  const auto n0 = m0.size();
+  const auto n1 = m1.size();
+  std::vector<T> out(n0 + n1);
+
+  for (std::size_t i = 0; i < n0; ++i) { out[i] = std::move(m0[i]); }
+  for (std::size_t i = 0; i < n1; ++i) { out[i + n0] = std::move(m1[i]); }
+  return out;
+}
+
+
 std::tuple<Label, Label, Label> gbDem1(
     const PRF& f,
     const Label& delta,
@@ -229,8 +276,7 @@ void evGate(
 }
 
 
-CondGarbling gbCond_(const PRF& f, std::span<const Circuit> cs, const Label& seed) {
-
+CondGarbling_ gbCond_(const PRF& f, std::span<const Circuit> cs, const Label& seed) {
   const auto n = cs.size();
   PRG prg(seed);
 
@@ -253,26 +299,25 @@ CondGarbling gbCond_(const PRF& f, std::span<const Circuit> cs, const Label& see
 
     std::span<Label> zeros { e.zeros };
     zeros = zeros.subspan(1);
-    const auto [mdem, e0, e1] = gbDem(prg, f, e.delta, s0, zeros, g0.inputEncoding, g1.inputEncoding);
+    auto [mdem, e0, e1] = gbDem(prg, f, e.delta, s0, zeros, g0.inputEncoding, g1.inputEncoding);
 
-    // TODO stack material
-    return { e, mdem };
+    auto stack = g0.material ^ g1.material;
+    return { e, std::move(mdem) | std::move(stack) };
   }
 }
 
 
-std::vector<Labelling> evCond(
+Labelling evCond(
     const PRF& f,
     std::span<const Circuit> cs,
     const Labelling& inp,
-    std::span<Label>& material) {
+    std::span<Label>& mat) {
 
   const auto n = cs.size();
 
   if (n == 1) {
-    return { ev(f, cs[0], inp, material) };
+    return ev(f, cs[0], inp, mat);
   } else {
-    // TODO split material for demux
     // split input into the branch condition and the remaining wires
     const auto s = inp[0];
     std::span<const Label> inp_(inp);
@@ -285,21 +330,79 @@ std::vector<Labelling> evCond(
 
     // garble both subtrees
 
-    const auto g0 = gbCond_(f, cs0, s);
-    const auto g1 = gbCond_(f, cs1, s);
+    auto g0 = gbCond_(f, cs0, s);
+    auto g1 = gbCond_(f, cs1, s);
 
-    const auto [inp0, inp1] = evDem(f, s, inp_, material);
+    const auto [inp0, inp1] = evDem(f, s, inp_, mat);
 
-    // TODO unstack garbling
-    auto y0 = evCond(f, cs0, inp0, material);
-    auto y1 = evCond(f, cs1, inp1, material);
+    // unstack!
+    g0.material ^= mat;
+    g1.material ^= mat;
 
-    // concatenate the two vectors of results
-    // for efficiency, move the subvectors from the second vector into the first
-    for (auto& y: y1) { y0.emplace_back(std::move(y)); }
-    return y0;
+    std::span mat0 { g1.material };
+    std::span mat1 { g0.material };
+
+    return evCond(f, cs0, inp0, mat0) ^ evCond(f, cs1, inp1, mat1);
   }
 }
+
+
+CondGarbling gbCond(
+    const PRF& f,
+    std::span<const Circuit> cs,
+    const Label& seed) {
+  const auto n = cs.size();
+  PRG prg(seed);
+
+  if (n == 1) {
+    const auto g = garble(prg, f, cs[0]);
+    return {
+      std::move(g.material),
+      std::move(g.inputEncoding),
+      { std::move(g.outputEncoding) },
+      { }
+    };
+  } else {
+    auto e = genEncoding(prg, cs[0].nInp);
+    const auto s0 = e.zeros[0];
+    const auto s1 = e.zeros[0] ^ e.delta;
+
+    // split the vector of circuits
+    const std::span<const Circuit> cs0 = cs.subspan(0, n/2);
+    const std::span<const Circuit> cs1 = cs.subspan(n/2);
+
+    auto g0 = gbCond(f, cs0, s1);
+    auto g1 = gbCond(f, cs1, s0);
+
+    auto branchmat = g0.material ^ g1.material;
+
+    auto g0_ = gbCond_(f, cs0, s0);
+    auto g1_ = gbCond_(f, cs1, s1);
+
+    std::span<Label> zeros { e.zeros };
+    zeros = zeros.subspan(1);
+    auto [mdem, bad0, bad1] = gbDem(prg, f, e.delta, s0, zeros, g0.inputEncoding, g1.inputEncoding);
+
+    g0_.material ^= branchmat;
+    g1_.material ^= branchmat;
+
+    std::span mat0 { g1_.material };
+    std::span mat1 { g0_.material };
+    auto badout0 = evCond(f, cs0, bad0, mat0);
+    auto badout1 = evCond(f, cs1, bad1, mat1);
+
+    return {
+      std::move(mdem) | std::move(branchmat),
+      e,
+      std::move(g0.outputEncodings) | std::move(g1.outputEncodings),
+      std::vector<Labelling> { std::move(badout0) }
+        | std::move(g0.bad)
+        | std::vector<Labelling> { std::move(badout1) }
+        | std::move(g1.bad)
+    };
+  }
+}
+
 
 
 Encoding gb(const PRF& f, const Circuit& c, const Encoding& inputEncoding, std::span<Label>& material) {

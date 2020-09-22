@@ -64,9 +64,17 @@ struct Garbling {
 };
 
 
-struct CondGarbling {
+struct CondGarbling_ {
   Encoding inputEncoding;
   Material material;
+};
+
+
+struct CondGarbling {
+  Material material;
+  Encoding inputEncoding;
+  std::vector<Encoding> outputEncodings;
+  std::vector<Labelling> bad;
 };
 
 
@@ -90,7 +98,7 @@ void gbGate(const PRF&, const Gate&, const Label& delta, NetlistCtxt&);
 void evGate(const PRF&, const Gate&, NetlistCtxt&);
 Encoding genEncoding(PRG&, std::size_t);
 
-std::vector<Labelling> evCond(const PRF&, std::span<Circuit>, const Labelling&, std::span<Label>&);
+Labelling evCond(const PRF&, std::span<Circuit>, const Labelling&, std::span<Label>&);
 
 std::tuple<Material, Labelling, Labelling> gbDem(
     PRG&,
