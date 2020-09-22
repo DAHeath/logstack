@@ -5,20 +5,6 @@ template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
 
-// TODO remove
-Material operator^(const Material& m0, const Material& m1) {
-  const auto n = m0.size();
-  assert(m1.size() == n);
-
-  Material out(n);
-
-  for (std::size_t i = 0; i < n; ++i) {
-    out[i] = m0[i] ^ m1[i];
-  }
-  return out;
-}
-
-
 template <typename T>
 std::span<Label> operator^=(std::span<Label> m0, const T& m1) {
   const auto n = m1.size();
@@ -142,6 +128,70 @@ std::pair<Labelling, Labelling> evDem(
 }
 
 
+Encoding gbMux(
+    PRG& prg,
+    const PRF& f,
+    const Label& delta,
+    const Label& S0,
+    const Encoding& good0,
+    const Encoding& good1,
+    const Labelling& bad0,
+    const Labelling& bad1,
+    std::span<Label> mat) {
+
+  const auto n = good0.zeros.size();
+
+  const auto s = S0[0];
+  const auto hS0 = f(S0);
+  const auto hS1 = f(S0 ^ delta);
+
+  // evaluator should conditionally add on delta ^ delta0/delta ^ delta1 depending on S
+  // and if each label has a high lsb.
+  mat[0] ^= hS0 ^ hS1 ^ good0.delta ^ good1.delta;
+  mat = mat.subspan(1);
+  const auto diff = s ? (hS0 ^ delta ^ good0.delta) : (hS1 ^ delta ^ good1.delta);
+
+
+  Encoding e;
+  e.zeros.resize(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    // implement the following garbled truth table for arbitrary X:
+    // S0 -> Good0 ^ Bad1 ^ X
+    // S1 -> Good1 ^ Bad0 ^ X
+    mat[0] = hS0 ^ hS1 ^ good0.zeros[i] ^ good1.zeros[i] ^ bad0[i] ^ bad1[i];
+
+    e.zeros[i] = s ? (hS0 ^ good0.zeros[i] ^ bad1[i]) : (hS1 ^ good1.zeros[i] ^ bad0[i]);
+    e.zeros[i] ^= e.zeros[i][0] ? diff : 0;
+    mat = mat.subspan(1);
+  }
+
+  return e;
+}
+
+
+Labelling evMux(
+    const PRF& f,
+    const Label& S,
+    const Labelling& X,
+    const Labelling& Y,
+    std::span<Label> mat) {
+
+  const auto n = X.size();
+
+  const auto s = S[0];
+  const auto hS = f(S);
+
+  const auto diff = hS ^ (s ? mat[0] : 0);
+  mat = mat.subspan(1);
+
+  Labelling out(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    out[i] = X[i] ^ Y[i] ^ hS ^ (s ? mat[0] : 0);
+    out[i] ^= out[i][0] ? diff : 0;
+    mat = mat.subspan(1);
+  }
+  return out;
+}
 
 
 void gbGate(
@@ -272,7 +322,8 @@ Labelling evCond(
     const PRF& f,
     std::span<const Circuit> cs,
     const Labelling& inp,
-    std::span<Label> mat) {
+    std::span<Label> mat,
+    std::span<Label> muxMat) {
 
   const auto n = cs.size();
 
@@ -280,12 +331,12 @@ Labelling evCond(
     return ev(f, cs[0], inp, mat);
   } else {
     // split input into the branch condition and the remaining wires
-    const auto s = inp[0];
+    const auto S = inp[0];
     std::span<const Label> inp_(inp);
     inp_ = inp_.subspan(1);
 
     // evaluate the demux to compute inputs for both branches
-    const auto [inp0, inp1] = evDem(f, s, inp_, mat);
+    const auto [inp0, inp1] = evDem(f, S, inp_, mat);
     // move past the demux material
     mat = mat.subspan(3*inp_.size() + 2);
 
@@ -298,79 +349,14 @@ Labelling evCond(
     Material mat1 { mat.begin(), mat.end() };
 
     // garble straight into material so as to unstack
-    gbCond_(f, cs0, s, mat0);
-    const auto l0 = evCond(f, cs0, inp0, mat0);
+    gbCond_(f, cs0, S, mat0);
+    const auto l0 = evCond(f, cs0, inp0, mat0, muxMat.subspan(0)); // TODO muxMat subspan
 
-    gbCond_(f, cs1, s, mat1);
-    const auto l1 = evCond(f, cs1, inp1, mat1);
-    return l0 ^ l1;
+    gbCond_(f, cs1, S, mat1);
+    const auto l1 = evCond(f, cs1, inp1, mat1, muxMat.subspan(0)); // TODO muxMat subspan
+
+    return evMux(f, S, l0, l1, muxMat.subspan(0)); // TODO muxMat subspan
   }
-}
-
-
-Encoding gbMux(
-    PRG& prg,
-    const PRF& f,
-    const Label& delta,
-    const Label& S0,
-    const Encoding& good0,
-    const Encoding& good1,
-    const Labelling& bad0,
-    const Labelling& bad1,
-    std::span<Label> mat) {
-
-  const auto n = good0.zeros.size();
-
-  const auto s = S0[0];
-  const auto hS0 = f(S0);
-  const auto hS1 = f(S0 ^ delta);
-
-  // evaluator should conditionally add on delta ^ delta0/delta ^ delta1 depending on S
-  // and if each label has a high lsb.
-  mat[0] ^= hS0 ^ hS1 ^ good0.delta ^ good1.delta;
-  mat = mat.subspan(1);
-  const auto diff = s ? (hS0 ^ delta ^ good0.delta) : (hS1 ^ delta ^ good1.delta);
-
-
-  Encoding e;
-  e.zeros.resize(n);
-  for (std::size_t i = 0; i < n; ++i) {
-    // implement the following garbled truth table for arbitrary X:
-    // S0 -> Good0 ^ Bad1 ^ X
-    // S1 -> Good1 ^ Bad0 ^ X
-    mat[0] = hS0 ^ hS1 ^ good0.zeros[i] ^ good1.zeros[i] ^ bad0[i] ^ bad1[i];
-
-    e.zeros[i] = s ? (hS0 ^ good0.zeros[i] ^ bad1[i]) : (hS1 ^ good1.zeros[i] ^ bad0[i]);
-    e.zeros[i] ^= e.zeros[i][0] ? diff : 0;
-    mat = mat.subspan(1);
-  }
-
-  return e;
-}
-
-
-Labelling evMux(
-    const PRF& f,
-    const Label& S,
-    const Labelling& X,
-    const Labelling& Y,
-    std::span<Label> mat) {
-
-  const auto n = X.size();
-
-  const auto s = S[0];
-  const auto hS = f(S);
-
-  const auto diff = hS ^ (s ? mat[0] : 0);
-  mat = mat.subspan(1);
-
-  Labelling out(n);
-  for (std::size_t i = 0; i < n; ++i) {
-    out[i] = X[i] ^ Y[i] ^ hS ^ (s ? mat[0] : 0);
-    out[i] ^= out[i][0] ? diff : 0;
-    mat = mat.subspan(1);
-  }
-  return out;
 }
 
 
@@ -432,16 +418,21 @@ Interface gbCond(
     {
       Material mat0(branchmat.begin(), branchmat.end());
       e0_ = gbCond_(f, cs0, s0, mat0);
-      bad0 = evCond(f, cs0, bad0, mat0);
+      bad0 = evCond(f, cs0, bad0, mat0, muxMat.subspan(0)); // TODO muxMat subspan
     }
     {
       Material mat1(branchmat.begin(), branchmat.end());
       e1_ = gbCond_(f, cs1, s1, mat1);
-      bad1 = evCond(f, cs1, bad1, mat1);
+      bad1 = evCond(f, cs1, bad1, mat1, muxMat.subspan(0)); // TODO muxMat subspan
     }
 
     const auto eout = gbMux(
-        prg, f, e.delta, s0, i0.outputEncoding, i1.outputEncoding, bad0, bad1, mat);
+        prg, f, e.delta, s0,
+        i0.outputEncoding,
+        i1.outputEncoding,
+        bad0,
+        bad1,
+        muxMat.subspan(0)); // TODO muxMat subspan
 
     return { e, eout };
   }
@@ -496,14 +487,14 @@ Interface garble(PRG& seed, const PRF& f, const Circuit& c, std::span<Label> mat
 }
 
 
-Labelling ev(const PRF& f, const Circuit& c, const Labelling& input, std::span<Label> material) {
+Labelling ev(const PRF& f, const Circuit& c, const Labelling& input, std::span<Label> mat) {
   return std::visit(overloaded {
     [&](const Netlist& n) {
       Labelling output(c.nOut);
 
       NetlistCtxt ctxt;
       ctxt.w = Wiring(c.nWires);
-      ctxt.material = material;
+      ctxt.material = mat;
       ctxt.inp = std::span<const Label>(input);
       ctxt.out = std::span<Label>(output);
       ctxt.nonce = 0;
@@ -515,14 +506,15 @@ Labelling ev(const PRF& f, const Circuit& c, const Labelling& input, std::span<L
       return output;
     },
     [&](const Conditional& cond) {
-      evCond(f, std::span { cond.cs }, input, material);
-      Labelling out;
-      return out;
+      const auto bodyMat = mat.subspan(0, mat.size() - cond.cs[0].nOut - 1);
+      const auto muxMat = mat.subspan(cond.cs[0].nOut + 1);
+      return evCond(f, std::span { cond.cs }, input, bodyMat, muxMat);
     },
     [&](const Sequence& seq) {
       auto labelling = input;
       for (const auto& c: seq) {
-        labelling = ev(f, c, labelling, material);
+        labelling = ev(f, c, labelling, mat);
+        mat = mat.subspan(c.nRow);
       }
       return labelling;
     },
