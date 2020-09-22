@@ -57,21 +57,13 @@ struct Encoding {
 using Material = std::vector<Label>;
 
 
-struct Garbling {
+struct Interface {
   Encoding inputEncoding;
   Encoding outputEncoding;
-  Material material;
-};
-
-
-struct CondGarbling_ {
-  Encoding inputEncoding;
-  Material material;
 };
 
 
 struct CondGarbling {
-  Material material;
   Encoding inputEncoding;
   std::vector<Encoding> outputEncodings;
   std::vector<Labelling> bad;
@@ -90,29 +82,30 @@ struct NetlistCtxt {
 };
 
 
-Garbling garble(PRG& seed, const PRF&, const Circuit&);
-Encoding gb(const PRF&, const Circuit&, const Encoding&, std::span<Label>&);
-Labelling ev(const PRF&, const Circuit&, const Labelling&, std::span<Label>&);
+Interface garble(PRG& seed, const PRF&, const Circuit&, std::span<Label>);
+Encoding gb(const PRF&, const Circuit&, const Encoding&, std::span<Label>);
+Labelling ev(const PRF&, const Circuit&, const Labelling&, std::span<Label>);
 
 void gbGate(const PRF&, const Gate&, const Label& delta, NetlistCtxt&);
 void evGate(const PRF&, const Gate&, NetlistCtxt&);
 Encoding genEncoding(PRG&, std::size_t);
 
-Labelling evCond(const PRF&, std::span<Circuit>, const Labelling&, std::span<Label>&);
+Labelling evCond(const PRF&, std::span<Circuit>, const Labelling&, std::span<Label>);
 
-std::tuple<Material, Labelling, Labelling> gbDem(
+std::pair<Labelling, Labelling> gbDem(
     PRG&,
     const PRF&,
     const Label& delta,
     const Label& S0,
     std::span<const Label>,
     const Encoding&,
-    const Encoding&);
+    const Encoding&,
+    std::span<Label>);
 
 std::pair<Labelling, Labelling> evDem(
     const PRF& f,
     const Label& S,
     std::span<const Label>,
-    std::span<Label>&);
+    std::span<Label>);
 
 #endif

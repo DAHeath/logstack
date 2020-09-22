@@ -14,10 +14,12 @@ int main() {
 
   std::span<Label> zeros { e.zeros };
   zeros = zeros.subspan(1);
-  auto [material, b0, b1] = gbDem(prg, f, e.delta, e.zeros[0], zeros, e0, e1);
 
+  Material material(3*1 + 2);
   std::span<Label> mat { material };
+  auto [b0, b1] = gbDem(prg, f, e.delta, e.zeros[0], zeros, e0, e1, mat);
 
+  mat = material;
   /* zeros[0] ^= e.delta; */
   const auto [X, Y] = evDem(f, e.zeros[0] ^ e.delta, zeros, mat);
 
