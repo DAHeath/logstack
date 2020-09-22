@@ -9,10 +9,7 @@ template <typename T>
 std::span<Label> operator^=(std::span<Label> m0, const T& m1) {
   const auto n = m1.size();
   assert(m0.size() >= n);
-
-  for (std::size_t i = 0; i < n; ++i) {
-    m0[i] ^= m1[i];
-  }
+  for (std::size_t i = 0; i < n; ++i) { m0[i] ^= m1[i]; }
   return m0;
 }
 
@@ -304,14 +301,15 @@ Encoding gbCond_(const PRF& f, std::span<const Circuit> cs, const Label& seed, s
     const std::span<const Circuit> cs1 = cs.subspan(n/2);
 
     // skip past the demux material
-    const auto mat_loc = mat.subspan(3*(e.zeros.size()-1) + 2);
+    const auto demMat = mat;
+    mat = mat.subspan(3*(e.zeros.size()-1) + 2);
 
-    const auto e0 = gbCond_(f, cs0, s1, mat_loc);
-    const auto e1 = gbCond_(f, cs1, s0, mat_loc);
+    const auto e0 = gbCond_(f, cs0, s1, mat);
+    const auto e1 = gbCond_(f, cs1, s0, mat);
 
     std::span<Label> zeros { e.zeros };
     zeros = zeros.subspan(1);
-    gbDem(prg, f, e.delta, s0, zeros, e0, e1, mat);
+    gbDem(prg, f, e.delta, s0, zeros, e0, e1, demMat);
 
     return e;
   }
@@ -350,12 +348,12 @@ Labelling evCond(
 
     // garble straight into material so as to unstack
     gbCond_(f, cs0, S, mat0);
-    const auto l0 = evCond(f, cs0, inp0, mat0, muxMat.subspan(0)); // TODO muxMat subspan
+    const auto l0 = evCond(f, cs0, inp0, mat0, muxMat);
 
     gbCond_(f, cs1, S, mat1);
-    const auto l1 = evCond(f, cs1, inp1, mat1, muxMat.subspan(0)); // TODO muxMat subspan
+    const auto l1 = evCond(f, cs1, inp1, mat1, muxMat.subspan(cs0.size() * (cs0[0].nOut + 1)));
 
-    return evMux(f, S, l0, l1, muxMat.subspan(0)); // TODO muxMat subspan
+    return evMux(f, S, l0, l1, muxMat.subspan(cs.size() * (cs[0].nOut + 1)));
   }
 }
 
@@ -395,12 +393,12 @@ Interface gbCond(
     // we cannot garble the material in place, and instead must garble into a fresh buffer.
     {
       Material mat0(branchmat.size());
-      i0 = gbCond(f, cs0, s1, mat0, muxMat.subspan(0)); // TODO muxMat subspan
+      i0 = gbCond(f, cs0, s1, mat0, muxMat);
       branchmat ^= mat0;
     }
     {
       Material mat1(branchmat.size());
-      i1 = gbCond(f, cs1, s0, mat1, muxMat.subspan(0)); // TODO muxMat subspan
+      i1 = gbCond(f, cs1, s0, mat1, muxMat.subspan(cs0.size() * (cs0[0].nOut + 1)));
       branchmat ^= mat1;
     }
 
@@ -418,12 +416,12 @@ Interface gbCond(
     {
       Material mat0(branchmat.begin(), branchmat.end());
       e0_ = gbCond_(f, cs0, s0, mat0);
-      bad0 = evCond(f, cs0, bad0, mat0, muxMat.subspan(0)); // TODO muxMat subspan
+      bad0 = evCond(f, cs0, bad0, mat0, muxMat);
     }
     {
       Material mat1(branchmat.begin(), branchmat.end());
       e1_ = gbCond_(f, cs1, s1, mat1);
-      bad1 = evCond(f, cs1, bad1, mat1, muxMat.subspan(0)); // TODO muxMat subspan
+      bad1 = evCond(f, cs1, bad1, mat1, muxMat.subspan(cs0.size() * (cs0[0].nOut + 1)));
     }
 
     const auto eout = gbMux(
@@ -432,15 +430,46 @@ Interface gbCond(
         i1.outputEncoding,
         bad0,
         bad1,
-        muxMat.subspan(0)); // TODO muxMat subspan
+        muxMat.subspan(cs.size() * (cs[0].nOut + 1)));
 
     return { e, eout };
   }
 }
 
 
+void gbTrans(PRG& seed, const Encoding& inp, const Encoding& out, std::span<Label> mat) {
+  const auto n = inp.zeros.size();
+  assert(out.zeros.size() == n);
 
-Encoding gb(const PRF& f, const Circuit& c, const Encoding& inputEncoding, std::span<Label> material) {
+  const auto dd = inp.delta ^ out.delta;
+  const auto mask = seed();
+  mat[0] = dd[0] ^ mask[0];
+  mat = mat.subspan(1);
+
+  for (std::size_t i = 0; i < n; ++i) {
+    const auto in = inp.zeros[i] ^ (inp.zeros[i][0] ? dd : 0);
+    mat[0] = in ^ out.zeros[i];
+    mat = mat.subspan(1);
+  }
+}
+
+
+Labelling evTrans(const Labelling& inp, std::span<Label> mat) {
+  auto dd = mat[0];
+  dd[0] = 0;
+  mat = mat.subspan(1);
+
+  const auto n = inp.size();
+  Labelling out(n);
+  for (std::size_t i = 0; i < n; ++i) {
+    out[i] = inp[i] ^ mat[0] ^ (inp[i][0] ? dd : 0);
+    mat = mat.subspan(1);
+  }
+  return out;
+}
+
+
+Encoding gb(const PRF& f, const Circuit& c, const Encoding& inputEncoding, std::span<Label> mat) {
   return std::visit(overloaded {
     [&](const Netlist& n) {
       const auto delta = inputEncoding.delta;
@@ -450,7 +479,7 @@ Encoding gb(const PRF& f, const Circuit& c, const Encoding& inputEncoding, std::
 
       NetlistCtxt ctxt;
       ctxt.w = Wiring(c.nWires);
-      ctxt.material = material;
+      ctxt.material = mat;
       ctxt.inp = std::span<const Label>(inputEncoding.zeros);
       ctxt.out = std::span<Label>(outputEncoding.zeros);
       ctxt.nonce = 0;
@@ -462,16 +491,27 @@ Encoding gb(const PRF& f, const Circuit& c, const Encoding& inputEncoding, std::
       return outputEncoding;
     },
     [&](const Conditional& cond) {
-      Encoding e;
+      PRG prg;
+      const auto seed = prg();
 
-      // TODO gen demux
-      // TODO gen mux
-      return e;
+      const auto b = cond.cs.size();
+      const auto n = cond.cs[0].nInp;
+      const auto m = cond.cs[0].nOut;
+
+      const auto frontTransMat = mat.subspan(0, n + 1);
+      const auto bodyMat = mat.subspan(
+          frontTransMat.size(),
+          mat.size() - frontTransMat.size() - ((b-1)*(m-1)));
+      const auto muxMat = mat.subspan(mat.size() - (b-1)*(m-1));
+      const auto interface = gbCond(f, cond.cs, seed, bodyMat, muxMat);
+
+      gbTrans(prg, inputEncoding, interface.inputEncoding, frontTransMat);
+      return interface.outputEncoding;
     },
     [&](const Sequence& seq) {
       auto encoding = inputEncoding;
       for (const auto& c: seq) {
-        encoding = gb(f, c, encoding, material);
+        encoding = gb(f, c, encoding, mat);
       }
       return encoding;
     },
@@ -506,9 +546,16 @@ Labelling ev(const PRF& f, const Circuit& c, const Labelling& input, std::span<L
       return output;
     },
     [&](const Conditional& cond) {
-      const auto bodyMat = mat.subspan(0, mat.size() - cond.cs[0].nOut - 1);
-      const auto muxMat = mat.subspan(cond.cs[0].nOut + 1);
-      return evCond(f, std::span { cond.cs }, input, bodyMat, muxMat);
+      const auto b = cond.cs.size();
+      const auto n = cond.cs[0].nInp;
+      const auto m = cond.cs[0].nOut;
+
+      const auto frontTransMat = mat.subspan(0, n + 1);
+      const auto bodyMat = mat.subspan(
+          frontTransMat.size(),
+          mat.size() - frontTransMat.size() - ((b-1)*(m-1)));
+      const auto muxMat = mat.subspan(mat.size() - (b-1)*(m-1));
+      return evCond(f, std::span { cond.cs }, evTrans(input, frontTransMat), bodyMat, muxMat);
     },
     [&](const Sequence& seq) {
       auto labelling = input;
