@@ -321,10 +321,10 @@ void evGate(
 
 
 Encoding gbCond_(const PRF& f, std::span<const Circuit> cs, const Label& seed, std::span<Label> mat) {
-  const auto n = cs.size();
+  const auto b = cs.size();
   PRG prg(seed);
 
-  if (n == 1) {
+  if (b == 1) {
     return garble(prg, f, cs[0], mat).inputEncoding;
   } else {
     // Generate a fresh encoding.
@@ -335,8 +335,8 @@ Encoding gbCond_(const PRF& f, std::span<const Circuit> cs, const Label& seed, s
     const auto S1 = e.zeros[0] ^ e.delta;
 
     // split the vector of circuits
-    const std::span<const Circuit> cs0 = cs.subspan(0, n/2);
-    const std::span<const Circuit> cs1 = cs.subspan(n/2);
+    const std::span<const Circuit> cs0 = cs.subspan(0, b/2);
+    const std::span<const Circuit> cs1 = cs.subspan(b/2);
 
     // skip past the demux material
     const auto demMat = mat;
@@ -361,9 +361,9 @@ Labelling evCond(
     std::span<Label> mat,
     std::span<Label> muxMat) {
 
-  const auto n = cs.size();
+  const auto b = cs.size();
 
-  if (n == 1) {
+  if (b == 1) {
     return ev(f, cs[0], inp, mat);
   } else {
     // split input into the branch condition and the remaining wires
@@ -377,8 +377,8 @@ Labelling evCond(
     mat = mat.subspan(3*inp_.size() + 2);
 
     // split the vector of circuits
-    const std::span<const Circuit> cs0 = cs.subspan(0, n/2);
-    const std::span<const Circuit> cs1 = cs.subspan(n/2);
+    const std::span<const Circuit> cs0 = cs.subspan(0, b/2);
+    const std::span<const Circuit> cs1 = cs.subspan(b/2);
     const auto muxMatSize0 = (cs0.size()-1) * (cs0[0].nOut + 2);
     const auto muxMatSize1 = (cs1.size()-1) * (cs1[0].nOut + 2);
     const auto muxMat0 = muxMat.subspan(0, muxMatSize0);
@@ -413,10 +413,10 @@ Interface gbCond(
     const Label& seed,
     std::span<Label> mat,
     std::span<Label> muxMat) {
-  const auto n = cs.size();
+  const auto b = cs.size();
   PRG prg(seed);
 
-  if (n == 1) {
+  if (b == 1) {
     return garble(prg, f, cs[0], mat);
   } else {
     const auto n = cs[0].nInp + ilog2(cs.size());
@@ -425,8 +425,8 @@ Interface gbCond(
     const auto S1 = e.zeros[0] ^ e.delta;
 
     // split the vector of circuits
-    const std::span<const Circuit> cs0 = cs.subspan(0, n/2);
-    const std::span<const Circuit> cs1 = cs.subspan(n/2);
+    const std::span<const Circuit> cs0 = cs.subspan(0, b/2);
+    const std::span<const Circuit> cs1 = cs.subspan(b/2);
 
     // skip the demux material for now
     const auto demSize = 3*(n-1) + 2;
@@ -558,6 +558,7 @@ Encoding gb(const PRF& f, const Circuit& c, const Encoding& inputEncoding, std::
           transSize,
           mat.size() - transSize - muxSize);
       const auto muxMat = mat.subspan(mat.size() - muxSize);
+
       const auto interface = gbCond(f, cond.cs, seed, bodyMat, muxMat);
 
       gbTrans(prg, inputEncoding, interface.inputEncoding, transMat);
@@ -615,7 +616,7 @@ Labelling ev(const PRF& f, const Circuit& c, const Labelling& input, std::span<L
       const auto muxMat = mat.subspan(mat.size() - muxSize);
 
       const auto translated = evTrans(input, transMat);
-      return evCond(f, std::span { cond.cs }, translated, bodyMat, muxMat);
+      return evCond(f, cond.cs, translated, bodyMat, muxMat);
     },
     [&](const Sequence& seq) {
       auto labelling = input;

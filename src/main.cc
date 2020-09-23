@@ -39,7 +39,38 @@ void showCircuit(const Circuit& c) {
 }
 
 
-int main() {
+Circuit conditional(const std::vector<Circuit>& cs) {
+  const auto b = cs.size();
+  const auto transSize = cs[0].nInp + 1;
+  const auto demSize = 3*cs[0].nInp + 2;
+  const auto muxSize = (b-1) * (cs[0].nOut + 2);
+
+  const auto logb = ilog2(b);
+
+
+  const auto fullDemSize = demSize * logb + 3*logb*logb;
+
+  std::size_t nRow = 0;
+  for (const auto& c: cs) { nRow = std::max(nRow, c.nRow); }
+  nRow += transSize + fullDemSize + muxSize;
+
+  return Circuit {
+    Conditional { cs },
+    cs[0].nInp + logb, // nInp
+    cs[0].nOut, // nInp
+    nRow, // nRow
+  };
+}
+
+
+int main(int argc, char** argv) {
+
+  if (argc < 2) {
+    std::cerr << "usage: " << argv[0] << " " << "<n-sha-reps>\n";
+    std::exit(1);
+  }
+
+  std::size_t n = atoi(argv[1]);
 
   {
     std::array<U32, 16> inp;
@@ -50,31 +81,31 @@ int main() {
     for (const auto& o: out) { o.output(); }
   }
 
-  /* { */
-  /*   U32 x = U32::input(); */
-  /*   U32 y = U32::input(); */
-
-  /*   (x + y).output(); */
-  /* } */
-
-  const auto c = Bool::compile();
-  /* showCircuit(c); */
+  const auto sha = Bool::compile();
 
 
+  Circuit c;
+  if (n <= 1) {
+    c = sha;
+  } else {
+    std::vector<Circuit> cs;
+    for (std::size_t i = 0; i < n; ++i) {
+      cs.push_back(sha);
+    }
+    c = conditional(cs);
+  }
 
-  /* Circuit c { */
-  /*   Conditional { { andc, andc, xorc, nand } }, */
-  /*   4, // nInp */
-  /*   1, // nOut */
-  /*   40 */
-  /* }; */
+  std::cout << c.nInp << '\n';
+  std::cout << c.nOut << '\n';
+  std::cout << c.nRow << '\n';
 
-  for (std::size_t i = 0; i < 100; ++i) {
   PRG seed;
   PRF k;
 
   Material material(c.nRow);
   auto g = garble(seed, k, c, material);
+
+  /* std::cout << g.inputEncoding.zeros.size() << '\n'; */
 
   const auto delta1 = g.inputEncoding.delta;
   const auto delta2 = g.outputEncoding.delta;
@@ -86,18 +117,18 @@ int main() {
 
   const auto out = ev(k, c, inp, material);
 
-  /* for (std::size_t i = 0; i < c.nOut; ++i) { */
-  /*   if (out[i] == g.outputEncoding.zeros[i]) { */
-  /*     std::cout << '0'; */
-  /*   } else if (out[i] == (g.outputEncoding.zeros[i] ^ delta2)) { */
-  /*     std::cout << '1'; */
-  /*   } else { */
-  /*     std::cerr << "ERROR!\n"; */
-  /*     std::cerr << out[i] << '\n'; */
-  /*     std::cerr << g.outputEncoding.zeros[i] << '\n'; */
-  /*     std::cerr << (g.outputEncoding.zeros[i] ^ delta2) << '\n'; */
-  /*     std::exit(1); */
-  /*   } */
-  /* } */
+  for (std::size_t i = 0; i < c.nOut; ++i) {
+    if (out[i] == g.outputEncoding.zeros[i]) {
+      std::cout << '0';
+    } else if (out[i] == (g.outputEncoding.zeros[i] ^ delta2)) {
+      std::cout << '1';
+    } else {
+      std::cerr << "ERROR!\n";
+      std::cerr << out[i] << '\n';
+      std::cerr << g.outputEncoding.zeros[i] << '\n';
+      std::cerr << (g.outputEncoding.zeros[i] ^ delta2) << '\n';
+      std::exit(1);
+    }
   }
+  std::cout << '\n';
 }

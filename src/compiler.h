@@ -15,7 +15,7 @@ public:
     Bool out;
     out.wire = counter;
     ++counter;
-    netlist.push_back(Gate { GateType::INPUT, 0, 0, out.wire });
+    gates->push_back(Gate { GateType::INPUT, 0, 0, out.wire });
     return out;
   }
 
@@ -32,7 +32,7 @@ public:
       Bool out;
       out.wire = counter;
       ++counter;
-      netlist.push_back(Gate { GateType::AND, wire, o.wire, out.wire });
+      gates->push_back(Gate { GateType::AND, wire, o.wire, out.wire });
       return out;
     }
   }
@@ -50,7 +50,7 @@ public:
       Bool out;
       out.wire = counter;
       ++counter;
-      netlist.push_back(Gate { GateType::XOR, wire, o.wire, out.wire });
+      gates->push_back(Gate { GateType::XOR, wire, o.wire, out.wire });
       return out;
     }
   }
@@ -64,7 +64,7 @@ public:
       Bool out;
       out.wire = counter;
       ++counter;
-      netlist.push_back(Gate { GateType::NOT, wire, 0, out.wire });
+      gates->push_back(Gate { GateType::NOT, wire, 0, out.wire });
       return out;
     }
   }
@@ -89,16 +89,16 @@ public:
   }
 
   void output() const {
-    netlist.push_back(Gate { GateType::OUTPUT, wire, 0, 0 });
+    gates->push_back(Gate { GateType::OUTPUT, wire, 0, 0 });
   }
 
   static Circuit compile() {
     Circuit c;
-    c.content = netlist;
+    c.content = *gates;
     c.nInp = 0;
     c.nOut = 0;
     c.nRow = 0;
-    for (const auto& g: netlist) {
+    for (const auto& g: *gates) {
       switch (g.type) {
         case GateType::INPUT: ++c.nInp; break;
         case GateType::OUTPUT: ++c.nOut; break;
@@ -108,13 +108,13 @@ public:
       }
     }
 
-    netlist = { };
+    gates = new std::vector<Gate>();
     counter = 2;
     return c;
   }
 
 private:
-  static Netlist netlist;
+  static std::vector<Gate>* gates;
   static std::uint32_t counter;
 
   // we reserve the special wire values 0 and 1 for false/true respectively

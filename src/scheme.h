@@ -34,7 +34,7 @@ struct Gate {
 };
 
 
-using Netlist = std::vector<Gate>;
+using Netlist = std::span<const Gate>;
 
 
 struct Circuit;
