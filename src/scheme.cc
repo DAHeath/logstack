@@ -1,4 +1,5 @@
 #include "scheme.h"
+#include <thread>
 
 // TODO remove
 #include <iostream>
@@ -372,7 +373,9 @@ Labelling evCond(
     inp_ = inp_.subspan(1);
 
     // evaluate the demux to compute inputs for both branches
-    const auto [inp0, inp1] = evDem(f, S, inp_, mat);
+    const auto demOut = evDem(f, S, inp_, mat);
+    const auto inp0 = demOut.first;
+    const auto inp1 = demOut.second;
     // move past the demux material
     mat = mat.subspan(3*inp_.size() + 2);
 
@@ -389,12 +392,20 @@ Labelling evCond(
     const auto mat0 = mat;
     Material mat1 { mat.begin(), mat.end() };
 
-    // garble straight into material so as to unstack
-    gbCond_(f, cs1, S, mat0);
-    const auto l0 = evCond(f, cs0, inp0, mat0, muxMat0);
+    Labelling l0, l1;
 
-    gbCond_(f, cs0, S, mat1);
-    const auto l1 = evCond(f, cs1, inp1, mat1, muxMat1);
+    // garble straight into material so as to unstack
+    std::thread th0 ([&] {
+      gbCond_(f, cs1, S, mat0);
+      l0 = evCond(f, cs0, inp0, mat0, muxMat0);
+    });
+
+    {
+      gbCond_(f, cs0, S, mat1);
+      l1 = evCond(f, cs1, inp1, mat1, muxMat1);
+    }
+
+    th0.join();
 
     return evMux(f, S, l0, l1, muxMatNow);
   }
@@ -440,40 +451,45 @@ Interface gbCond(
     const auto muxMatNow = muxMat.subspan(muxMatSize0 + muxMatSize1);
 
     Interface i0, i1;
+    Material mat0(branchmat.size());
+    Material mat1(branchmat.size());
     // because garbling the conditional recursively involves unstacking and evaluating,
     // we cannot garble the material in place, and instead must garble into a fresh buffer.
-    {
-      Material mat0(branchmat.size());
+    std::thread th ([&] {
       i0 = gbCond(f, cs0, S1, mat0, muxMat0);
-      branchmat ^= mat0;
-    }
+    });
     {
-      Material mat1(branchmat.size());
       i1 = gbCond(f, cs1, S0, mat1, muxMat1);
-      branchmat ^= mat1;
     }
+    th.join();
+
+    branchmat ^= mat0;
+    branchmat ^= mat1;
 
     // now, with the input encodings available, we can garble the demux
     // into the front of the material
     std::span<Label> zeros { e.zeros };
     zeros = zeros.subspan(1);
-    auto [bad0, bad1] = gbDem(prg, f, e.delta, S0, zeros, i0.inputEncoding, i1.inputEncoding, demMat);
+    auto bad = gbDem(prg, f, e.delta, S0, zeros, i0.inputEncoding, i1.inputEncoding, demMat);
+    auto bad0 = bad.first;
+    auto bad1 = bad.second;
 
     Encoding e0_, e1_;
     // copy the stacked material so as not to trash it
     // then garble a branch incorrectly to emulate bad evaluation of the other
     // branch (note garbling in place is safe because gbCond_ does not
     // recursively involve evaluation).
-    {
+    std::thread th2 ([&] {
       Material mat0(branchmat.begin(), branchmat.end());
       e0_ = gbCond_(f, cs1, S1, mat0);
       bad0 = evCond(f, cs0, bad0, mat0, muxMat0);
-    }
+    });
     {
       Material mat1(branchmat.begin(), branchmat.end());
       e1_ = gbCond_(f, cs0, S0, mat1);
       bad1 = evCond(f, cs1, bad1, mat1, muxMat1);
     }
+    th2.join();
 
 
     const auto eout = gbMux(
