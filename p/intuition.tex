@@ -3,9 +3,9 @@
 \label{sec:intuition}
 
 Our main contribution is reducing the computation associated with branch processing in SGC from $O(b^2)$ to $O(b \log b)$.
-To achieve this, we redesign stacking and reduce \G's uncertainty regarding \E's garbled evaluation.  
+To achieve this, we redesign stacking/unstacking and reduce \G's uncertainty regarding \E's garbled evaluation.  
 %At a high level, our approach builds on the following key idea:
-
+In this section we provide highest-level intuition, and provide a more detailed review in~\Cref{sec:techOverviewSG}.
 %\medskip
  
    Recall from discussion in~\Cref{sec:bsquaredcost} the  sources of \G's uncertainty, which results in $b^2$ garblings inside \G's emulation of \E: $b$ possible values for each variable \truth and \guess ($\truth \in\{0,b-1\}, \guess\in\{0,b-1\})$.
@@ -20,7 +20,7 @@ To achieve this, we redesign stacking and reduce \G's uncertainty regarding \E's
   For each leaf $\ell$, define $i$-th {\em sibling subtree at level $i$} to be the subtree rooted in a sibling of $i$-th node on the path to $\ell$ from tree root.  Thus, each branch has $\lceil \log b \rceil$ sibling subtrees (exactly $\log b$ sibling subtrees in a balanced binary tree).
   
     
- We reduce the number of possible \truth choices  {\em with respect to  \guess}.  For this, we  change the semantics of variable \truth: it now will not mean which of $b$ branches is active; instead \truth will denote in which sibling subtree of \guess the executed branch resides.  There are $\log b$ choices for this \truth.  If \G and \E can efficiently process each of these $b\log b$  (\truth,\guess) combinations  (we show that they can!), we achieve the improved $O(b\log b)$ computation cost.
+ We reduce the number of possible \truth choices  {\em with respect to  \guess}.  For this, we  change the semantics of variable \truth: it now will not mean which of $b$ branches is active; instead \truth will denote in which sibling subtree of \guess the executed branch resides ($\truth=0$ denotes a correct guess).  There are $\log b + 1$ choices for this \truth.  If \G and \E can efficiently process each of these $b\log b$  (\truth,\guess) combinations  (we show that they can!), we achieve the improved $O(b\log b)$ computation cost.
   
   
   
