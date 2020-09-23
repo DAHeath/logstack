@@ -272,6 +272,10 @@ void gbGate(
     case GateType::XOR:
       C0 = A0 ^ B0;
       break;
+
+    case GateType::NOT:
+      C0 = A0 ^ delta;
+      break;
   }
 }
 
@@ -311,6 +315,10 @@ void evGate(
 
     case GateType::XOR:
       C = A ^ B;
+      break;
+
+    case GateType::NOT:
+      C = A;
       break;
   }
 }

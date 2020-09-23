@@ -20,7 +20,7 @@ inline constexpr std::size_t ilog2(std::size_t n) {
 }
 
 
-enum class GateType { INPUT, OUTPUT, AND, XOR };
+enum class GateType { INPUT, OUTPUT, AND, XOR, NOT };
 
 
 struct Gate {
@@ -91,7 +91,25 @@ void gbGate(const PRF&, const Gate&, const Label& delta, NetlistCtxt&);
 void evGate(const PRF&, const Gate&, NetlistCtxt&);
 Encoding genEncoding(PRG&, std::size_t);
 
-Labelling evCond(const PRF&, std::span<Circuit>, const Labelling&, std::span<Label>);
+Labelling evCond(
+    const PRF&,
+    std::span<Circuit>,
+    const Labelling&,
+    std::span<Label> mat,
+    std::span<Label> muxMat);
+
+Encoding gbCond_(
+    const PRF&,
+    std::span<const Circuit>,
+    const Label& seed,
+    std::span<Label>);
+
+Interface gbCond(
+    const PRF&,
+    std::span<const Circuit>,
+    const Label& seed,
+    std::span<Label> mat,
+    std::span<Label> muxMat);
 
 Encoding gbMux(
     PRG& prg,

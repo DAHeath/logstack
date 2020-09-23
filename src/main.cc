@@ -81,10 +81,22 @@ int main() {
     1, // nOut
     0, // nRow
   };
+  Circuit nand {
+    Netlist {
+      Gate { GateType::INPUT, 0, 0, 0 },
+      Gate { GateType::INPUT, 0, 0, 1 },
+      Gate { GateType::AND, 0, 1, 2 },
+      Gate { GateType::NOT, 2, 0, 3 },
+      Gate { GateType::OUTPUT, 3, 0, 0 },
+    },
+    2, // nInp
+    1, // nOut
+    2, // nRow
+  };
 
 
   Circuit c {
-    Conditional { { andc, andc, xorc, andc } },
+    Conditional { { andc, andc, xorc, nand } },
     4, // nInp
     1, // nOut
     40
@@ -102,8 +114,8 @@ int main() {
 
   const Labelling inp = {
     g.inputEncoding.zeros[0] ^ delta1,
-    g.inputEncoding.zeros[1],
-    g.inputEncoding.zeros[2],
+    g.inputEncoding.zeros[1] ^ delta1,
+    g.inputEncoding.zeros[2] ^ delta1,
     g.inputEncoding.zeros[3] ^ delta1,
   };
   std::cout << "\nEVALUATOR\n";
