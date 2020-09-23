@@ -326,8 +326,8 @@ Encoding gbCond_(const PRF& f, std::span<const Circuit> cs, const Label& seed, s
     // Generate a fresh encoding.
     // All branches should have same number of inputs.
     auto e = genEncoding(prg, cs[0].nInp);
-    const auto s0 = e.zeros[0];
-    const auto s1 = e.zeros[0] ^ e.delta;
+    const auto S0 = e.zeros[0];
+    const auto S1 = e.zeros[0] ^ e.delta;
 
     // split the vector of circuits
     const std::span<const Circuit> cs0 = cs.subspan(0, n/2);
@@ -337,12 +337,12 @@ Encoding gbCond_(const PRF& f, std::span<const Circuit> cs, const Label& seed, s
     const auto demMat = mat;
     mat = mat.subspan(3*(e.zeros.size()-1) + 2);
 
-    const auto e0 = gbCond_(f, cs0, s1, mat);
-    const auto e1 = gbCond_(f, cs1, s0, mat);
+    const auto e0 = gbCond_(f, cs0, S1, mat);
+    const auto e1 = gbCond_(f, cs1, S0, mat);
 
     std::span<Label> zeros { e.zeros };
     zeros = zeros.subspan(1);
-    gbDem(prg, f, e.delta, s0, zeros, e0, e1, demMat);
+    gbDem(prg, f, e.delta, S0, zeros, e0, e1, demMat);
 
     return e;
   }
@@ -410,8 +410,8 @@ Interface gbCond(
     return garble(prg, f, cs[0], mat);
   } else {
     auto e = genEncoding(prg, cs[0].nInp + 1);
-    const auto s0 = e.zeros[0];
-    const auto s1 = e.zeros[0] ^ e.delta;
+    const auto S0 = e.zeros[0];
+    const auto S1 = e.zeros[0] ^ e.delta;
 
     // split the vector of circuits
     const std::span<const Circuit> cs0 = cs.subspan(0, n/2);
@@ -427,12 +427,12 @@ Interface gbCond(
     // we cannot garble the material in place, and instead must garble into a fresh buffer.
     {
       Material mat0(branchmat.size());
-      i0 = gbCond(f, cs0, s1, mat0, muxMat);
+      i0 = gbCond(f, cs0, S1, mat0, muxMat);
       branchmat ^= mat0;
     }
     {
       Material mat1(branchmat.size());
-      i1 = gbCond(f, cs1, s0, mat1, muxMat.subspan((cs0.size() - 1) * (cs0[0].nOut + 2)));
+      i1 = gbCond(f, cs1, S0, mat1, muxMat.subspan((cs0.size() - 1) * (cs0[0].nOut + 2)));
       branchmat ^= mat1;
     }
 
@@ -440,7 +440,7 @@ Interface gbCond(
     // into the front of the material
     std::span<Label> zeros { e.zeros };
     zeros = zeros.subspan(1);
-    auto [bad0, bad1] = gbDem(prg, f, e.delta, s0, zeros, i0.inputEncoding, i1.inputEncoding, demMat);
+    auto [bad0, bad1] = gbDem(prg, f, e.delta, S0, zeros, i0.inputEncoding, i1.inputEncoding, demMat);
 
     Encoding e0_, e1_;
     // copy the stacked material so as not to trash it
@@ -449,17 +449,18 @@ Interface gbCond(
     // recursively involve evaluation).
     {
       Material mat0(branchmat.begin(), branchmat.end());
-      e0_ = gbCond_(f, cs1, s0, mat0);
+      e0_ = gbCond_(f, cs1, S1, mat0);
       bad0 = evCond(f, cs0, bad0, mat0, muxMat);
     }
     {
       Material mat1(branchmat.begin(), branchmat.end());
-      e1_ = gbCond_(f, cs0, s1, mat1);
+      e1_ = gbCond_(f, cs0, S0, mat1);
       bad1 = evCond(f, cs1, bad1, mat1, muxMat.subspan((cs0.size() - 1) * (cs0[0].nOut + 2)));
     }
 
+
     const auto eout = gbMux(
-        prg, f, e.delta, s0,
+        prg, f, e.delta, S0,
         i0.outputEncoding,
         i1.outputEncoding,
         bad0,

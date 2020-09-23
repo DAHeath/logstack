@@ -84,7 +84,7 @@ int main() {
 
 
   Circuit c {
-    Conditional { { andc, xorc } },
+    Conditional { { andc, andc } },
     3, // nInp
     1, // nOut
     20
@@ -101,7 +101,7 @@ int main() {
   const auto delta2 = g.outputEncoding.delta;
 
   const Labelling inp = {
-    g.inputEncoding.zeros[0],
+    g.inputEncoding.zeros[0] ^ delta1,
     g.inputEncoding.zeros[1] ^ delta1,
     g.inputEncoding.zeros[2] ^ delta1,
   };
