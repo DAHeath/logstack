@@ -3,6 +3,11 @@
 // TODO remove
 #include <iostream>
 
+void show(const Label& l) {
+  std::uint64_t* xs = (std::uint64_t*)(&l);
+  std::cout << std::hex << xs[0] << xs[1] << '\n';
+}
+
 
 template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
@@ -28,7 +33,6 @@ std::pair<Labelling, Labelling> gbDem(
     std::span<Label> mat) {
 
   const auto n = zeros.size();
-  std::cout << "N " << zeros.size() << '\n';
 
   const auto s = S0[0];
   const auto hS0 = f(S0);
@@ -70,7 +74,6 @@ std::pair<Labelling, Labelling> gbDem(
   Labelling bad0(n);
   Labelling bad1(n);
   for (std::size_t i = 0; i < n; ++i) {
-    std::cout << mat.size() << '\n';
     const auto [g, b] = gbDem1(zeros[i]);
     mat = mat.subspan(1);
     const auto good0 = g ^ (g[0] ? (delta ^ e0.delta) : 0);
@@ -82,7 +85,6 @@ std::pair<Labelling, Labelling> gbDem(
     bad0[i] ^= hS1 ^ mat[0];
     bad1[i] ^= hS0 ^ mat[1];
     mat = mat.subspan(2);
-    std::cout << mat.size() << '\n';
   }
 
   return { bad0, bad1 };
@@ -430,7 +432,7 @@ Interface gbCond(
     }
     {
       Material mat1(branchmat.size());
-      i1 = gbCond(f, cs1, s0, mat1, muxMat.subspan(cs0.size() * (cs0[0].nOut + 2)));
+      i1 = gbCond(f, cs1, s0, mat1, muxMat.subspan((cs0.size() - 1) * (cs0[0].nOut + 2)));
       branchmat ^= mat1;
     }
 
@@ -447,12 +449,12 @@ Interface gbCond(
     // recursively involve evaluation).
     {
       Material mat0(branchmat.begin(), branchmat.end());
-      e0_ = gbCond_(f, cs0, s0, mat0);
+      e0_ = gbCond_(f, cs1, s0, mat0);
       bad0 = evCond(f, cs0, bad0, mat0, muxMat);
     }
     {
       Material mat1(branchmat.begin(), branchmat.end());
-      e1_ = gbCond_(f, cs1, s1, mat1);
+      e1_ = gbCond_(f, cs0, s1, mat1);
       bad1 = evCond(f, cs1, bad1, mat1, muxMat.subspan((cs0.size() - 1) * (cs0[0].nOut + 2)));
     }
 

@@ -97,26 +97,16 @@ int main() {
   Material material(c.nRow);
   auto g = garble(seed, k, c, material);
 
-  for (const auto& row: material) {
-    std::cout << row << '\n';
-  }
-
   const auto delta1 = g.inputEncoding.delta;
   const auto delta2 = g.outputEncoding.delta;
 
   const Labelling inp = {
     g.inputEncoding.zeros[0],
-    g.inputEncoding.zeros[1],
-    g.inputEncoding.zeros[2],
+    g.inputEncoding.zeros[1] ^ delta1,
+    g.inputEncoding.zeros[2] ^ delta1,
   };
   const auto out = ev(k, c, inp, material);
 
-  /* std::cout << out[0] << '\n'; */
-  /* std::cout << g.outputEncoding.zeros[0] << '\n'; */
-  /* std::cout << (g.outputEncoding.zeros[0] ^ delta2) << '\n'; */
-  /* std::cout << delta2 << '\n'; */
-  /* std::cout << g.outputEncoding.zeros.size() << '\n'; */
-  /* /1* std::cout << out[0] << '\n'; *1/ */
   std::cout << (out[0] == g.outputEncoding.zeros[0]) << '\n';
   std::cout << (out[0] == (g.outputEncoding.zeros[0] ^ delta2)) << '\n';
 
