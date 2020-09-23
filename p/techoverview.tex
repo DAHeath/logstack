@@ -60,6 +60,10 @@ Continuing this argument, we conclude that all in all, for our considered $\gues
 
 Finally, we note  that this argument clearly generalized to every guess \guess.
 
+Let's now verify that we indeed reduced the number of calls to \Gb and \Ev to $\b log b$.  This is easily done by first considering how many such calls are made by \E.  Consider branch $C_i$.  It is garbled $\log b$ times, once with a seed derived at each level.  Total number of calls to \Ev by \E is exactly $b$.  To construct the gadget, \G emulates the work done by \E, and hence it also makes  $\log b$ calls to \Gb and $b$ calls to \Ev to obtain all garbage labels.
+
+
+
 \vlad{need to add argument counting total num evaluations}
 
 
