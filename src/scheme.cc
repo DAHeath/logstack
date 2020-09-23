@@ -9,10 +9,6 @@ void show(const Label& l) {
 }
 
 
-template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
-
-
 template <typename T>
 std::span<Label> operator^=(std::span<Label> m0, const T& m1) {
   const auto n = m1.size();
@@ -535,7 +531,7 @@ Encoding gb(const PRF& f, const Circuit& c, const Encoding& inputEncoding, std::
       outputEncoding.zeros.resize(c.nOut);
 
       NetlistCtxt ctxt;
-      ctxt.w = Wiring(n.size() - c.nOut);
+      ctxt.w = Wiring(n.size() - c.nOut + 2);
       ctxt.material = mat;
       ctxt.inp = std::span<const Label>(inputEncoding.zeros);
       ctxt.out = std::span<Label>(outputEncoding.zeros);
@@ -593,7 +589,7 @@ Labelling ev(const PRF& f, const Circuit& c, const Labelling& input, std::span<L
       Labelling output(c.nOut);
 
       NetlistCtxt ctxt;
-      ctxt.w = Wiring(n.size() - c.nOut);
+      ctxt.w = Wiring(n.size() - c.nOut + 2);
       ctxt.material = mat;
       ctxt.inp = std::span<const Label>(input);
       ctxt.out = std::span<Label>(output);

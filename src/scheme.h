@@ -11,6 +11,11 @@
 #include "prf.h"
 #include "prg.h"
 
+
+template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+
+
 inline constexpr std::size_t ilog2(std::size_t n) {
   std::size_t out = 0;
   n *= 2;
@@ -20,12 +25,12 @@ inline constexpr std::size_t ilog2(std::size_t n) {
 }
 
 
-enum class GateType { INPUT, OUTPUT, AND, XOR, NOT };
+enum class GateType : std::uint32_t { INPUT, OUTPUT, AND, XOR, NOT };
 
 
 struct Gate {
   GateType type;
-  std::size_t inp0, inp1, out;
+  std::uint32_t inp0, inp1, out;
 };
 
 

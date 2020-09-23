@@ -1,128 +1,103 @@
 #include "scheme.h"
+#include "compiler.h"
+#include "sha256.h"
 #include <iostream>
+
+
+void showGate(const Gate& g) {
+  switch (g.type) {
+    case GateType::INPUT: std::cout << "INPUT " << g.out; break;
+    case GateType::OUTPUT: std::cout << "OUTPUT " << g.inp0; break;
+    case GateType::AND: std::cout << "AND " << g.inp0 << " " << g.inp1 << " " << g.out; break;
+    case GateType::XOR: std::cout << "XOR " << g.inp0 << " " << g.inp1 << " " << g.out; break;
+    case GateType::NOT: std::cout << "NOT " << g.inp0 << " " << g.out; break;
+  }
+}
+
+
+void showNetlist(const Netlist& nl) {
+  for (const auto& g: nl) {
+    showGate(g);
+    std::cout << '\n';
+  }
+}
+
+
+void showCircuit(const Circuit& c) {
+  std::cout << "INPUTS: " << c.nInp << '\n';
+  std::cout << "OUTPUTS: " << c.nOut << '\n';
+  std::cout << "ROWS: " << c.nRow << '\n';
+  std::visit(overloaded {
+    [&](const Netlist& n) {
+      showNetlist(n);
+    },
+    [&](const Conditional& cond) {
+    },
+    [&](const Sequence& seq) {
+    },
+  }, c.content);
+}
 
 
 int main() {
 
-  /* { */
-  /*   PRG prg; */
-  /*   PRF f; */
-
-  /*   auto e = genEncoding(prg, 2); */
-  /*   auto e0 = genEncoding(prg, 1); */
-  /*   auto e1 = genEncoding(prg, 1); */
-
-  /*   std::span<Label> zeros { e.zeros }; */
-  /*   zeros = zeros.subspan(1); */
-
-  /*   Material material(3*1 + 2); */
-  /*   std::span<Label> mat { material }; */
-  /*   auto [b0, b1] = gbDem(prg, f, e.delta, e.zeros[0], zeros, e0, e1, mat); */
-
-  /*   mat = material; */
-  /*   /1* zeros[0] ^= e.delta; *1/ */
-  /*   const auto [X, Y] = evDem(f, e.zeros[0], zeros, mat); */
-
-  /*   const auto good00 = e0.zeros[0]; */
-  /*   const auto good10 = e1.zeros[0]; */
-  /*   const auto good01 = e0.zeros[0] ^ e0.delta; */
-  /*   const auto good11 = e1.zeros[0] ^ e1.delta; */
-  /*   const auto bad0 = b0[0]; */
-  /*   const auto bad1 = b1[0]; */
-  /*   std::cout << "X: " << (X[0] == good00) << (X[0] == good01) << (X[0] == bad0) << '\n'; */
-  /*   std::cout << "Y: " << (Y[0] == good10) << (Y[0] == good11) << (Y[0] == bad1) << '\n'; */
-  /* } */
-
-  /* { // test mux */
-
-  /*   PRG prg; */
-  /*   PRF f; */
-
-  /*   const auto e = genEncoding(prg, 1); */
-  /*   const auto e0 = genEncoding(prg, 1); */
-  /*   const auto e1 = genEncoding(prg, 1); */
-
-  /*   const auto b0 = prg(); */
-  /*   const auto b1 = prg(); */
-
-
-  /*   Material material(1 + 2); */
-
-  /*   const auto eout = gbMux(prg, f, e.delta, e.zeros[0], e0, e1, { b0 }, { b1 }, material); */
-
-  /*   /1* const auto out = evMux(f, e.zeros[0], { e0.zeros[0]}, { b1 }, material); *1/ */
-  /*   const auto out = evMux(f, e.zeros[0] ^ e.delta, { b0 }, { e1.zeros[0] ^ e1.delta }, material); */
-
-  /*   std::cout << (out[0] == eout.zeros[0]) << '\n'; */
-  /*   std::cout << (out[0] == (eout.zeros[0] ^ eout.delta)) << '\n'; */
-  /* } */
-
   {
+    std::array<U32, 16> inp;
+    for (auto& i: inp) { i = U32::input(); }
 
-  Circuit andc {
-    Netlist {
-      Gate { GateType::INPUT, 0, 0, 0 },
-      Gate { GateType::INPUT, 0, 0, 1 },
-      Gate { GateType::AND, 0, 1, 2 },
-      Gate { GateType::OUTPUT, 2, 0 , 0 },
-    },
-    2, // nInp
-    1, // nOut
-    2, // nRow
-  };
-  Circuit xorc {
-    Netlist {
-      Gate { GateType::INPUT, 0, 0, 0 },
-      Gate { GateType::INPUT, 0, 0, 1 },
-      Gate { GateType::XOR, 0, 1, 2 },
-      Gate { GateType::OUTPUT, 2, 0 , 0 },
-    },
-    2, // nInp
-    1, // nOut
-    0, // nRow
-  };
-  Circuit nand {
-    Netlist {
-      Gate { GateType::INPUT, 0, 0, 0 },
-      Gate { GateType::INPUT, 0, 0, 1 },
-      Gate { GateType::AND, 0, 1, 2 },
-      Gate { GateType::NOT, 2, 0, 3 },
-      Gate { GateType::OUTPUT, 3, 0, 0 },
-    },
-    2, // nInp
-    1, // nOut
-    2, // nRow
-  };
+    const auto out = sha256(inp);
+
+    for (const auto& o: out) { o.output(); }
+  }
+
+  /* { */
+  /*   U32 x = U32::input(); */
+  /*   U32 y = U32::input(); */
+
+  /*   (x + y).output(); */
+  /* } */
+
+  const auto c = Bool::compile();
+  /* showCircuit(c); */
 
 
-  Circuit c {
-    Conditional { { andc, andc, xorc, nand } },
-    4, // nInp
-    1, // nOut
-    40
-  };
 
+  /* Circuit c { */
+  /*   Conditional { { andc, andc, xorc, nand } }, */
+  /*   4, // nInp */
+  /*   1, // nOut */
+  /*   40 */
+  /* }; */
+
+  for (std::size_t i = 0; i < 100; ++i) {
   PRG seed;
   PRF k;
 
   Material material(c.nRow);
-  std::cout << "GENERATOR\n";
   auto g = garble(seed, k, c, material);
 
   const auto delta1 = g.inputEncoding.delta;
   const auto delta2 = g.outputEncoding.delta;
 
-  const Labelling inp = {
-    g.inputEncoding.zeros[0] ^ delta1,
-    g.inputEncoding.zeros[1] ^ delta1,
-    g.inputEncoding.zeros[2] ^ delta1,
-    g.inputEncoding.zeros[3] ^ delta1,
-  };
-  std::cout << "\nEVALUATOR\n";
+  Labelling inp(c.nInp);
+  for (std::size_t i = 0; i < c.nInp; ++i) {
+    inp[i] = g.inputEncoding.zeros[i];
+  }
+
   const auto out = ev(k, c, inp, material);
 
-  std::cout << (out[0] == g.outputEncoding.zeros[0]) << '\n';
-  std::cout << (out[0] == (g.outputEncoding.zeros[0] ^ delta2)) << '\n';
-
+  /* for (std::size_t i = 0; i < c.nOut; ++i) { */
+  /*   if (out[i] == g.outputEncoding.zeros[i]) { */
+  /*     std::cout << '0'; */
+  /*   } else if (out[i] == (g.outputEncoding.zeros[i] ^ delta2)) { */
+  /*     std::cout << '1'; */
+  /*   } else { */
+  /*     std::cerr << "ERROR!\n"; */
+  /*     std::cerr << out[i] << '\n'; */
+  /*     std::cerr << g.outputEncoding.zeros[i] << '\n'; */
+  /*     std::cerr << (g.outputEncoding.zeros[i] ^ delta2) << '\n'; */
+  /*     std::exit(1); */
+  /*   } */
+  /* } */
   }
 }
