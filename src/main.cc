@@ -33,79 +33,83 @@ int main() {
   /*   std::cout << "Y: " << (Y[0] == good10) << (Y[0] == good11) << (Y[0] == bad1) << '\n'; */
   /* } */
 
-  { // test mux
+  /* { // test mux */
 
-    PRG prg;
-    PRF f;
+  /*   PRG prg; */
+  /*   PRF f; */
 
-    const auto e = genEncoding(prg, 1);
-    const auto e0 = genEncoding(prg, 1);
-    const auto e1 = genEncoding(prg, 1);
+  /*   const auto e = genEncoding(prg, 1); */
+  /*   const auto e0 = genEncoding(prg, 1); */
+  /*   const auto e1 = genEncoding(prg, 1); */
 
-    const auto b0 = prg();
-    const auto b1 = prg();
+  /*   const auto b0 = prg(); */
+  /*   const auto b1 = prg(); */
 
 
-    Material material(1 + 2);
+  /*   Material material(1 + 2); */
 
-    const auto eout = gbMux(prg, f, e.delta, e.zeros[0], e0, e1, { b0 }, { b1 }, material);
+  /*   const auto eout = gbMux(prg, f, e.delta, e.zeros[0], e0, e1, { b0 }, { b1 }, material); */
 
-    /* const auto out = evMux(f, e.zeros[0], { e0.zeros[0]}, { b1 }, material); */
-    const auto out = evMux(f, e.zeros[0] ^ e.delta, { b0 }, { e1.zeros[0] ^ e1.delta }, material);
+  /*   /1* const auto out = evMux(f, e.zeros[0], { e0.zeros[0]}, { b1 }, material); *1/ */
+  /*   const auto out = evMux(f, e.zeros[0] ^ e.delta, { b0 }, { e1.zeros[0] ^ e1.delta }, material); */
 
-    std::cout << (out[0] == eout.zeros[0]) << '\n';
-    std::cout << (out[0] == (eout.zeros[0] ^ eout.delta)) << '\n';
+  /*   std::cout << (out[0] == eout.zeros[0]) << '\n'; */
+  /*   std::cout << (out[0] == (eout.zeros[0] ^ eout.delta)) << '\n'; */
+  /* } */
+
+  {
+
+  Circuit andc {
+    Netlist {
+      Gate { GateType::INPUT, 0, 0, 0 },
+      Gate { GateType::INPUT, 0, 0, 1 },
+      Gate { GateType::AND, 0, 1, 2 },
+      Gate { GateType::OUTPUT, 2, 0 , 0 },
+    },
+    2, // nInp
+    1, // nOut
+    2, // nRow
+  };
+  Circuit xorc {
+    Netlist {
+      Gate { GateType::INPUT, 0, 0, 0 },
+      Gate { GateType::INPUT, 0, 0, 1 },
+      Gate { GateType::XOR, 0, 1, 2 },
+      Gate { GateType::OUTPUT, 2, 0 , 0 },
+    },
+    2, // nInp
+    1, // nOut
+    0, // nRow
+  };
+
+
+  Circuit c {
+    Conditional { { andc, xorc } },
+    3, // nInp
+    1, // nOut
+    20
+  };
+
+
+  PRG seed;
+  PRF k;
+
+  Material material(c.nRow);
+  auto g = garble(seed, k, c, material);
+
+  for (const auto& row: material) {
+    std::cout << row << '\n';
   }
 
-  /* { */
+  const auto delta1 = g.inputEncoding.delta;
+  const auto delta2 = g.outputEncoding.delta;
 
-  /* Circuit andc { */
-  /*   Netlist { */
-  /*     Gate { GateType::INPUT, 0, 0, 0 }, */
-  /*     Gate { GateType::INPUT, 0, 0, 1 }, */
-  /*     Gate { GateType::AND, 0, 1, 2 }, */
-  /*     Gate { GateType::OUTPUT, 2, 0 , 0 }, */
-  /*   }, */
-  /*   2, // nInp */
-  /*   1, // nOut */
-  /*   2, // nRow */
-  /* }; */
-  /* Circuit xorc { */
-  /*   Netlist { */
-  /*     Gate { GateType::INPUT, 0, 0, 0 }, */
-  /*     Gate { GateType::INPUT, 0, 0, 1 }, */
-  /*     Gate { GateType::XOR, 0, 1, 2 }, */
-  /*     Gate { GateType::OUTPUT, 2, 0 , 0 }, */
-  /*   }, */
-  /*   2, // nInp */
-  /*   1, // nOut */
-  /*   0, // nRow */
-  /* }; */
-
-
-  /* Circuit c { */
-  /*   Conditional { { andc, xorc } }, */
-  /*   3, // nInp */
-  /*   1, // nOut */
-  /*   3*2 + 1 + 2 + 1+1, // nRow */
-  /* }; */
-
-
-  /* PRG seed; */
-  /* PRF k; */
-
-  /* Material material(c.nRow); */
-  /* auto g = garble(seed, k, c, material); */
-
-  /* const auto delta1 = g.inputEncoding.delta; */
-  /* const auto delta2 = g.outputEncoding.delta; */
-
-  /* const Labelling inp = { */
-  /*   g.inputEncoding.zeros[0], */
-  /*   g.inputEncoding.zeros[1], */
-  /*   g.inputEncoding.zeros[2], */
-  /* }; */
-  /* const auto out = ev(k, c, inp, material); */
+  const Labelling inp = {
+    g.inputEncoding.zeros[0],
+    g.inputEncoding.zeros[1],
+    g.inputEncoding.zeros[2],
+  };
+  const auto out = ev(k, c, inp, material);
 
   /* std::cout << out[0] << '\n'; */
   /* std::cout << g.outputEncoding.zeros[0] << '\n'; */
@@ -113,8 +117,8 @@ int main() {
   /* std::cout << delta2 << '\n'; */
   /* std::cout << g.outputEncoding.zeros.size() << '\n'; */
   /* /1* std::cout << out[0] << '\n'; *1/ */
-  /* std::cout << (out[0] == g.outputEncoding.zeros[0]) << '\n'; */
-  /* std::cout << (out[0] == (g.outputEncoding.zeros[0] ^ delta2)) << '\n'; */
+  std::cout << (out[0] == g.outputEncoding.zeros[0]) << '\n';
+  std::cout << (out[0] == (g.outputEncoding.zeros[0] ^ delta2)) << '\n';
 
-  /* } */
+  }
 }
