@@ -1,5 +1,8 @@
 #include "scheme.h"
 
+// TODO remove
+#include <iostream>
+
 
 template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
@@ -142,23 +145,42 @@ Encoding gbMux(
   const auto hS0 = f(S0);
   const auto hS1 = f(S0 ^ delta);
 
-  // evaluator should conditionally add on delta ^ delta0/delta ^ delta1 depending on S
-  // and if each label has a high lsb.
-  mat[0] ^= hS0 ^ hS1 ^ good0.delta ^ good1.delta;
-  mat = mat.subspan(1);
-  const auto diff = s ? (hS0 ^ delta ^ good0.delta) : (hS1 ^ delta ^ good1.delta);
+  auto dd0 = delta ^ good0.delta;
+  auto dd1 = delta ^ good1.delta;
+  // some extra random bits to mask the definitely zero lsb of delta ^ delta0/delta1
+  const auto mask = prg();
+  dd0[0] = mask[0];
+  dd1[0] = mask[1];
 
+  mat[0] ^= hS0 ^ dd0;
+  mat[1] ^= hS1 ^ dd1;
+
+  auto bad_diff0 = hS1 ^ mat[0];
+  auto bad_diff1 = hS0 ^ mat[1];
+  bad_diff0[0] = 0;
+  bad_diff1[0] = 0;
+
+  mat = mat.subspan(2);
 
   Encoding e;
+  e.delta = delta;
   e.zeros.resize(n);
   for (std::size_t i = 0; i < n; ++i) {
+    auto b0 = bad0[i];
+    auto b1 = bad1[i];
+    auto g0 = good0.zeros[i];
+    auto g1 = good1.zeros[i];
+    b0 ^= b0[0] ? bad_diff0 : 0;
+    b1 ^= b1[0] ? bad_diff1 : 0;
+    g0 ^= g0[0] ? (delta ^ good0.delta) : 0;
+    g1 ^= g1[0] ? (delta ^ good1.delta) : 0;
+
     // implement the following garbled truth table for arbitrary X:
     // S0 -> Good0 ^ Bad1 ^ X
     // S1 -> Good1 ^ Bad0 ^ X
-    mat[0] = hS0 ^ hS1 ^ good0.zeros[i] ^ good1.zeros[i] ^ bad0[i] ^ bad1[i];
+    mat[0] = hS0 ^ hS1 ^ g0 ^ g1 ^ b0 ^ b1;
 
-    e.zeros[i] = s ? (hS0 ^ good0.zeros[i] ^ bad1[i]) : (hS1 ^ good1.zeros[i] ^ bad0[i]);
-    e.zeros[i] ^= e.zeros[i][0] ? diff : 0;
+    e.zeros[i] = s ? (hS1 ^ g1 ^ b0) : (hS0 ^ g0 ^ b1);
     mat = mat.subspan(1);
   }
 
@@ -169,22 +191,28 @@ Encoding gbMux(
 Labelling evMux(
     const PRF& f,
     const Label& S,
-    const Labelling& X,
-    const Labelling& Y,
+    const Labelling& Xs,
+    const Labelling& Ys,
     std::span<Label> mat) {
 
-  const auto n = X.size();
+  const auto n = Xs.size();
 
   const auto s = S[0];
   const auto hS = f(S);
+  auto diff0 = hS ^ mat[0];
+  auto diff1 = hS ^ mat[1];
+  diff0[0] = 0;
+  diff1[0] = 0;
 
-  const auto diff = hS ^ (s ? mat[0] : 0);
-  mat = mat.subspan(1);
+  mat = mat.subspan(2);
 
   Labelling out(n);
   for (std::size_t i = 0; i < n; ++i) {
-    out[i] = X[i] ^ Y[i] ^ hS ^ (s ? mat[0] : 0);
-    out[i] ^= out[i][0] ? diff : 0;
+    auto X = Xs[i];
+    auto Y = Ys[i];
+    X ^= X[0] ? diff0 : 0;
+    Y ^= Y[0] ? diff1 : 0;
+    out[i] = X ^ Y ^ hS ^ (s ? mat[0] : 0);
     mat = mat.subspan(1);
   }
   return out;
@@ -351,9 +379,9 @@ Labelling evCond(
     const auto l0 = evCond(f, cs0, inp0, mat0, muxMat);
 
     gbCond_(f, cs1, S, mat1);
-    const auto l1 = evCond(f, cs1, inp1, mat1, muxMat.subspan(cs0.size() * (cs0[0].nOut + 1)));
+    const auto l1 = evCond(f, cs1, inp1, mat1, muxMat.subspan(cs0.size() * (cs0[0].nOut + 2)));
 
-    return evMux(f, S, l0, l1, muxMat.subspan(cs.size() * (cs[0].nOut + 1)));
+    return evMux(f, S, l0, l1, muxMat.subspan(cs.size() * (cs[0].nOut + 2)));
   }
 }
 
@@ -398,7 +426,7 @@ Interface gbCond(
     }
     {
       Material mat1(branchmat.size());
-      i1 = gbCond(f, cs1, s0, mat1, muxMat.subspan(cs0.size() * (cs0[0].nOut + 1)));
+      i1 = gbCond(f, cs1, s0, mat1, muxMat.subspan(cs0.size() * (cs0[0].nOut + 2)));
       branchmat ^= mat1;
     }
 
@@ -421,7 +449,7 @@ Interface gbCond(
     {
       Material mat1(branchmat.begin(), branchmat.end());
       e1_ = gbCond_(f, cs1, s1, mat1);
-      bad1 = evCond(f, cs1, bad1, mat1, muxMat.subspan(cs0.size() * (cs0[0].nOut + 1)));
+      bad1 = evCond(f, cs1, bad1, mat1, muxMat.subspan(cs0.size() * (cs0[0].nOut + 2)));
     }
 
     const auto eout = gbMux(
@@ -430,7 +458,7 @@ Interface gbCond(
         i1.outputEncoding,
         bad0,
         bad1,
-        muxMat.subspan(cs.size() * (cs[0].nOut + 1)));
+        muxMat.subspan(cs.size() * (cs[0].nOut + 2)));
 
     return { e, eout };
   }
@@ -478,7 +506,7 @@ Encoding gb(const PRF& f, const Circuit& c, const Encoding& inputEncoding, std::
       outputEncoding.zeros.resize(c.nOut);
 
       NetlistCtxt ctxt;
-      ctxt.w = Wiring(c.nWires);
+      ctxt.w = Wiring(n.size() - c.nOut);
       ctxt.material = mat;
       ctxt.inp = std::span<const Label>(inputEncoding.zeros);
       ctxt.out = std::span<Label>(outputEncoding.zeros);
@@ -533,7 +561,7 @@ Labelling ev(const PRF& f, const Circuit& c, const Labelling& input, std::span<L
       Labelling output(c.nOut);
 
       NetlistCtxt ctxt;
-      ctxt.w = Wiring(c.nWires);
+      ctxt.w = Wiring(n.size() - c.nOut);
       ctxt.material = mat;
       ctxt.inp = std::span<const Label>(input);
       ctxt.out = std::span<Label>(output);

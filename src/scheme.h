@@ -36,7 +36,6 @@ using Sequence = std::vector<Circuit>;
 
 struct Circuit {
   std::variant<Netlist, Conditional, Sequence> content;
-  std::size_t nWires;
   std::size_t nInp;
   std::size_t nOut;
   std::size_t nRow;
@@ -84,6 +83,24 @@ void evGate(const PRF&, const Gate&, NetlistCtxt&);
 Encoding genEncoding(PRG&, std::size_t);
 
 Labelling evCond(const PRF&, std::span<Circuit>, const Labelling&, std::span<Label>);
+
+Encoding gbMux(
+    PRG& prg,
+    const PRF& f,
+    const Label& delta,
+    const Label& S0,
+    const Encoding& good0,
+    const Encoding& good1,
+    const Labelling& bad0,
+    const Labelling& bad1,
+    std::span<Label> mat);
+
+Labelling evMux(
+    const PRF& f,
+    const Label& S,
+    const Labelling& X,
+    const Labelling& Y,
+    std::span<Label> mat);
 
 std::pair<Labelling, Labelling> gbDem(
     PRG&,
