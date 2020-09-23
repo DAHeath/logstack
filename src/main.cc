@@ -84,17 +84,17 @@ int main() {
 
 
   Circuit c {
-    Conditional { { andc, andc } },
-    3, // nInp
+    Conditional { { andc, andc, xorc, andc } },
+    4, // nInp
     1, // nOut
-    20
+    40
   };
-
 
   PRG seed;
   PRF k;
 
   Material material(c.nRow);
+  std::cout << "GENERATOR\n";
   auto g = garble(seed, k, c, material);
 
   const auto delta1 = g.inputEncoding.delta;
@@ -102,9 +102,11 @@ int main() {
 
   const Labelling inp = {
     g.inputEncoding.zeros[0] ^ delta1,
-    g.inputEncoding.zeros[1] ^ delta1,
-    g.inputEncoding.zeros[2] ^ delta1,
+    g.inputEncoding.zeros[1],
+    g.inputEncoding.zeros[2],
+    g.inputEncoding.zeros[3] ^ delta1,
   };
+  std::cout << "\nEVALUATOR\n";
   const auto out = ev(k, c, inp, material);
 
   std::cout << (out[0] == g.outputEncoding.zeros[0]) << '\n';

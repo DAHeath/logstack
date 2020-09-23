@@ -11,6 +11,15 @@
 #include "prf.h"
 #include "prg.h"
 
+inline constexpr std::size_t ilog2(std::size_t n) {
+  std::size_t out = 0;
+  n *= 2;
+  n -= 1;
+  while (n >>= 1) { ++out; }
+  return out;
+}
+
+
 enum class GateType { INPUT, OUTPUT, AND, XOR };
 
 
