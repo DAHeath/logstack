@@ -11,16 +11,30 @@
 #include "prf.h"
 #include "prg.h"
 
-enum class GateType { INPUT, OUTPUT, AND, XOR };
+
+template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+
+
+inline constexpr std::size_t ilog2(std::size_t n) {
+  std::size_t out = 0;
+  n *= 2;
+  n -= 1;
+  while (n >>= 1) { ++out; }
+  return out;
+}
+
+
+enum class GateType : std::uint32_t { INPUT, OUTPUT, AND, XOR, NOT };
 
 
 struct Gate {
   GateType type;
-  std::size_t inp0, inp1, out;
+  std::uint32_t inp0, inp1, out;
 };
 
 
-using Netlist = std::vector<Gate>;
+using Netlist = std::span<const Gate>;
 
 
 struct Circuit;
@@ -36,7 +50,6 @@ using Sequence = std::vector<Circuit>;
 
 struct Circuit {
   std::variant<Netlist, Conditional, Sequence> content;
-  std::size_t nWires;
   std::size_t nInp;
   std::size_t nOut;
   std::size_t nRow;
@@ -83,7 +96,43 @@ void gbGate(const PRF&, const Gate&, const Label& delta, NetlistCtxt&);
 void evGate(const PRF&, const Gate&, NetlistCtxt&);
 Encoding genEncoding(PRG&, std::size_t);
 
-Labelling evCond(const PRF&, std::span<Circuit>, const Labelling&, std::span<Label>);
+Labelling evCond(
+    const PRF&,
+    std::span<Circuit>,
+    const Labelling&,
+    std::span<Label> mat,
+    std::span<Label> muxMat);
+
+Encoding gbCond_(
+    const PRF&,
+    std::span<const Circuit>,
+    const Label& seed,
+    std::span<Label>);
+
+Interface gbCond(
+    const PRF&,
+    std::span<const Circuit>,
+    const Label& seed,
+    std::span<Label> mat,
+    std::span<Label> muxMat);
+
+Encoding gbMux(
+    PRG& prg,
+    const PRF& f,
+    const Label& delta,
+    const Label& S0,
+    const Encoding& good0,
+    const Encoding& good1,
+    const Labelling& bad0,
+    const Labelling& bad1,
+    std::span<Label> mat);
+
+Labelling evMux(
+    const PRF& f,
+    const Label& S,
+    const Labelling& X,
+    const Labelling& Y,
+    std::span<Label> mat);
 
 std::pair<Labelling, Labelling> gbDem(
     PRG&,

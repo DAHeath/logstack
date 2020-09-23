@@ -1,74 +1,134 @@
 #include "scheme.h"
+#include "compiler.h"
+#include "sha256.h"
 #include <iostream>
 
 
-int main() {
+void showGate(const Gate& g) {
+  switch (g.type) {
+    case GateType::INPUT: std::cout << "INPUT " << g.out; break;
+    case GateType::OUTPUT: std::cout << "OUTPUT " << g.inp0; break;
+    case GateType::AND: std::cout << "AND " << g.inp0 << " " << g.inp1 << " " << g.out; break;
+    case GateType::XOR: std::cout << "XOR " << g.inp0 << " " << g.inp1 << " " << g.out; break;
+    case GateType::NOT: std::cout << "NOT " << g.inp0 << " " << g.out; break;
+  }
+}
 
-  {
-  PRG prg;
-  PRF f;
 
-  auto e = genEncoding(prg, 2);
-  auto e0 = genEncoding(prg, 1);
-  auto e1 = genEncoding(prg, 1);
+void showNetlist(const Netlist& nl) {
+  for (const auto& g: nl) {
+    showGate(g);
+    std::cout << '\n';
+  }
+}
 
-  std::span<Label> zeros { e.zeros };
-  zeros = zeros.subspan(1);
 
-  Material material(3*1 + 2);
-  std::span<Label> mat { material };
-  auto [b0, b1] = gbDem(prg, f, e.delta, e.zeros[0], zeros, e0, e1, mat);
+void showCircuit(const Circuit& c) {
+  std::cout << "INPUTS: " << c.nInp << '\n';
+  std::cout << "OUTPUTS: " << c.nOut << '\n';
+  std::cout << "ROWS: " << c.nRow << '\n';
+  std::visit(overloaded {
+    [&](const Netlist& n) {
+      showNetlist(n);
+    },
+    [&](const Conditional& cond) {
+    },
+    [&](const Sequence& seq) {
+    },
+  }, c.content);
+}
 
-  mat = material;
-  /* zeros[0] ^= e.delta; */
-  const auto [X, Y] = evDem(f, e.zeros[0], zeros, mat);
 
-  const auto good00 = e0.zeros[0];
-  const auto good10 = e1.zeros[0];
-  const auto good01 = e0.zeros[0] ^ e0.delta;
-  const auto good11 = e1.zeros[0] ^ e1.delta;
-  const auto bad0 = b0[0];
-  const auto bad1 = b1[0];
-  std::cout << "X: " << (X[0] == good00) << (X[0] == good01) << (X[0] == bad0) << '\n';
-  std::cout << "Y: " << (Y[0] == good10) << (Y[0] == good11) << (Y[0] == bad1) << '\n';
+Circuit conditional(const std::vector<Circuit>& cs) {
+  const auto b = cs.size();
+  const auto transSize = cs[0].nInp + 1;
+  const auto demSize = 3*cs[0].nInp + 2;
+  const auto muxSize = (b-1) * (cs[0].nOut + 2);
+
+  const auto logb = ilog2(b);
+
+
+  const auto fullDemSize = demSize * logb + 3*logb*logb;
+
+  std::size_t nRow = 0;
+  for (const auto& c: cs) { nRow = std::max(nRow, c.nRow); }
+  nRow += transSize + fullDemSize + muxSize;
+
+  return Circuit {
+    Conditional { cs },
+    cs[0].nInp + logb, // nInp
+    cs[0].nOut, // nInp
+    nRow, // nRow
+  };
+}
+
+
+int main(int argc, char** argv) {
+
+  if (argc < 2) {
+    std::cerr << "usage: " << argv[0] << " " << "<n-sha-reps>\n";
+    std::exit(1);
   }
 
-  /* std::cout << "good0: " << good << '\n'; */
-  /* std::cout << "good1: " << (good ^ delta) << '\n'; */
-  /* std::cout << "bad:   " << bad << '\n'; */
-  /* std::cout << "X:     " << X << '\n'; */
-  /* std::cout << "Y:     " << Y << '\n'; */
+  std::size_t n = atoi(argv[1]);
+
+  {
+    std::array<U32, 16> inp;
+    for (auto& i: inp) { i = U32::input(); }
+
+    const auto out = sha256(inp);
+
+    for (const auto& o: out) { o.output(); }
+  }
+
+  const auto sha = Bool::compile();
 
 
-/*   Circuit c { */
-/*     Netlist { */
-/*       Gate { GateType::INPUT, 0, 0, 0 }, */
-/*       Gate { GateType::INPUT, 0, 0, 1 }, */
-/*       Gate { GateType::AND, 0, 1, 2 }, */
-/*       Gate { GateType::OUTPUT, 2, 0 , 0 }, */
-/*     }, */
-/*     3, // nWires */
-/*     2, // nInp */
-/*     1, // nOut */
-/*     2, // nRow */
-/*   }; */
+  Circuit c;
+  if (n <= 1) {
+    c = sha;
+  } else {
+    std::vector<Circuit> cs;
+    for (std::size_t i = 0; i < n; ++i) {
+      cs.push_back(sha);
+    }
+    c = conditional(cs);
+  }
 
+  std::cout << c.nInp << '\n';
+  std::cout << c.nOut << '\n';
+  std::cout << c.nRow << '\n';
 
-/*   PRG seed; */
-/*   PRF k; */
+  PRG seed;
+  PRF k;
 
-/*   auto g = garble(seed, k, c); */
+  Material material(c.nRow);
+  auto g = garble(seed, k, c, material);
 
-/*   const auto delta = g.inputEncoding.delta; */
+  /* std::cout << g.inputEncoding.zeros.size() << '\n'; */
 
-/*   const Labelling inp = { */
-/*     g.inputEncoding.zeros[0] ^ delta, */
-/*     g.inputEncoding.zeros[1] ^ delta, */
-/*   }; */
-/*   std::span<Label> mat(g.material); */
-/*   const auto out = ev(k, c, inp, mat); */
+  const auto delta1 = g.inputEncoding.delta;
+  const auto delta2 = g.outputEncoding.delta;
 
+  Labelling inp(c.nInp);
+  for (std::size_t i = 0; i < c.nInp; ++i) {
+    inp[i] = g.inputEncoding.zeros[i];
+  }
 
-/*   std::cout << (out[0] == g.outputEncoding.zeros[0]) << '\n'; */
-/*   std::cout << (out[0] == (g.outputEncoding.zeros[0] ^ delta)) << '\n'; */
+  const auto out = ev(k, c, inp, material);
+
+  for (std::size_t i = 0; i < c.nOut; ++i) {
+    if (out[i] == g.outputEncoding.zeros[i]) {
+      std::cout << '0';
+    } else if (out[i] == (g.outputEncoding.zeros[i] ^ delta2)) {
+      std::cout << '1';
+    } else {
+      std::cerr << "ERROR!\n";
+      std::cerr << out[i] << '\n';
+      std::cerr << g.outputEncoding.zeros[i] << '\n';
+      std::cerr << (g.outputEncoding.zeros[i] ^ delta2) << '\n';
+      std::exit(1);
+    }
+  }
+  std::cout << '\n';
 }
