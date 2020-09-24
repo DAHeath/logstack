@@ -7,7 +7,7 @@ We  now review in our main contributions with sufficient  detail to present most
 \subsection{$O(b\log b)$ Stacked Garbling}
 \label{sec:techOverviewSG}
 
-Our main contribution is reducing the computation associated with branch processing in SGC from $O(b^2)$ to $O(b \log b)$.
+Our main contribution is reducing the computation associated with branch processing in SGC from $O(b^2)$ to $O(b \log b)$.  Our constants are low, and together \G and \E make $\approx 3 b \log b$ calls to \Gb\ and $b\log b$ calls  to \Ev.  \vlad{to confirm exact numbers.}
 
 We now continue the discussion of~\Cref{sec:intuition} and add  technical detail.  
 Our main task is the garbage collection of output labels of {\em incorrectly guessed} (\truth,\guess) combinations 
@@ -60,19 +60,11 @@ Continuing this argument, we conclude that all in all, for our considered $\gues
 
 Finally, we note  that this argument clearly generalized to every guess \guess.
 
-Let's now verify that we indeed reduced the number of calls to \Gb and \Ev to $\b log b$.  This is easily done by first considering how many such calls are made by \E.  Consider branch $C_i$.  It is garbled $\log b$ times, once with a seed derived at each level.  Total number of calls to \Ev by \E is exactly $b$.  To construct the gadget, \G emulates the work done by \E, and hence it also makes  $\log b$ calls to \Gb and $b$ calls to \Ev to obtain all garbage labels.
+{\em Computational cost accounting.} Let's now verify that we indeed reduced the number of calls to \Gb\ and \Ev\ to $O(b \log b)$.  This is easily done by first considering how many such calls are made by \E.  
+Consider branch $C_i$.  It is garbled $\log b$ times, once with a seed derived at each level.  Thus, total number of calls by \E to \Gb\ is $b \log b$ and to \Ev\ is exactly $b$.  
 
-
-
-\vlad{need to add argument counting total num evaluations}
-
-
-\vlad{end of argument}
-
-\bigskip
- relying on the fact that
-
-  \G including a garbled ga
+To construct the gadget, \G must obtain all possible garbage labels.  Hence \G emulates the work done by \E in its entirety  for {\em every} possible value of $\truth\in\{1,...,\log b\}$.  Hence it makes total  $b \log^2 b$ number of calls to \Gb\ and $b \log b$ calls to  \Ev.  
+%hence it  makes  $\log b$ calls per branch to \Gb\ and $b\log b$ total calls to \Ev\ to obtain all garbage labels.
 
 
 
@@ -81,6 +73,19 @@ Let's now verify that we indeed reduced the number of calls to \Gb and \Ev to $\
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+\ignore{
 
 
 
@@ -105,50 +110,16 @@ By way of example, let's consider the special case of $\guess=0$ and $\truth = 1
 
 
 
- Key idea of our work and difference from~\HK is that:
-\begin{itemize}
-	\item for any tree level $i$, if active branch is 
-	\item 
-\end{itemize}
-
-
 
 
  Consider at each level of the tree the dichotomy of whether leaves indexed by \guess and \truth are in the same subtree. Our idea is, given a fixed \guess, to  enforce that \E identically processes \guess for {\em all} values of \truth which belong to the same sibling subtree of guess. This narrows \G’s uncertainty for each value of \guess: each value of \guess has only $\log b$ possible \truth options, one for each sibling subtree of \guess.  In turn, this results in $b\log b$  sets of garbage labels, and $b\log b$ garblings required by \G. \todo{and by \E?}
 
-%In this work, we address the technical challenge of designing garbling gadgets and  the stacking  to support security and correctness 
 
-\medskip
-
+}
 
 
-the following is to move to technical intuition maybe.
-\begin{itemize}
 	
-	\item The conditional branches are \emph{nested}.
-	That is, instead of organizing $b$ branches as a vector, we
-	organize them into a binary tree.
-	Suppose \E guesses that a particular branch $\cir_i$ is taken,
-	while in fact $\cir_j$, a member of a different subtree, is taken.
-	The key idea of our approach is that we ensure that when \ev
-	garbles the entire subtree containg $\cir_j$ but not $\cir_i$, she
-	computes the same material, regardless of $j$.\todo{intuition still unclear}
-	\item The multiplexer is \emph{not stacked}.
-	The careful reader familiar with \cite{EPRINT:HeaKol20b} may be
-	confused about our key idea: Stacked Garbling first presents a
-	recursive binary tree approach to branching that they later
-	discard in favor of a more efficient vector approach.
-	So why is our binary tree approach better?
-	The problem with \cite{EPRINT:HeaKol20b}'s recursive construction
-	is that the evaluator recursively computes the multiplexer for
-	nested sub-conditionals.
-	However, doing so leads to a recursive emulation whereby \E
-	emulates herself (and hence \G emulates himself as well).
-	This recursion leads to quadratic cost for both players.
-	The way out is to treat the multiplexer separately, and to opt not
-	to stack it.
-	If multiplexers are not stacked, then \E need not compute them.
-\end{itemize}
+	
 
 
 % At a high level, the circuit generator, i.e. the player who constructs
@@ -158,7 +129,7 @@ the following is to move to technical intuition maybe.
 
 
 
-\subsection{Lower bound)}
+\subsection{Lower bound}
 \label{sec:techOverviewLB}
 
 
@@ -166,7 +137,7 @@ the following is to move to technical intuition maybe.
 
 
 
-\subsection{Stacked garbling without Random Oracles)}
+\subsection{Stacked garbling without Random Oracles}
 \label{sec:techOverviewRO}
 
 

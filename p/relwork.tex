@@ -1,10 +1,46 @@
 \section{Related Work}\label{sec:relwork}
 
-\begin{itemize}
-  \item What are the categories of prior work?
-  \item What are the key works we build on?
-  \item What do we supercede?
-  \item What are we orthogonal to?
-  \item Test citation~\cite{ICALP:KolSch08}.
 
-\end{itemize}
+
+GC is the most popular and often the fastest approach to secure two-party computation
+(2PC).  Until recently, it was believed that it is necessary
+to transmit the entire GC during 2PC, even for conditional branches that
+are not taken.  Recent breakthrough work~\HK showed that this folklore belief is false, and that  it is enough to only transmit GC material  proportional to the
+longest execution path rather than to the entire circuit.
+
+While the protocol of~\HK is concretely efficient, its quadratic computational cost presents a  limitation in settings where branching factor $b$ is beyond $5$ or $10$.  
+
+In addition to significantly improving computation cost (i.e. number of calls to \Gb\ and \Ev), our approach offers {\em dramatically} better memory utilization, as we discuss in~\Cref{sec:ourContrib}.  Quadratic construction of~\HK requires keeping track of a quadratic number of garbled circuits \vlad{to check}, while only XXX GCs are in memory at a time.
+
+As a result, in this work we essentially eliminate the concern of increased computation due to Stacked Garbling for standard settings (1 Gbps network, commodity laptop computing device). 
+
+
+{\em Technical difference between our and~\HK binary braching.}
+%The multiplexer is \emph{not stacked}.
+The careful reader familiar with \cite{EPRINT:HeaKol20b} may be
+confused about our key idea: Stacked Garbling first presents a
+recursive binary tree approach to branching that they later
+discard in favor of a more efficient vector approach.
+So why is our binary tree approach better?
+The problem with \cite{EPRINT:HeaKol20b}'s recursive construction
+is that the evaluator recursively computes the multiplexer for
+nested sub-conditionals.
+However, doing so leads to a recursive emulation whereby \E
+emulates herself (and hence \G emulates himself as well).
+This recursion leads to quadratic cost for both players.
+The way out is to treat the multiplexer separately, and to opt not
+to stack it.
+If multiplexers are not stacked, then \E need not compute them.
+
+
+
+
+\ignore{\item The conditional branches are \emph{nested}.
+	That is, instead of organizing $b$ branches as a vector, we
+	organize them into a binary tree.
+	Suppose \E guesses that a particular branch $\cir_i$ is taken,
+	while in fact $\cir_j$, a member of a different subtree, is taken.
+	The key idea of our approach is that we ensure that when \ev
+	garbles the entire subtree containg $\cir_j$ but not $\cir_i$, she
+	computes the same material, regardless of $j$.\todo{intuition still unclear}
+}
