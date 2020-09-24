@@ -4,6 +4,8 @@
 // TODO remove
 #include <iostream>
 
+int gbcounter = 0;
+
 void show(const Label& l) {
   std::uint64_t* xs = (std::uint64_t*)(&l);
   std::cout << std::hex << xs[0] << xs[1] << '\n';
@@ -326,6 +328,7 @@ Encoding gbCond_(const PRF& f, std::span<const Circuit> cs, const Label& seed, s
   PRG prg(seed);
 
   if (b == 1) {
+    ++gbcounter;
     return garble(prg, f, cs[0], mat).inputEncoding;
   } else {
     // Generate a fresh encoding.
@@ -395,17 +398,19 @@ Labelling evCond(
     Labelling l0, l1;
 
     // garble straight into material so as to unstack
-    std::thread th0 ([&] {
+    /* std::thread th0 ([&] { */
+    {
       gbCond_(f, cs1, S, mat0);
       l0 = evCond(f, cs0, inp0, mat0, muxMat0);
-    });
+    /* }); */
+    }
 
     {
       gbCond_(f, cs0, S, mat1);
       l1 = evCond(f, cs1, inp1, mat1, muxMat1);
     }
 
-    th0.join();
+    /* th0.join(); */
 
     return evMux(f, S, l0, l1, muxMatNow);
   }
@@ -428,6 +433,7 @@ Interface gbCond(
   PRG prg(seed);
 
   if (b == 1) {
+    ++gbcounter;
     return garble(prg, f, cs[0], mat);
   } else {
     const auto n = cs[0].nInp + ilog2(cs.size());
@@ -455,13 +461,15 @@ Interface gbCond(
     Material mat1(branchmat.size());
     // because garbling the conditional recursively involves unstacking and evaluating,
     // we cannot garble the material in place, and instead must garble into a fresh buffer.
-    std::thread th ([&] {
+    /* std::thread th ([&] { */
+    {
       i0 = gbCond(f, cs0, S1, mat0, muxMat0);
-    });
+    /* }); */
+  }
     {
       i1 = gbCond(f, cs1, S0, mat1, muxMat1);
     }
-    th.join();
+    /* th.join(); */
 
     branchmat ^= mat0;
     branchmat ^= mat1;
@@ -479,17 +487,19 @@ Interface gbCond(
     // then garble a branch incorrectly to emulate bad evaluation of the other
     // branch (note garbling in place is safe because gbCond_ does not
     // recursively involve evaluation).
-    std::thread th2 ([&] {
+    /* std::thread th2 ([&] { */
+    {
       Material mat0(branchmat.begin(), branchmat.end());
       e0_ = gbCond_(f, cs1, S1, mat0);
       bad0 = evCond(f, cs0, bad0, mat0, muxMat0);
-    });
+    /* }); */
+  }
     {
       Material mat1(branchmat.begin(), branchmat.end());
       e1_ = gbCond_(f, cs0, S0, mat1);
       bad1 = evCond(f, cs1, bad1, mat1, muxMat1);
     }
-    th2.join();
+    /* th2.join(); */
 
 
     const auto eout = gbMux(
@@ -560,6 +570,7 @@ Encoding gb(const PRF& f, const Circuit& c, const Encoding& inputEncoding, std::
       return outputEncoding;
     },
     [&](const Conditional& cond) {
+      gbcounter = 0;
       PRG prg;
       const auto seed = prg();
 
@@ -579,6 +590,7 @@ Encoding gb(const PRF& f, const Circuit& c, const Encoding& inputEncoding, std::
 
       gbTrans(prg, inputEncoding, interface.inputEncoding, transMat);
 
+      std::cout << gbcounter << '\n';
       return interface.outputEncoding;
     },
     [&](const Sequence& seq) {

@@ -74,7 +74,7 @@ Circuit conditional(const std::vector<Circuit>& cs) {
 }
 
 
-constexpr std::size_t n_repetitions = 10;
+constexpr std::size_t n_repetitions = 1;
 
 double experiment(const Circuit& c) {
   std::vector<double> results;
@@ -129,9 +129,10 @@ int main(int argc, char** argv) {
   /* } */
 
   std::vector<Circuit> cs;
-  for (std::size_t i = 1; i <= 32; ++i) {
+  for (std::size_t i = 1; i <= 64; ++i) {
     cs.push_back(sha);
-    std::cout << experiment(conditional(cs)) << '\n';
+    experiment(conditional(cs));
+    /* std::cout << experiment(conditional(cs)) << '\n'; */
   }
 
 
