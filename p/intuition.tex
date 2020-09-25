@@ -17,7 +17,8 @@ In this section we provide highest-level intuition, and provide a more detailed 
 
   
   Here is how we approach this.  Wlog, consider a balanced binary tree with $b$ branches as leaves. 
-  For each leaf $\ell$, define $i$-th {\em sibling subtree at level $i$} to be the subtree rooted in a sibling of $i$-th node on the path to $\ell$ from tree root.  Thus, each branch has $\lceil \log b \rceil$ sibling subtrees (exactly $\log b$ sibling subtrees in a balanced binary tree).
+  For each leaf $\ell$, define {\em sibling subtree at level $i$} (or  $i$-th  sibling subtree) to be the subtree rooted in a sibling of $i$-th node on the path to $\ell$ from tree root.  Thus, each branch has $\lceil \log b \rceil$ sibling subtrees (exactly $\log b$ sibling subtrees in a balanced binary tree).
+  We will call the root of a sibling subtree of a leaf $\ell$ a {\em sibling root of $\ell$}.
   Note that the $\lceil \log b \rceil$ sibling subtrees of a leaf $\ell$ 
   %are the $\lceil \log b \rceil$ 
   %largest   subtrees that 
