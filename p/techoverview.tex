@@ -7,7 +7,7 @@ We  now review in our main contributions with sufficient  detail to present most
 \subsection{$O(b\log b)$ Stacked Garbling}
 \label{sec:techOverviewSG}
 
-Our main contribution is reducing the computation associated with branch processing in SGC from $O(b^2)$ to $O(b \log b)$.
+Our main contribution is reducing the computation associated with branch processing in SGC from $O(b^2)$ to $O(b \log b)$.  Our constants are low, and together \G and \E make $\approx 3 b \log b$ calls to \Gb\ and $b\log b$ calls  to \Ev.  \vlad{to confirm exact numbers.}
 
 We now continue the discussion of~\Cref{sec:intuition} and add  technical detail.  
 Our main task is the garbage collection of output labels of {\em incorrectly guessed} (\truth,\guess) combinations 
@@ -32,47 +32,37 @@ Recall, as part of GC  evaluation, \aid is computed by the circuit, and \E obtai
  %each label 
 $S[i] \in \{S^0[i],S^1[i]\}$; \G of course knows all labels $S^0[i],S^1[i]$.
 % he uses the labels as seeds in garbling the branches as follows.
-\G  garbles branches  $C_0,...,C_7$ as follows.  \G generates  random seeds for 
-%each internal node and 
-each leaf in the tree.  He uses leaf seed $s_i$ to garble the branch $\cir_i$ and stacks all garbled branches $\mat=\bigoplus_i \gcir_i$.  \G additionally generates and sends to \E a garbled gadget that will aid \E in garbled  branch reconstructions.  We will explain how this gadget is constructed and used by defining how \E will process her guesses:
-%If \E guesses correct, and hence obtains  all seeds unequal to target branch, she will recover the evaluated garbled branch.
+
+\G  garbles branches  $C_0,...,C_7$ as follows.  \G generates  random seed for the root of the tree (denoted $s_{0-7}$ for the $8$-leaf tree in~\Cref{fig:seed-tree}), and uses it to pseudorandomly derive seeds for each node of the tree.  This is done in the standard manner, e.g. the immediate children of a seed $s$ are the PRF evaluations on inputs $0$ and $1$ with the key $s$.
+\G uses leaf seed $s_i$ to garble each branch $\cir_i$ and stacks all garbled branches $\mat=\bigoplus_i \gcir_i$.  
+
+%will take labels $\vec S$ as input, and
+
+\G additionally generates and sends to \E a garbled gadget \gadget that will aid \E in garbled branch reconstructions.  Specifically, \gadget can be applied to any tree node \node; it is constructed to 
+  allow  \E to correctly reconstruct the seed $s_\node$ if and only if \node is a {\em sibling root} (i.e.  a root of a sibling subtree) of the leaf \aid.   \gadget will input \aid in the form of the labels $\vec S$ and can easily be implemented as a collection of garbled rows.  Importantly, since this is a fixed gadget, when evaluated on a node \node that is not a sibling root of \aid, \E will obtain a {\em single} predictable to \G\   fixed garbage value. % for each specific leaf $\ell$.
+
+For example in~\Cref{fig:seed-tree}, if active branch is $\aid=4$, then applying the gadget to nodes $\node_{0-3}, \node_{6-7}, \node_{5}$ will allow the reconstruction of correct seeds $s_{0-3}, s_{6-7}, s_{5}$.  Applying \gadget to other nodes (which would under the hood mean decrypting a correspondingly different garbled row) will result in \E obtaining garbage seeds.
+
+
+\medskip
+
+It is now intuitive how \E will proceed with unstacking.  She will use the gadget and obtain a tree of random-looking seeds; of $2b$ seeds, only $\log b$ seeds off the path to \aid will be correct.
+\E will guess \guess; assuming \guess, she will use (only) the sibling seeds of \guess to derive all the $b-1$ leaf seeds.  She then garbles all branches $\cir_i$ and unstacks the corresponding GCs $\gcir_i$.
+
+Clearly, if $\guess=\aid$, she will reconstruct and unstack the intended garbled circuits, and therefore will obtain the intended circuit for evaluation.  Let's consider the case that her guess is wrong. Firstly, there is no security violation since she will never receive any additional seeds; \E will simply unstack wrong branches garbled with the wrong seeds.
 
 
 
 
-Let's return to our example of~\Cref{fig:seed-tree} with $b=8$ branches and $\guess=0$. Let's consider $\truth = 1$ (i.e. $\aid \in \{4,...,7\}$ and $S[0] = S^1[0]$).
-% and refer to the illustration of depicting the $b=8$ branches and the binary tree built on them.  It will be clear that this idea naturally generalizes to any \guess and $b$.  
 
-\E starts processing at the root of the tree.  Recall the basic SGC idea of~\HK: \E obtains seeds for reconstructing branches {\em not} taken and unstacks them based on its guess of the truth.  Since \E's $\guess=0$, she will need to unstack the {\em entire} level-1 sibling subtree tree $\truth = 1$ using obtained labels  $\vec S$.
-How convenient: \G could derive the seeds for the entire level-1 right subtree from a single  seed denoted $s_{4-7}$ on~\Cref{fig:seed-tree} (and symmetrically seeds for left subtree -- from seed $s_{0-3}$).  Now, following the \HK basic idea, since taken branch is in the right subtree, 
- \E will obtain the complementary label $S[0]=s_{0-3}$.  
- 
- She will use $S[0]$ to derive (incorrectly) seeds $s'_4-s'_7$ and will unstack all $C_4-C_7$ in a {\em single specific} wrong way, no matter what $\aid\in\{4,...,7\}$ is.  Second crucial idea now is to ensure that there is {\em no further variation} in \E obtaining garbage due to \E's attempted unstacking of other circuits $C_1-C_3$.  This is achieved with our garbled gadget, applied by \E at tree each traversal level $i$, that recognizes whether a \guess and \aid branches are in different sibling subtrees, and, if so, leads \E to deriving the {\em same} seeds for garbling the remaining unstacked circuits, no matter how the remaining bits of \truth and \guess relate.  This gadget is easy to construct, since for each element of $\vec S$, there are only two possible options.  We must of course be careful  that the seeds derived with the help of this gadget look like random strings, and ``true'' seeds used by \G are indistinguishable from the possible garbage seeds.
-
-To summarize, we showed that for our considered $\guess=0$ and {\em any}  $\aid \in \{4-7\}$, \E will unstack to obtain a single specific (incorrectly) recovered GC which she evaluates.
-
-Let's now consider the same $\guess=0$ and a different $\truth = 2$.  \E will obtain the label $S[0]=s_{4-7}$.  She will use it to (correctly) derive seeds $s_4-s_7$ and will unstack $C_4-C_7$.  She will then attempt to unstack the branches of the next sibling subtree $C_2-C_3$.  She received  $S[1] = s_{0-1}$, uses it (in conjunction with our gadget) to (incorrectly) derive $s_2,s_3$ and unstacks $C_2-C_3$ in a single specific wrong way. By the same argument as above, our gadget ensures that subsequent unstacking is identical  no matter how the remaining bits of \truth and \guess relate.
-
-Observe that for our considered $\guess=0$ and {\em any} true branch id $\in \{2-3\}$, \E will unstack to obtain a single specific (incorrectly) recovered GC which she evaluates.
-
-Continuing this argument, we conclude that all in all, for our considered $\guess=0$ and {\em any} true branch id unequal to \guess, \E will unstack to obtain one of exactly $\log b$ garbage circuits.
+Finally, we note  that this argument clearly generalizes to the tree of every size.
 
 
-Finally, we note  that this argument clearly generalized to every guess \guess.
+{\em Computational cost accounting.} Let's now verify that we indeed reduced the number of calls to \Gb\ and \Ev\ to $O(b \log b)$.  This is easily done by first considering how many such calls are made by \E.  
+Consider branch $\cir_i$.  It is garbled $\log b$ times, once with a seed derived at each level.  Thus, total number of calls by \E to \Gb\ is $b \log b$ and to \Ev\ is exactly $b$.  
 
-Let's now verify that we indeed reduced the number of calls to \Gb and \Ev to $\b log b$.  This is easily done by first considering how many such calls are made by \E.  Consider branch $C_i$.  It is garbled $\log b$ times, once with a seed derived at each level.  Total number of calls to \Ev by \E is exactly $b$.  To construct the gadget, \G emulates the work done by \E, and hence it also makes  $\log b$ calls to \Gb and $b$ calls to \Ev to obtain all garbage labels.
-
-
-
-\vlad{need to add argument counting total num evaluations}
-
-
-\vlad{end of argument}
-
-\bigskip
- relying on the fact that
-
-  \G including a garbled ga
+To construct the gadget, \G must obtain all possible garbage labels.  Hence \G emulates the work done by \E in its entirety  for {\em every} possible value of $\truth\in\{1,...,\log b\}$.  Hence it makes total  $b \log^2 b$ number of calls to \Gb\ and $b \log b$ calls to  \Ev.  
+%hence it  makes  $\log b$ calls per branch to \Gb\ and $b\log b$ total calls to \Ev\ to obtain all garbage labels.
 
 
 
@@ -81,6 +71,19 @@ Let's now verify that we indeed reduced the number of calls to \Gb and \Ev to $\
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+\ignore{
 
 
 
@@ -105,50 +108,16 @@ By way of example, let's consider the special case of $\guess=0$ and $\truth = 1
 
 
 
- Key idea of our work and difference from~\HK is that:
-\begin{itemize}
-	\item for any tree level $i$, if active branch is 
-	\item 
-\end{itemize}
-
-
 
 
  Consider at each level of the tree the dichotomy of whether leaves indexed by \guess and \truth are in the same subtree. Our idea is, given a fixed \guess, to  enforce that \E identically processes \guess for {\em all} values of \truth which belong to the same sibling subtree of guess. This narrows \G’s uncertainty for each value of \guess: each value of \guess has only $\log b$ possible \truth options, one for each sibling subtree of \guess.  In turn, this results in $b\log b$  sets of garbage labels, and $b\log b$ garblings required by \G. \todo{and by \E?}
 
-%In this work, we address the technical challenge of designing garbling gadgets and  the stacking  to support security and correctness 
 
-\medskip
-
+}
 
 
-the following is to move to technical intuition maybe.
-\begin{itemize}
 	
-	\item The conditional branches are \emph{nested}.
-	That is, instead of organizing $b$ branches as a vector, we
-	organize them into a binary tree.
-	Suppose \E guesses that a particular branch $\cir_i$ is taken,
-	while in fact $\cir_j$, a member of a different subtree, is taken.
-	The key idea of our approach is that we ensure that when \ev
-	garbles the entire subtree containg $\cir_j$ but not $\cir_i$, she
-	computes the same material, regardless of $j$.\todo{intuition still unclear}
-	\item The multiplexer is \emph{not stacked}.
-	The careful reader familiar with \cite{EPRINT:HeaKol20b} may be
-	confused about our key idea: Stacked Garbling first presents a
-	recursive binary tree approach to branching that they later
-	discard in favor of a more efficient vector approach.
-	So why is our binary tree approach better?
-	The problem with \cite{EPRINT:HeaKol20b}'s recursive construction
-	is that the evaluator recursively computes the multiplexer for
-	nested sub-conditionals.
-	However, doing so leads to a recursive emulation whereby \E
-	emulates herself (and hence \G emulates himself as well).
-	This recursion leads to quadratic cost for both players.
-	The way out is to treat the multiplexer separately, and to opt not
-	to stack it.
-	If multiplexers are not stacked, then \E need not compute them.
-\end{itemize}
+	
 
 
 % At a high level, the circuit generator, i.e. the player who constructs
@@ -158,7 +127,7 @@ the following is to move to technical intuition maybe.
 
 
 
-\subsection{Lower bound)}
+\subsection{Lower bound}
 \label{sec:techOverviewLB}
 
 
@@ -166,7 +135,7 @@ the following is to move to technical intuition maybe.
 
 
 
-\subsection{Stacked garbling without Random Oracles)}
+\subsection{Stacked garbling without Random Oracles}
 \label{sec:techOverviewRO}
 
 
