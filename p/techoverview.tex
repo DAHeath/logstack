@@ -46,10 +46,10 @@ For example in~\Cref{fig:seed-tree}, if active branch is $\aid=4$, then applying
 
 \medskip
 
-It is now intuitive how \E will proceed with unstacking.  She will use the gadget and obtain a tree of random-looking seeds; of $2b$ seeds, only $\log b$ seeds off the path to \aid will be correct.
+It is now intuitive how \E will proceed with unstacking.  She will use the gadget and obtain a tree of random-looking seeds; of $2b$ seeds, only $\log b$ seeds just off the path to \aid (corresponding to sibling roots) will be correct.
 \E will guess \guess; assuming \guess, she will use (only) the sibling seeds of \guess to derive all the $b-1$ leaf seeds.  She then garbles all branches $\cir_i$ and unstacks the corresponding GCs $\gcir_i$.
 
-Clearly, if $\guess=\aid$, she will reconstruct and unstack the intended garbled circuits, and therefore will obtain the intended circuit for evaluation.  Let's consider the case that her guess is wrong. Firstly, there is no security violation since she will never receive any additional seeds; \E will simply unstack wrong branches garbled with the wrong seeds.
+Clearly, if $\guess=\aid$, she will reconstruct and unstack the intended garbled circuits, and therefore will obtain the intended circuit for evaluation.  Let's consider the case that her guess is wrong. Firstly, there is no security violation since she will never receive any additional valid seeds; \E will simply unstack wrong branches garbled with the wrong seeds.
 
 
 
@@ -59,9 +59,9 @@ Finally, we note  that this argument clearly generalizes to the tree of every si
 
 
 {\em Computational cost accounting.} Let's now verify that we indeed reduced the number of calls to \Gb\ and \Ev\ to $O(b \log b)$.  This is easily done by first considering how many such calls are made by \E.  
-Consider branch $\cir_i$.  It is garbled $\log b$ times, once with a seed derived at each level.  Thus, total number of calls by \E to \Gb\ is $b \log b$ and to \Ev\ is exactly $b$.  
+Consider branch $\cir_i$.  It is garbled $\log b$ times, once with a seed (ultimately) derived from each seed on the path to the root. \vlad{rephrase?}  Thus, total number of calls by \E to \Gb\ is $b \log b$ and to \Ev\ is exactly $b$.  
 
-To construct the gadget, \G must obtain all possible garbage labels.  Hence \G emulates the work done by \E in its entirety  for {\em every} possible value of $\truth\in\{1,...,\log b\}$.  Hence it makes total  $b \log^2 b$ number of calls to \Gb\ and $b \log b$ calls to  \Ev.  
+To construct \gadget, \G must obtain all possible garbage labels.  Hence \G emulates the work done by \E in its entirety  for {\em every} possible value of $\truth\in\{1,...,\log b\}$.  Hence it makes total  $b \log^2 b$ number of calls to \Gb\ and $b \log b$ calls to  \Ev.  
 %hence it  makes  $\log b$ calls per branch to \Gb\ and $b\log b$ total calls to \Ev\ to obtain all garbage labels.
 
 
