@@ -38,8 +38,23 @@ $S[i] \in \{S^0[i],S^1[i]\}$; \G of course knows all labels $S^0[i],S^1[i]$.
 
 %will take labels $\vec S$ as input, and
 
+\ignore{
 \G additionally generates and sends to \E a garbled gadget \gadget that will aid \E in garbled branch reconstructions.  Specifically, \gadget can be applied to any tree node \node; it is constructed to 
   allow  \E to correctly reconstruct the seed $s_\node$ if and only if \node is a {\em sibling root} (i.e.  a root of a sibling subtree) of the leaf \aid.   \gadget will input \aid in the form of the labels $\vec S$ and can easily be implemented as a collection of garbled rows.  Importantly, since this is a fixed gadget, when evaluated on a node \node that is not a sibling root of \aid, \E will obtain a {\em single} predictable to \G\   fixed garbage value. % for each specific leaf $\ell$.
+}
+
+\G additionally generates and sends to \E a garbled gadget \gadget that will aid \E in garbled branch reconstructions.  Specifically, \gadget can be applied to any tree node \node; it is constructed to allow  \E to correctly reconstruct the seed $s_\node$ if and only if \node is a {\em sibling root} (i.e.  a root of a sibling subtree) of the leaf \aid.   \gadget will input \aid in the form of the labels $\vec S$ and can easily be implemented as a collection of garbled rows.  Importantly, since this is a fixed gadget, when evaluated on a node \node that is not a sibling root of \aid, \E will obtain a {\em single} predictable to \G\ fixed garbage value.  We need to ensure this garbage value is the same for every \aid. This is easy to do.  Details follow:
+
+
+
+The function of \gadget can be described in two steps:
+
+\gadget computes for each node \node in the tree the following function:
+Is \node a sibling root of $\aid$? This Boolean function can be efficiently realized using a GC with cost proportional to the size of the tree (i.e. $b$ AND gates \vlad{check}). Let $isSR_\node$ be the output of this function for \node.
+\gadget maps these encrypted truth values to seeds for each \node as follows:
+$(isSR_\node = 1 -> s_\node, 	isSR_\node = 0 -> \bot)$
+Where $\bot$ is a uniformly random string indistinguishable from $s_\node$. Informally, if a node is a sibling root of $\aid$, then Eval obtains the correct seed, and otherwise obtains a garbage seed. We implement this function using only a single garbled row per node.
+
 
 For example in~\Cref{fig:seed-tree}, if active branch is $\aid=4$, then applying the gadget to nodes $\node_{0-3}, \node_{6-7}, \node_{5}$ will allow the reconstruction of correct seeds $s_{0-3}, s_{6-7}, s_{5}$.  Applying \gadget to other nodes (which would under the hood mean decrypting a correspondingly different garbled row) will result in \E obtaining garbage seeds.
 
@@ -61,9 +76,23 @@ Finally, we note  that this argument clearly generalizes to the tree of every si
 {\em Computational cost accounting.} Let's now verify that we indeed reduced the number of calls to \Gb\ and \Ev\ to $O(b \log b)$.  This is easily done by first considering how many such calls are made by \E.  
 Consider branch $\cir_i$.  It is garbled $\log b$ times, once with a seed (ultimately) derived from each seed on the path to the root. \vlad{rephrase?}  Thus, total number of calls by \E to \Gb\ is $b \log b$ and to \Ev\ is exactly $b$.  
 
-To construct \gadget, \G must obtain all possible garbage labels.  Hence \G emulates the work done by \E in its entirety  for {\em every} possible value of $\truth\in\{1,...,\log b\}$.  Hence it makes total  $b \log^2 b$ number of calls to \Gb\ and $b \log b$ calls to  \Ev.  
-%hence it  makes  $\log b$ calls per branch to \Gb\ and $b\log b$ total calls to \Ev\ to obtain all garbage labels.
 
+
+
+To construct \gadget, \G must obtain all possible garbage labels. 
+We now demonstrate that the total cost to the generator is $b (\log b + 1)$ calls to \Gb\ and $b \log b$ calls to \Ev.
+First let’s consider only \Gb\ and consider the number of ways \E\ can garble a specific circuit $\cir_i$. Clearly, this is exactly $\log b+1$.
+
+Now let’s consider the number of calls needed to \Ev.
+Recall that our goal was to ensure that \E constructs the same garbage output labels for a branch $\cir_i$ in each scenario where \aid is in some fixed sibling subtree of $\cir_i$. Note that the logic of our gadget ensures that \E will obtain the same sibling root seeds in each of these scenarios, and therefore she will construct the same garblings. Hence, since there are $\log b$ sibling subtrees of $\cir_i$, $\cir_i$ has only $\log b$ possible garbage output labels.
+
+
+
+\ignore{
+
+ Hence \G emulates the work done by \E in its entirety  for {\em every} possible value of $\truth\in\{1,...,\log b\}$.  Hence it makes total  $b \log^2 b$ number of calls to \Gb\ and $b \log b$ calls to  \Ev.  
+%hence it  makes  $\log b$ calls per branch to \Gb\ and $b\log b$ total calls to \Ev\ to obtain all garbage labels.
+}
 
 
 
