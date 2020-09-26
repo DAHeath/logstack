@@ -10,15 +10,15 @@
 using Label = std::bitset<128>;
 
 
-template <typename Val>
+template <typename Rep>
 struct Boolean {
 public:
   Boolean() : isConstant(false), constant(false) { }
   Boolean(bool b) : isConstant(true), constant(b) { }
 
 
-  static Boolean input() { return Boolean(Val::input()); }
-  void output() {
+  static Boolean input() { return Boolean(Rep::input()); }
+  void output() const {
     assert(!isConstant);
     val.output();
   }
@@ -31,9 +31,9 @@ public:
     } else if (isConstant) {
       return { ~o.val };
     } else if (o.isConstant && !o.constant) {
-      return { false };
-    } else if (o.isConstant) {
       return *this;
+    } else if (o.isConstant) {
+      return { ~val };
     } else {
       return { val ^ o.val };
     }
@@ -55,38 +55,40 @@ public:
     }
   }
 
-  Bool operator~() const { return *this ^ Bool { true }; }
+  Boolean operator~() const { return *this ^ Boolean { true }; }
 
-  Bool operator|(const Bool& o) const { return ~(~(*this) & ~o); }
+  Boolean operator|(const Boolean& o) const { return ~(~(*this) & ~o); }
 
-  Bool& operator^=(const Bool& o) {
+  Boolean& operator^=(const Boolean& o) {
     *this = *this ^ o;
     return *this;
   }
 
-  Bool& operator&=(const Bool& o) {
+  Boolean& operator&=(const Boolean& o) {
     *this = *this & o;
     return *this;
   }
 
-  Bool& operator|=(const Bool& o) {
+  Boolean& operator|=(const Boolean& o) {
     *this = *this | o;
     return *this;
   }
 
 
 private:
-  Boolean(const Val& val) : isConstant(false), val(val) { }
+  Boolean(const Rep& val) : isConstant(false), val(val) { }
 
   bool isConstant;
   bool constant;
-  Val val;
+  Rep val;
 };
 
 
 struct Gen {
   struct Ctxt {
     std::span<Label> material;
+    std::span<Label> inps;
+    std::span<Label> outs;
     Label delta;
     std::size_t nonce;
     PRF f;
@@ -94,128 +96,102 @@ struct Gen {
 
   static thread_local Ctxt ctxt;
 
-  struct Bool {
+  struct Rep {
   public:
-    Bool() : label(0), isConstant(false) { }
-    Bool(bool b) : label(b ? 1 : 0), isConstant(true) { }
-
-    Bool operator&(const Bool&) const;
-    Bool operator^(const Bool&) const;
-
-    Bool operator~() const { return *this ^ Bool { true }; }
-    Bool operator|(const Bool& o) const { return ~(~(*this) & ~o); }
-
-    Bool& operator^=(const Bool& o) {
-      *this = *this ^ o;
-      return *this;
+    static Rep input() {
+      Label l = ctxt.inps[0];
+      ctxt.inps = ctxt.inps.subspan(1);
+      return { l };
     }
 
-    Bool& operator&=(const Bool& o) {
-      *this = *this & o;
-      return *this;
+    void output() const {
+      ctxt.outs[0] = label;
+      ctxt.outs = ctxt.outs.subspan(1);
     }
 
-    Bool& operator|=(const Bool& o) {
-      *this = *this | o;
-      return *this;
-    }
+    Rep() : label(0) { }
+
+    Rep operator&(const Rep&) const;
+    Rep operator^(const Rep& o) const { return { label ^ o.label }; }
+    Rep operator~() const { return { label ^ ctxt.delta }; }
 
   private:
-    Bool(const Label& label, bool isConstant) : label(label), isConstant(isConstant) { }
+    Rep(const Label& label) : label(label) { }
 
     Label label;
-    bool isConstant;
   };
+
+  using Bool = Boolean<Rep>;
 };
 
 
 struct Eval {
   struct Ctxt {
     std::span<Label> material;
+    std::span<Label> inps;
+    std::span<Label> outs;
     std::size_t nonce;
     PRF f;
   };
 
   static thread_local Ctxt ctxt;
 
-  struct Bool {
+  struct Rep {
   public:
-    Bool() : label(0), isConstant(false) { }
-    Bool(bool b) : label(b ? 1 : 0), isConstant(true) { }
-
-    Bool operator&(const Bool&) const;
-    Bool operator^(const Bool&) const;
-
-    Bool operator~() const { return *this ^ Bool { true }; }
-
-    Bool operator|(const Bool& o) const { return ~(~(*this) & ~o); }
-
-    Bool& operator^=(const Bool& o) {
-      *this = *this ^ o;
-      return *this;
+    static Rep input() {
+      Label l = ctxt.inps[0];
+      ctxt.inps = ctxt.inps.subspan(1);
+      return { l };
     }
 
-    Bool& operator&=(const Bool& o) {
-      *this = *this & o;
-      return *this;
+    void output() const {
+      ctxt.outs[0] = label;
+      ctxt.outs = ctxt.outs.subspan(1);
     }
 
-    Bool& operator|=(const Bool& o) {
-      *this = *this | o;
-      return *this;
-    }
+    Rep() : label(0) { }
+
+    Rep operator&(const Rep&) const;
+    Rep operator^(const Rep& o) const { return { label ^ o.label }; }
+    Rep operator~() const { return { label }; }
 
   private:
-    Bool(const Label& label, bool isConstant) : label(label), isConstant(isConstant) { }
+    Rep(const Label& label) : label(label) { }
 
     Label label;
-    bool isConstant;
   };
+
+  using Bool = Boolean<Rep>;
+};
+
+
+struct CircuitDesc {
+  std::size_t nInp;
+  std::size_t nOut;
+  std::size_t nRow;
 };
 
 
 struct Count {
-  struct Ctxt {
-    std::size_t nInp;
-    std::size_t nOut;
-    std::size_t nRow;
+  static thread_local CircuitDesc ctxt;
+
+  struct Rep {
+    static Rep input() { ++ctxt.nInp; return Rep { }; }
+    void output() const { ++ctxt.nOut; }
+
+    Rep operator&(const Rep&) const { ctxt.nRow += 2; return Rep { }; }
+    Rep operator^(const Rep&) const { return Rep { }; }
+    Rep operator~() const { return Rep { }; }
   };
 
-  static thread_local Ctxt ctxt;
+  using Bool = Boolean<Rep>;
+};
 
-  struct Bool {
-  public:
-    Bool() : isConstant(false), constant(false) { }
-    Bool(bool b) : isConstant(true), constant(b) { }
 
-    Bool operator&(const Bool&) const;
-    Bool operator^(const Bool&) const;
-
-    Bool operator~() const { return *this ^ Bool { true }; }
-
-    Bool operator|(const Bool& o) const { return ~(~(*this) & ~o); }
-
-    Bool& operator^=(const Bool& o) {
-      *this = *this ^ o;
-      return *this;
-    }
-
-    Bool& operator&=(const Bool& o) {
-      *this = *this & o;
-      return *this;
-    }
-
-    Bool& operator|=(const Bool& o) {
-      *this = *this | o;
-      return *this;
-    }
-
-  private:
-    Bool(bool isConstant, bool constant) : isConstant(isConstant), constant(constant) { }
-
-    bool isConstant;
-    bool constant;
-  };
+struct Circuit {
+  void (*gb)(void);
+  void (*ev)(void);
+  CircuitDesc desc;
 };
 
 
