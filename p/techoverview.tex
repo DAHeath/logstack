@@ -7,54 +7,108 @@ We  now review in our main contributions with sufficient  detail to present most
 \subsection{$O(b\log b)$ Stacked Garbling}
 \label{sec:techOverviewSG}
 
-Our main contribution is reducing the computation associated with branch processing in SGC from $O(b^2)$ to $O(b \log b)$.  Our constants are low, and together \G and \E make $\approx 3 b \log b$ calls to \Gb\ and $b\log b$ calls  to \Ev.  \vlad{to confirm exact numbers.}
+Our main contribution is the reduction of SGC computation
+from $O(b^2)$ to $O(b \log b)$.  Our constants are also
+low: together \G and \E make a total of $2 b \log b + b$ calls to \Gb\
+and $b(\log b + 1)$ calls  to \Ev.
 
-We now continue the discussion of~\Cref{sec:intuition} and add  technical detail.  
-Our main task is the garbage collection of output labels of {\em incorrectly guessed} (\truth,\guess) combinations 
+We now continue the discussion from~\Cref{sec:intuition} in more detail.
+Our main task is the garbage collection of output labels of {\em
+incorrectly guessed} $(\truth, \guess)$ combinations 
 %w.r.t. taken (active) branch, 
 where
-\guess is \E's guess of the active branch, and \truth defines the active branch w.r.t. \guess.   Wlog, let $b$ be a power of $2$ to simplify notation.
+\guess is \E's guess of the active branch, and \truth defines the active branch w.r.t. \guess.
+Wlog, let $b$ be a power of $2$ to simplify notation.
 
 Fix one of $b$ choices for \guess.  In contrast with previous work~\HK, which then considers $b$ choices for \truth independently from \guess, we define \truth\ {\em in relation} to \guess, and consider fewer \truth options.  Namely,
 % for each tree level $i$, 
-we  let \truth  denote in which sibling subtree of \guess the executed branch resides (cf. discussion in~\Cref{sec:intuition}).  There are $\log b$ choices for this \truth.
+we  let \truth  denote in which sibling subtree of \guess the executed branch resides (cf. discussion in~\Cref{sec:intuition}). 
+Given fixed \guess, there are only $\log b$ choices for \truth.
 
-Consider an illustrative example of~\Cref{fig:seed-tree}, where $\guess=0$.  Then any of active branches $C_4-C_7$ will correspond to $\truth = 1$ as they all belong to the level-$1$ sibling subtree of $C_0$.  We want \E's unstacking and evaluation to result in identical garbage output labels across all cases when active branch is one of $C_4-C_7$  (and similarly across each level-$i$ subtree).  To achieve this, \E will use garbled labels corresponding to the ID of the active branch \aid.
+Consider the illustrative example in~\Cref{fig:seed-tree}, where $\guess=0$.
+Consider the four scenarios where branches $C_4-C_7$ are active.
+These four scenarios each correspond
+to $\truth = 1$: $C_4-C_7$ all belong to the level-$1$ sibling subtree of
+$C_0$.
+%
+Our objective is to ensure that \E's unstacking and evaluation in each
+of these four cases is \emph{identical} (and similarly for each
+level-$i$ subtree).
+Let \aid denote the ID of the active branch. That is, \aid is a $\log
+b$-bit integer that points to the active branch.
+% To achieve our objective, \E will use garbled labels corresponding to
+% \aid to compute seeds for the various nodes in the tree.
 
-% We achieve this by 
+% Recall, as part of GC  evaluation, \aid is computed by the circuit, and \E obtains the corresponding $ \log b$-long vector of GC labels $\vec S$, where
+% $S[i] \in \{S^0[i],S^1[i]\}$; \G of course knows all labels $S^0[i],S^1[i]$.
 
-% (the choice of $\truth = 0$ is only valid for the correct guess), one of which corresponds to the correct guess.  If  the guess is correct, active branch resides in none of the $\log b$ sibling subtrees, and we can denote $\truth=0$ in this case. 
+\G  garbles branches  $C_0,...,C_7$ as follows.  \G chooses a random
+seed for the root of the tree (denoted $s_{0-7}$ for the $8$-leaf tree
+in~\Cref{fig:seed-tree}), and uses it to pseudorandomly derive seeds
+for each node of the tree.  This is done in the standard manner, e.g.
+the immediate children of a seed $s$ are the PRF evaluations on inputs
+$0$ and $1$ with the key $s$.
+\G uses each leaf seed $s_i$ to garble the corresponding branch $\cir_i$ and stacks all garbled branches $\mat=\bigoplus_i \gcir_i$.  
+%
+This material $\mat$ is the large string that \G\ ultimately sends
+across the network to \E.
+We note two facts about $\mat$ and about the active branch $\aid$.
+\begin{enumerate}
+  \item \textbf{Correctness}: if \E\ obtains the $\log b$ seeds of the
+    \emph{sibling roots} (i.e.  a root of a sibling subtree) of
+    $\aid$, then she can regarble all circuits $\gcir_{i\neq \act}$,
+    unstack by XORing with \mat, and obtain $\gcir_\act$, allowing her to
+    correctly evaluate $\cir_\act$.
+  \item \textbf{Security}: \E\ cannot obtain any correct seed
+    corresponding to any ancestor of \aid. If she could, she would learn (by garbling) the
+    encoding of wire labels which would allow her to decrypt all
+    intermediate wire values in $\cir_\act$.
+    %
+    Instead, \E\ will be given `garbage' seeds indistinguishable yet
+    distinct from the correct seeds.
+\end{enumerate}
 
-%We now show how \G and \E can efficiently process each of the $b\log b$ cases.   
+To account for these two facts,
+\G additionally generates and sends to \E a small (linear in the
+number of branches with small constants) garbled gadget
+\gadget that aids \E in securely reconstructing material for the
+branches.
+Specifically, \gadget takes as input labels corresponding to \aid and
+produces as output seeds for each node in the tree.
+For each node \node, \gadget constructs a correct seed $s_\node$
+if and only if \node is a sibling root  of the leaf \aid.
+\gadget can easily be implemented as a collection of garbled rows.
+Importantly, since this is a fixed
+gadget, when evaluated on a node \node that is not a sibling root of
+\aid, \E will obtain a {\em single} predictable to \G\ fixed garbage
+seed. 
+% We need to ensure this garbage value is the same for every
+% \aid. This is easy to do.  Details follow:
 
-Recall, as part of GC  evaluation, \aid is computed by the circuit, and \E obtains the corresponding $ \log b$-long vector of GC labels $\vec S$, where
-%, whose corresponding plaintext values define the id of the active branch. 
- %each label 
-$S[i] \in \{S^0[i],S^1[i]\}$; \G of course knows all labels $S^0[i],S^1[i]$.
-% he uses the labels as seeds in garbling the branches as follows.
-
-\G  garbles branches  $C_0,...,C_7$ as follows.  \G generates  random seed for the root of the tree (denoted $s_{0-7}$ for the $8$-leaf tree in~\Cref{fig:seed-tree}), and uses it to pseudorandomly derive seeds for each node of the tree.  This is done in the standard manner, e.g. the immediate children of a seed $s$ are the PRF evaluations on inputs $0$ and $1$ with the key $s$.
-\G uses leaf seed $s_i$ to garble each branch $\cir_i$ and stacks all garbled branches $\mat=\bigoplus_i \gcir_i$.  
-
-%will take labels $\vec S$ as input, and
-
-\ignore{
-\G additionally generates and sends to \E a garbled gadget \gadget that will aid \E in garbled branch reconstructions.  Specifically, \gadget can be applied to any tree node \node; it is constructed to 
-  allow  \E to correctly reconstruct the seed $s_\node$ if and only if \node is a {\em sibling root} (i.e.  a root of a sibling subtree) of the leaf \aid.   \gadget will input \aid in the form of the labels $\vec S$ and can easily be implemented as a collection of garbled rows.  Importantly, since this is a fixed gadget, when evaluated on a node \node that is not a sibling root of \aid, \E will obtain a {\em single} predictable to \G\   fixed garbage value. % for each specific leaf $\ell$.
-}
-
-\G additionally generates and sends to \E a garbled gadget \gadget that will aid \E in garbled branch reconstructions.  Specifically, \gadget can be applied to any tree node \node; it is constructed to allow  \E to correctly reconstruct the seed $s_\node$ if and only if \node is a {\em sibling root} (i.e.  a root of a sibling subtree) of the leaf \aid.   \gadget will input \aid in the form of the labels $\vec S$ and can easily be implemented as a collection of garbled rows.  Importantly, since this is a fixed gadget, when evaluated on a node \node that is not a sibling root of \aid, \E will obtain a {\em single} predictable to \G\ fixed garbage value.  We need to ensure this garbage value is the same for every \aid. This is easy to do.  Details follow:
-
-
-
-The function of \gadget can be described in two steps:
-
-\gadget computes for each node \node in the tree the following function:
-Is \node a sibling root of $\aid$? This Boolean function can be efficiently realized using a GC with cost proportional to the size of the tree (i.e. $b$ AND gates \vlad{check}). Let $isSR_\node$ be the output of this function for \node.
-\gadget maps these encrypted truth values to seeds for each \node as follows:
-$(isSR_\node = 1 -> s_\node, 	isSR_\node = 0 -> \bot)$
-Where $\bot$ is a uniformly random string indistinguishable from $s_\node$. Informally, if a node is a sibling root of $\aid$, then Eval obtains the correct seed, and otherwise obtains a garbage seed. We implement this function using only a single garbled row per node.
-
+In more detail, \gadget can be described in two steps:
+\begin{enumerate}
+  \item
+    \gadget computes for each node \node in the tree the following function:
+    `Is \node a sibling root of $\aid$?' This Boolean function can be
+    efficiently realized using a GC with cost proportional to the size
+    of the tree (i.e. $2b$ AND gates). Let $isSR_\node$ be
+    the output of this function for node \node.
+  \item
+    \gadget maps the above intermediate encrypted truth values to
+    seeds for each \node as follows:
+    \[
+    es_\node =
+    \begin{cases}
+        s_\node,& \text{if } isSR_\node\\
+        s_\node',& \text{otherwise}
+    \end{cases}
+  \]
+    Where $s_\node'$ is a uniform string indistinguishable from
+    $s_\node$. If \node is a sibling root of $\aid$, then
+    \E\ obtains the correct seed, and otherwise obtains a garbage
+    seed. We implement this function using only a single garbled row
+    per node.
+\end{enumerate}
 
 For example in~\Cref{fig:seed-tree}, if active branch is $\aid=4$, then applying the gadget to nodes $\node_{0-3}, \node_{6-7}, \node_{5}$ will allow the reconstruction of correct seeds $s_{0-3}, s_{6-7}, s_{5}$.  Applying \gadget to other nodes (which would under the hood mean decrypting a correspondingly different garbled row) will result in \E obtaining garbage seeds.
 
