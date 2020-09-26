@@ -2,7 +2,55 @@
 
 \begin{figure}
   \begin{align*}
+    &\func_\gadget(\vec S):\\
+    &~~\codecomment{delegate to a recursive subprocedure}\\
+    &~~\codecomment{the root of the overall tree is always an ancestor
+    of \aid}\\
+    &~~\creturn~\func_\gadget'(\vec S, 1)\\
+    \\
+    &\func_\gadget'(\vec S, isAncestor):\\
+    &~~\codecomment{$isAncestor$ indicates if the current node is an ancestor of \aid}\\
+    &~~\cif~empty(\vec S):\\
+    &~~~~\codecomment{when we reach the bottom of the tree, no
+    seeds are needed}\\
+    &~~~~\creturn~[~]\\
+    &~~\celse:\\
+    &~~~~\codecomment{split the index $\vec S$ into the first bit and
+    the remaining bits}\\
+    &~~~~S \gets \vec S[0]\\
+    &~~~~\vec S' \gets \vec S[1..]\\
+    &~~~~isSR_l \gets isAncestor\cdot S \quad\codecomment{is the left
+    child a sibling root of \aid?}\\
+    &~~~~isSR_r \gets isAncestor\cdot \neg S \quad \codecomment{is the
+    right child a sibling root of \aid?}\\
+    &~~~~s_l \gets toSeed(isSR_l)\\
+    &~~~~s_r \gets toSeed(isSR_r)\\
+    &~~~~\codecomment{recursively step to children and compute remaining seeds}.\\
+    &~~~~\codecomment{if right child is a sibling root of \aid,
+    then left child is an ancestor of \aid}\\
+    &~~~~\vec s_l \gets \func_\gadget'(\vec S', isSR_r)\\
+    &~~~~\vec s_r \gets \func_\gadget'(\vec S', isSR_l)\\
+    &~~~~\codecomment{concatenate all partial results into one
+    vector}\\
+    &~~~~\creturn~s_l \mid \vec s_l\mid  s_r\mid  \vec s_r\\
+    \\
+    &toSeed(isSR_\node) = 
+    \begin{cases}
+        s_\node,& \text{if } isSR_\node\\
+        s_\node',& \text{otherwise}
+    \end{cases}
   \end{align*}
+  \caption{%
+    The functionality for the garbled gadget \gadget, $\func_\gadget$.
+    $\func_\gadget$ computes for \E a vector of the needed seeds for her
+    evaluation of the conditional circuit. For each sibling root \node of
+    the active branch \aid, $\func_\gadget$ outputs the correct seed
+    $s_\node$. For the remaining nodes, $\func_\gadget$ outputs
+    $s'_\node$, an incorrect seed.
+    %
+    As presented, $\func_\gadget$ is for a complete binary tree.
+    $\func_\gadget$ is easily realized as a garbled circuit.
+  }\label{fig:gadget-func}
 \end{figure}
 
 
