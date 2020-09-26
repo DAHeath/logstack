@@ -1,4 +1,4 @@
-#include "gen.h"
+#include "circuit.h"
 
 
 thread_local Gen::Ctxt Gen::ctxt;
@@ -50,4 +50,52 @@ Eval::Rep Eval::Rep::operator&(const Eval::Rep& o) const {
   ctxt.nonce += 2;
 
   return { (A&B) ^ X ^ Y };
+}
+
+
+Interface gb(PRG& prg, const PRF& prf, const Circuit& c, std::span<Label> mat) {
+  Interface interface;
+
+  interface.inpEnc.delta = prg();
+  interface.inpEnc.delta[0] = 1;
+  interface.inpEnc.zeros.resize(c.desc.nInp);
+
+  for (auto& i: interface.inpEnc.zeros) { i = prg(); }
+
+  interface.outEnc.zeros.resize(c.desc.nOut);
+
+  const auto stash = Gen::ctxt;
+
+  Gen::ctxt.material = mat;
+  Gen::ctxt.delta = interface.inpEnc.delta;
+  Gen::ctxt.inps = interface.inpEnc.zeros;
+  Gen::ctxt.outs = interface.outEnc.zeros;
+  Gen::ctxt.nonce = 0;
+  Gen::ctxt.f = prf;
+
+  c.gb();
+
+  interface.outEnc.delta = Gen::ctxt.delta;
+
+  Gen::ctxt = stash;
+
+  return interface;
+}
+
+
+Labelling ev(const PRF& prf, const Circuit& c, const Labelling& inp, std::span<Label> mat) {
+  Labelling out(c.desc.nOut);
+
+  const auto stash = Eval::ctxt;
+
+  Eval::ctxt.material = mat;
+  Eval::ctxt.inps = inp;
+  Eval::ctxt.outs = out;
+  Eval::ctxt.nonce = 0;
+  Eval::ctxt.f = prf;
+
+  c.ev();
+
+  Eval::ctxt = stash;
+  return out;
 }

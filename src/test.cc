@@ -1,37 +1,7 @@
-#include "gen.h"
+#include "circuit.h"
 #include "u32.h"
 #include <array>
 #include <iostream>
-
-
-template <typename Gb, typename Ev, typename Desc>
-Circuit compile(const Gb& gb, const Ev& ev, const Desc& desc) {
-  CircuitDesc tmp = Count::ctxt;
-  Count::ctxt = { };
-  desc();
-  const auto d = Count::ctxt;
-  Count::ctxt = tmp;
-
-  return { gb, ev, d };
-}
-
-
-#define CIRCUIT(name) \
-  template <typename Bool> \
-  void name##IMPL() {
-
-#define END_CIRCUIT(name) \
-  } \
-  const Circuit name = compile(name##IMPL<Gen::Bool>, name##IMPL<Eval::Bool>, name##IMPL<Count::Bool>);
-
-
-CIRCUIT(test)
-  const auto x = Bool::input();
-  const auto y = Bool::input();
-  const auto z = Bool::input();
-
-  ((x & y) ^ z).output();
-END_CIRCUIT(test)
 
 
 template <typename Bool>
@@ -109,9 +79,44 @@ CIRCUIT(sha)
 END_CIRCUIT(sha)
 
 
+CIRCUIT(test)
+  const auto a = Bool::input();
+  const auto b = Bool::input();
+  (a&b).output();
+END_CIRCUIT(test)
+
+
 
 int main() {
-  std::cout << sha.desc.nInp << '\n';
-  std::cout << sha.desc.nOut << '\n';
-  std::cout << sha.desc.nRow << '\n';
+  const auto c = sha;
+
+  std::vector<Label> material(c.desc.nRow);
+
+
+  PRG prg;
+  PRF prf;
+  const auto interface = gb(prg, prf, c, material);
+
+
+
+  Labelling inp(c.desc.nInp);
+  for (std::size_t i = 0; i < inp.size(); ++i) {
+    inp[i] = interface.inpEnc.zeros[i];
+  }
+  const auto out = ev(prf, c, inp, material);
+  for (std::size_t i = 0; i < c.desc.nOut; ++i) {
+    if (out[i] == interface.outEnc.zeros[i]) {
+      std::cout << '0';
+    } else if (out[i] == (interface.outEnc.zeros[i] ^ interface.outEnc.delta)) {
+      std::cout << '1';
+    } else {
+      std::cerr << "ERROR\n";
+      std::cerr << out[i] << '\n';
+      std::cerr << interface.outEnc.zeros[i] << '\n';
+      std::cerr << (interface.outEnc.zeros[i] ^ interface.outEnc.delta) << '\n';
+      std::cerr << interface.outEnc.delta << '\n';
+      std::exit(1);
+    }
+  }
+  std::cout << '\n';
 }

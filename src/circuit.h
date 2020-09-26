@@ -3,6 +3,7 @@
 
 
 #include "prf.h"
+#include "prg.h"
 #include <vector>
 #include <span>
 
@@ -128,7 +129,7 @@ struct Gen {
 struct Eval {
   struct Ctxt {
     std::span<Label> material;
-    std::span<Label> inps;
+    std::span<const Label> inps;
     std::span<Label> outs;
     std::size_t nonce;
     PRF f;
@@ -193,6 +194,45 @@ struct Circuit {
   void (*ev)(void);
   CircuitDesc desc;
 };
+
+
+template <typename Gb, typename Ev, typename Desc>
+Circuit compile(const Gb& gb, const Ev& ev, const Desc& desc) {
+  CircuitDesc tmp = Count::ctxt;
+  Count::ctxt = { };
+  desc();
+  const auto d = Count::ctxt;
+  Count::ctxt = tmp;
+
+  return { gb, ev, d };
+}
+
+
+#define CIRCUIT(name) \
+  template <typename Bool> \
+  void name##IMPL() {
+
+#define END_CIRCUIT(name) \
+  } \
+  const Circuit name = compile(name##IMPL<Gen::Bool>, name##IMPL<Eval::Bool>, name##IMPL<Count::Bool>);
+
+
+using Labelling = std::vector<Label>;
+
+struct Encoding {
+  Labelling zeros;
+  Label delta;
+};
+
+
+struct Interface {
+  Encoding inpEnc;
+  Encoding outEnc;
+};
+
+
+Interface gb(PRG&, const PRF&, const Circuit&, std::span<Label>);
+Labelling ev(const PRF&, const Circuit&, const Labelling&, std::span<Label>);
 
 
 #endif

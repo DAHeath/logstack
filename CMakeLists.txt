@@ -34,6 +34,6 @@ file(GLOB sources "src/*.cc")
 # target_include_directories(${NAME} PUBLIC src ${OPENSSL_INCLUDE_DIR})
 # target_link_libraries(${NAME} ${OPENSSL_LIBRARIES})
 
-add_executable(Test src/test.cc src/gen.cc src/prf.cc)
+add_executable(Test src/test.cc src/circuit.cc src/prf.cc)
 target_include_directories(Test PUBLIC src ${OPENSSL_INCLUDE_DIR})
 target_link_libraries(Test ${OPENSSL_LIBRARIES})
