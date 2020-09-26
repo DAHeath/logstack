@@ -150,4 +150,21 @@ std::pair<Labelling, Labelling> evDem(
     std::span<const Label>,
     std::span<Label>);
 
+
+std::vector<Label> gbGadget(
+    std::size_t,
+    const PRF&,
+    const Label& delta,
+    std::span<const Label> inseeds,
+    std::span<const Label> index,
+    std::span<Label>& mat);
+
+
+std::vector<Label> evGadget(
+    std::size_t b,
+    const PRF& f,
+    std::span<const Label> index,
+    std::span<Label>& mat);
+
+
 #endif

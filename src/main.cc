@@ -119,23 +119,57 @@ double experiment(const Circuit& c) {
 
 
 int main(int argc, char** argv) {
-  {
-    std::array<u32, 16> inp;
-    for (auto& i: inp) { i = u32::input(); }
+  /* { */
+  /*   std::array<u32, 16> inp; */
+  /*   for (auto& i: inp) { i = u32::input(); } */
 
-    const auto out = sha256(inp);
+  /*   const auto out = sha256(inp); */
 
-    for (const auto& o: out) { o.output(); }
+  /*   for (const auto& o: out) { o.output(); } */
+  /* } */
+
+  /* const auto sha = Bool::compile(); */
+
+  /* std::vector<Circuit> cs; */
+  /* for (std::size_t i = 1; i <= 64; ++i) { */
+  /*   cs.push_back(sha); */
+  /*   std::cout << experiment(conditional(cs)) << '\n'; */
+  /* } */
+
+
+  PRG prg;
+  PRF f;
+
+
+  const auto enc = genEncoding(prg, 3);
+
+  const auto b = 5;
+
+  std::vector<Label> seeds(2*b - 2);
+  for (std::size_t i = 0; i < 2*b - 2; ++i) {
+    seeds[i] = prg();
   }
 
-  const auto sha = Bool::compile();
+  Material m(40);
+  for (auto& r: m) { r = 0; }
+  std::span<Label> mat(m);
+  const auto bad = gbGadget(b, f, enc.delta, seeds, enc.zeros, mat);
 
-  std::vector<Circuit> cs;
-  for (std::size_t i = 1; i <= 64; ++i) {
-    cs.push_back(sha);
-    std::cout << experiment(conditional(cs)) << '\n';
+
+  mat = m;
+
+  Labelling index = enc.zeros;
+  index[0] ^= enc.delta;
+  index[1] ^= enc.delta;
+
+  const auto actual = evGadget(b, f, index, mat);
+
+
+  for (std::size_t i = 0; i < seeds.size(); ++i) {
+    std::cout << actual[i] << '\n';
+    std::cout << seeds[i] << '\n';
+    std::cout << bad[i] << "\n\n";
   }
-
 
 
 }

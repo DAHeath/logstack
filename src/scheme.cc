@@ -341,6 +341,115 @@ void evGate(
 }
 
 
+void gbGadget_rec(
+    std::size_t b,
+    const PRF& f,
+    const Label& delta,
+    std::span<const Label> inseeds,
+    std::span<Label> outseeds,
+    std::span<const Label> index,
+    const Label& isAncestor0,
+    std::span<Label>& mat) {
+  if (b > 1) {
+    std::size_t nonce = 0;
+    const auto isAncestorR0 = gbAnd(f, delta, index[0], isAncestor0, mat, nonce);
+    const auto isAncestorL0 = isAncestorR0 ^ isAncestor0;
+
+    const auto bL = b/2;
+    const auto bR = b - bL;
+
+    mat[0] ^= isAncestorR0 ^ inseeds[0] ^ delta;
+    outseeds[0] = inseeds[0] ^ delta;
+    mat[1] ^= isAncestorL0 ^ inseeds[2*bL-1] ^ delta;
+    outseeds[2*bL-1] = inseeds[2*bL-1] ^ delta;
+    mat = mat.subspan(2);
+
+    gbGadget_rec(bL, f, delta, inseeds.subspan(1, 2*bL-1), outseeds.subspan(1, 2*bL-1), index.subspan(1), isAncestorL0, mat);
+    gbGadget_rec(bR, f, delta, inseeds.subspan(2*bL), outseeds.subspan(2*bL), index.subspan(1), isAncestorR0, mat);
+  }
+}
+
+
+std::vector<Label> gbGadget(
+    std::size_t b,
+    const PRF& f,
+    const Label& delta,
+    std::span<const Label> inseeds,
+    std::span<const Label> index,
+    std::span<Label>& mat) {
+  std::vector<Label> out(inseeds.size());
+
+  std::span<Label> outseeds(out);
+
+  const auto isAncestorR0 = index[0];
+  const auto isAncestorL0 = index[0] ^ delta;
+
+  const auto bL = b/2;
+  const auto bR = b - bL;
+  mat[0] ^= isAncestorR0 ^ inseeds[0] ^ delta;
+  outseeds[0] = inseeds[0] ^ delta;
+  mat[1] ^= isAncestorL0 ^ inseeds[2*bL-1] ^ delta;
+  outseeds[2*bL-1] = inseeds[2*bL-1] ^ delta;
+  mat = mat.subspan(2);
+
+  gbGadget_rec(bL, f, delta, inseeds.subspan(1, 2*bL-1), outseeds.subspan(1, 2*bL-1), index.subspan(1), isAncestorL0, mat);
+  gbGadget_rec(bR, f, delta, inseeds.subspan(2*bL), outseeds.subspan(2*bL), index.subspan(1), isAncestorR0, mat);
+
+  return out;
+}
+
+
+void evGadget_rec(
+    std::size_t b,
+    const PRF& f,
+    std::span<Label> outseeds,
+    std::span<const Label> index,
+    const Label& isAncestor,
+    std::span<Label>& mat) {
+  if (b > 1) {
+    std::size_t nonce = 0;
+    const auto isAncestorR = evAnd(f, index[0], isAncestor, mat, nonce);
+    const auto isAncestorL = isAncestorR ^ isAncestor;
+
+    const auto bL = b/2;
+    const auto bR = b - bL;
+
+    outseeds[0] = mat[0] ^ isAncestorR;
+    outseeds[2*bL-1] = mat[1] ^ isAncestorL;
+    mat = mat.subspan(2);
+
+    evGadget_rec(bL, f, outseeds.subspan(1, 2*bL-1), index.subspan(1), isAncestorL, mat);
+    evGadget_rec(bR, f, outseeds.subspan(2*bL), index.subspan(1), isAncestorR, mat);
+  }
+}
+
+
+std::vector<Label> evGadget(
+    std::size_t b,
+    const PRF& f,
+    std::span<const Label> index,
+    std::span<Label>& mat) {
+  std::vector<Label> out(2*b - 2);
+
+  std::span<Label> outseeds(out);
+
+  const auto isAncestorR = index[0];
+  const auto isAncestorL = index[0];
+
+  const auto bL = b/2;
+  const auto bR = b - bL;
+
+  outseeds[0] = mat[0] ^ isAncestorR;
+  outseeds[2*bL-1] = mat[1] ^ isAncestorL;
+  mat = mat.subspan(2);
+
+  evGadget_rec(bL, f, outseeds.subspan(1, 2*bL-1), index.subspan(1), isAncestorL, mat);
+  evGadget_rec(bR, f, outseeds.subspan(2*bL), index.subspan(1), isAncestorR, mat);
+
+  return out;
+}
+
+
 Encoding gbCond_(const PRF& f, std::span<const Circuit> cs, const Label& seed, std::span<Label> mat) {
   const auto b = cs.size();
   PRG prg(seed);
