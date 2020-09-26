@@ -86,37 +86,65 @@ CIRCUIT(test)
 END_CIRCUIT(test)
 
 
+template <typename Bool>
+void gadget_rec(std::size_t n, std::span<Bool> index, std::span<Label> seeds, const Bool& isAncestor) {
+  if (n == 0) {
+  } else {
+    const auto isAncestorL = isAncestor & (~index[0]);
+    const auto isAncestorR = isAncestor ^ isAncestorL;
 
-int main() {
-  const auto c = sha;
+    const auto nL = n/2;
+    const auto nR = n - nL;
 
-  std::vector<Label> material(c.desc.nRow);
+    const auto seedL = seeds[0];
+    const auto seedR = seeds[nL*2];
 
-
-  PRG prg;
-  PRF prf;
-  const auto interface = gb(prg, prf, c, material);
-
-
-
-  Labelling inp(c.desc.nInp);
-  for (std::size_t i = 0; i < inp.size(); ++i) {
-    inp[i] = interface.inpEnc.zeros[i];
+    gadget_rec(nL, index.subspan(1), seeds.subspan(1, nL*2), isAncestorL);
+    gadget_rec(nR, index.subspan(1), seeds.subspan(nL*2+1), isAncestorR);
   }
-  const auto out = ev(prf, c, inp, material);
-  for (std::size_t i = 0; i < c.desc.nOut; ++i) {
-    if (out[i] == interface.outEnc.zeros[i]) {
-      std::cout << '0';
-    } else if (out[i] == (interface.outEnc.zeros[i] ^ interface.outEnc.delta)) {
-      std::cout << '1';
-    } else {
-      std::cerr << "ERROR\n";
-      std::cerr << out[i] << '\n';
-      std::cerr << interface.outEnc.zeros[i] << '\n';
-      std::cerr << (interface.outEnc.zeros[i] ^ interface.outEnc.delta) << '\n';
-      std::cerr << interface.outEnc.delta << '\n';
-      std::exit(1);
-    }
-  }
-  std::cout << '\n';
 }
+
+
+template <typename Bool>
+void gadget(std::size_t n, std::span<Bool> index, std::span<Label> seeds) {
+  return gadget_ret<Bool>(n, index, seeds, true);
+}
+
+
+/* CIRCUIT */
+
+
+
+/* int main() { */
+/*   const auto c = sha; */
+
+/*   std::vector<Label> material(c.desc.nRow); */
+
+
+/*   PRG prg; */
+/*   PRF prf; */
+/*   const auto interface = gb(prg, prf, c, material); */
+
+
+
+/*   Labelling inp(c.desc.nInp); */
+/*   for (std::size_t i = 0; i < inp.size(); ++i) { */
+/*     inp[i] = interface.inpEnc.zeros[i]; */
+/*   } */
+/*   const auto out = ev(prf, c, inp, material); */
+/*   for (std::size_t i = 0; i < c.desc.nOut; ++i) { */
+/*     if (out[i] == interface.outEnc.zeros[i]) { */
+/*       std::cout << '0'; */
+/*     } else if (out[i] == (interface.outEnc.zeros[i] ^ interface.outEnc.delta)) { */
+/*       std::cout << '1'; */
+/*     } else { */
+/*       std::cerr << "ERROR\n"; */
+/*       std::cerr << out[i] << '\n'; */
+/*       std::cerr << interface.outEnc.zeros[i] << '\n'; */
+/*       std::cerr << (interface.outEnc.zeros[i] ^ interface.outEnc.delta) << '\n'; */
+/*       std::cerr << interface.outEnc.delta << '\n'; */
+/*       std::exit(1); */
+/*     } */
+/*   } */
+/*   std::cout << '\n'; */
+/* } */

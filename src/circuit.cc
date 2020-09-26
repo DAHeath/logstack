@@ -53,7 +53,7 @@ Eval::Rep Eval::Rep::operator&(const Eval::Rep& o) const {
 }
 
 
-Interface gb(PRG& prg, const PRF& prf, const Circuit& c, std::span<Label> mat) {
+Interface circuitgb(PRG& prg, const PRF& prf, const Circuit& c, std::span<Label> mat) {
   Interface interface;
 
   interface.inpEnc.delta = prg();
@@ -83,7 +83,7 @@ Interface gb(PRG& prg, const PRF& prf, const Circuit& c, std::span<Label> mat) {
 }
 
 
-Labelling ev(const PRF& prf, const Circuit& c, const Labelling& inp, std::span<Label> mat) {
+Labelling circuitev(const PRF& prf, const Circuit& c, const Labelling& inp, std::span<Label> mat) {
   Labelling out(c.desc.nOut);
 
   const auto stash = Eval::ctxt;

@@ -4,8 +4,6 @@
 // TODO remove
 #include <iostream>
 
-int gbcounter = 0;
-
 void show(const Label& l) {
   std::uint64_t* xs = (std::uint64_t*)(&l);
   std::cout << std::hex << xs[0] << xs[1] << '\n';
@@ -223,6 +221,53 @@ Labelling evMux(
 }
 
 
+Label gbAnd(
+    const PRF& f,
+    const Label& delta,
+    const Label& A0,
+    const Label& B0,
+    std::span<Label>& mat,
+    std::size_t& nonce) {
+  const auto nonce0 = Label { nonce };
+  const auto nonce1 = Label { nonce + 1 };
+  const auto hA0 = f(A0 ^ nonce0);
+  const auto hA1 = f(A0 ^ delta ^ nonce0);
+  const auto hB0 = f(B0 ^ nonce1);
+  const auto hB1 = f(B0 ^ delta ^ nonce1);
+  const auto A0D = A0 & delta;
+  const auto B0D = B0 & delta;
+
+  const auto X = A0[0] ? (hA1 ^ B0D) : hA0;
+  const auto Y = B0[0] ? (hB1 ^ A0D) : hB0;
+
+  mat[0] ^= hA0 ^ hA1 ^ B0D;
+  mat[1] ^= hB0 ^ hB1 ^ A0D;
+
+  nonce += 2;
+  mat = mat.subspan(2);
+
+  return A0&B0 ^ X ^ Y;
+}
+
+
+Label evAnd(
+    const PRF& f,
+    const Label& A,
+    const Label& B,
+    std::span<Label>& mat,
+    std::size_t& nonce) {
+  const auto nonce0 = Label { nonce };
+  const auto nonce1 = Label { nonce + 1 };
+  const auto hA = f(A ^ nonce0);
+  const auto hB = f(B ^ nonce1);
+  const auto X = A[0] ? hA ^ mat[0] : hA;
+  const auto Y = B[0] ? hB ^ mat[1] : hB;
+  mat = mat.subspan(2);
+  nonce += 2;
+  return (A&B) ^ X ^ Y;
+}
+
+
 void gbGate(
     const PRF& f,
     const Gate& g,
@@ -245,28 +290,9 @@ void gbGate(
       ctxt.out = ctxt.out.subspan(1);
       break;
 
-    case GateType::AND: {
-      const auto nonce0 = Label { ctxt.nonce };
-      const auto nonce1 = Label { ctxt.nonce + 1 };
-      const auto hA0 = f(A0 ^ nonce0);
-      const auto hA1 = f(A0 ^ delta ^ nonce0);
-      const auto hB0 = f(B0 ^ nonce1);
-      const auto hB1 = f(B0 ^ delta ^ nonce1);
-      const auto A0D = A0 & delta;
-      const auto B0D = B0 & delta;
-
-      const auto X = A0[0] ? (hA1 ^ B0D) : hA0;
-      const auto Y = B0[0] ? (hB1 ^ A0D) : hB0;
-
-      ctxt.material[0] ^= hA0 ^ hA1 ^ B0D;
-      ctxt.material[1] ^= hB0 ^ hB1 ^ A0D;
-
-      ctxt.nonce += 2;
-      ctxt.material = ctxt.material.subspan(2);
-
-      C0 = A0&B0 ^ X ^ Y;
+    case GateType::AND:
+      C0 = gbAnd(f, delta, A0, B0, ctxt.material, ctxt.nonce);
       break;
-    }
 
     case GateType::XOR:
       C0 = A0 ^ B0;
@@ -300,15 +326,7 @@ void evGate(
       break;
 
     case GateType::AND: {
-      const auto nonce0 = Label { ctxt.nonce };
-      const auto nonce1 = Label { ctxt.nonce + 1 };
-      const auto hA = f(A ^ nonce0);
-      const auto hB = f(B ^ nonce1);
-      const auto X = A[0] ? hA ^ ctxt.material[0] : hA;
-      const auto Y = B[0] ? hB ^ ctxt.material[1] : hB;
-      ctxt.material = ctxt.material.subspan(2);
-      ctxt.nonce += 2;
-      C = (A&B) ^ X ^ Y;
+      C = evAnd(f, A, B, ctxt.material, ctxt.nonce);
       break;
     }
 
@@ -328,7 +346,6 @@ Encoding gbCond_(const PRF& f, std::span<const Circuit> cs, const Label& seed, s
   PRG prg(seed);
 
   if (b == 1) {
-    ++gbcounter;
     return garble(prg, f, cs[0], mat).inputEncoding;
   } else {
     // Generate a fresh encoding.
@@ -433,7 +450,6 @@ Interface gbCond(
   PRG prg(seed);
 
   if (b == 1) {
-    ++gbcounter;
     return garble(prg, f, cs[0], mat);
   } else {
     const auto n = cs[0].nInp + ilog2(cs.size());
@@ -570,7 +586,6 @@ Encoding gb(const PRF& f, const Circuit& c, const Encoding& inputEncoding, std::
       return outputEncoding;
     },
     [&](const Conditional& cond) {
-      gbcounter = 0;
       PRG prg;
       const auto seed = prg();
 
@@ -590,7 +605,6 @@ Encoding gb(const PRF& f, const Circuit& c, const Encoding& inputEncoding, std::
 
       gbTrans(prg, inputEncoding, interface.inputEncoding, transMat);
 
-      std::cout << gbcounter << '\n';
       return interface.outputEncoding;
     },
     [&](const Sequence& seq) {

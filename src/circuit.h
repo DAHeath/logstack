@@ -231,8 +231,8 @@ struct Interface {
 };
 
 
-Interface gb(PRG&, const PRF&, const Circuit&, std::span<Label>);
-Labelling ev(const PRF&, const Circuit&, const Labelling&, std::span<Label>);
+Interface circuitgb(PRG&, const PRF&, const Circuit&, std::span<Label>);
+Labelling circuitev(const PRF&, const Circuit&, const Labelling&, std::span<Label>);
 
 
 #endif
