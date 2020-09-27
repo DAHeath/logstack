@@ -8,11 +8,15 @@ to transmit the entire GC during 2PC, even for conditional branches that
 are not taken.  Recent breakthrough work~\HK showed that this folklore belief is false, and that  it is enough to only transmit GC material  proportional to the
 longest execution path rather than to the entire circuit.
 
-While the protocol of~\HK is concretely efficient, its quadratic computational cost presents a  limitation in settings where branching factor $b$ is beyond $5$ or $10$.  
+While the protocol of~\HK is concretely efficient, its quadratic computational cost presents a  limitation in settings where branching factor $b$ is beyond $5$ or, perhaps, $10$.  This estimate is based on the fact that on a commodity laptop and 1Gbps network, GC generation (and also evaluation by \E) is only about $20\times$ faster than its network transmission.  In most reasonable  settings and use cases, applying \HK to branching with factors beyond $30$ is not likely to improve total computation time.  Our work pushes this boundary significantly.
 
-In addition to significantly improving computation cost (i.e. number of calls to \Gb\ and \Ev), our approach offers {\em dramatically} better memory utilization, as we discuss in~\Cref{sec:ourContrib}.  Quadratic construction of~\HK requires keeping track of a quadratic number of garbled circuits \vlad{to check}, while only XXX GCs are in memory at a time.
+Above we only discussed the garbling costs in terms of the number of garbled circuits.  Crucially, memory management is a significant performance factor in GC in general, and in particular in~\HK garbling.  Indeed, retrieving an already-garbled material from RAM may take similar or longer time than regarbling from scratch while operating in cache.
 
-As a result, in this work we essentially eliminate the concern of increased computation due to Stacked Garbling for standard settings (1 Gbps network, commodity laptop computing device). 
+In addition to significantly improving computation cost (i.e. number of calls to \Gb\ and \Ev), our approach offers {\em dramatically} better memory utilization, as we discuss in~\Cref{sec:ourContrib}.  Quadratic construction of~\HK requires keeping track of a quadratic number of garbled circuits \vlad{to check}, while only XXX GCs are in memory at a time.  
+
+As a result, in this work we essentially eliminate the concern of increased computation due to Stacked Garbling for standard settings (1 Gbps network, commodity laptop computing device).   That is, given a circuit
+
+\vlad{be clear: there are two ways to see comp performance. Starting with \cir, are we going to be slower than naive due to computation, and 2) compared to naive eval of netlist of material of same size as stacked material}
 
 
 {\em Technical difference between our and~\HK binary braching.}
