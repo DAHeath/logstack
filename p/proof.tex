@@ -1,5 +1,26 @@
 \section{Proofs}\label{sec:proof}
 
+\subsection{Correctness}\label{sec:correctness}
+
+\begin{definition}[Correctness]\label{def:correct}
+  A garbling scheme is \textbf{correct} if for
+  all circuits $\cir$,
+  all input strings $\cirinp$ of length $n$,
+  and all pseudorandom seeds $S$:
+  \[
+    \gDe(d, \gEv(\cir, \mat,\gEn(e,\cirinp))) = \gev(\cir,\cirinp)
+  \]
+  where $(\mat, e, d) = \gGb(1^\kappa,\cir,S)$
+\end{definition}
+
+\begin{theorem}\label{theorem:correctness}
+  If \underscheme\ is correct, then \ourscheme\ is correct.
+\end{theorem}
+\begin{proof}
+\end{proof}
+
+\subsection{Security}
+
 \begin{definition}[Stackability]\label{def:stackable}
   A garbling scheme is \textbf{stackable} if:
   \begin{enumerate}
@@ -74,3 +95,88 @@ of course adopt any additional security assumptions from the chosen
 underlying scheme: e.g., isntantiating \ourscheme\ with the efficient
 Half Gates scheme~\cite{EPRINT:ZahRosEva14} requires us to assume the
 existence of a correlation robust hash function.
+
+\begin{theorem}
+  If \underscheme\ is stackable, then \ourscheme\ is stackable.
+\end{theorem}
+\begin{proof}
+  By induction on the structure of the target circuit \cir.
+  In the following, we use the phrase `$x$ looks random' to mean that $x$ is indistinguishable from a uniform string of the same length.
+  \begin{itemize}
+    \item Suppose \cir\ is a netlist.
+      Then $\ourscheme.\gGb$ delegates to \underscheme,
+      which is assumed to be stackable.
+      %
+      Netlists are stackable.
+    \item Suppose \cir\ is a sequence $\sequential(\cir_0, \cir_1)$.
+      By induction,
+      both $\cir_0$ and $\cir_1$ are stackable.
+      It remains to demonstrate that the intervening translation
+      gadget preserves stackability.
+      %
+      Consider a subcomponent of the translator that translates one wire.
+      %
+      This subcomponent is implemented as an encrypted truth table with two ciphertexts of material (\Cref{sec:translate}).
+      %
+      Each row is the XOR of an input label with the
+      output of $H$. $H$ is modeled as a random oracle and hence its output looks random.
+      %
+      Furthermore, correctly decrypting one row yields an
+      input label for $\cir_1$ which, by induction, looks random.
+      %
+      Therefore, the ciphertexts constructed by $\gbtranslate$
+      look random, so the translation component preserves stackability.
+      %
+      Sequences are stackable.
+    \item Suppose \cir\ is a conditional $\conditional(\cir_0, \cir_1)$.
+  \end{itemize}
+  \ourscheme\ is stackable.
+\end{proof}
+
+\begin{definition}[Privacy]\label{def:privacy}
+  A garbling scheme is \textbf{private} if
+  there exists a simulator $\simulator_{prv}$ such that for
+  any circuit $\cir$
+  and all inputs $\cirinp$ of length $n$,
+  the following are computationally indistinguishable:
+   \[
+  (\mat, \gcirinp, d)
+  \indist
+  \simulator_{prv}(1^\kappa, \cir, \cirout),
+  \]
+  where
+  $S$ is uniform,
+   $(\mat, e, d) = \gGb(1^\kappa,\cir,S)$,
+  $\gcirinp = \gEn(e,\cirinp)$,
+  and $\cirout = \gev(\cir,\cirinp)$. 
+\end{definition}
+
+\begin{theorem}
+  If \underscheme\ is stackable, then \ourscheme\ is private.
+\end{theorem}
+\begin{proof}
+\end{proof}
+
+\begin{definition}[Authenticity]\label{def:authenticity}
+  A garbling scheme is \textbf{authentic} if for
+  all circuits \cir,
+  all inputs $\cirinp$ of length $n$,
+  and all poly-time adversaries \adv 
+  the following probability is negligible in $\kappa$:
+  \[
+    \pr{\gcirout' \neq \gEv(\cir, \mat,\gcirinp)
+    \land
+    \gDe(d, \gcirout') \neq \bot}
+  \]
+  where
+  $S$ is uniform,
+  $(\mat, e, d) = \gGb(1^\kappa,\cir,S)$,
+  $\gcirinp = \gEn(e,\cirinp)$,
+  and $\gcirout' = \adv(\cir, \mat, \gcirinp)$
+\end{definition}
+
+\begin{theorem}\label{theorem:authenticity}
+  If \underscheme is authentic, then \ourscheme is authentic.
+\end{theorem}
+\begin{proof}
+\end{proof}

@@ -2,6 +2,21 @@
 \section{Technical Overview of Our Approach}
 \label{sec:techOverview}
 
+\begin{figure*}[t]
+  \centering
+  \input{fig/seed-tree}
+  \caption{%
+    Suppose there are $8$ branches $\cir_0$ through $\cir_7$, and
+    suppose \E guesses that $\cir_0$ is the taken branch.
+    If the taken branch is in the subtree $\cir_4$ through $\cir_7$,
+    \E will generate the same garbage material for the entire subtree,
+    regardless of which branch is actually taken.
+    By extension, $\cir_0$ can only be evaluated against $\log 8 = 3$ garbage
+    material strings: one for each sibling subtree (sibling subtrees
+    are bracketed).
+  }\label{fig:seed-tree}
+\end{figure*}
+
 We  now review in our main contributions with sufficient  detail to present most interesting  technical challenges and  solutions.
 
 \subsection{$O(b\log b)$ Stacked Garbling}
