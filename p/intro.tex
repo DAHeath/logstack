@@ -28,6 +28,7 @@ In particular, in a conditional with branching factor $b$, \HK GC generator garb
 
 
 \subsection{A case for a high branching factor}
+\label{sec:motivationHighB}
 
 Clearly,   branching is an essential feature in programming, and our work significantly improves the efficiency to secure evaluations of programs with branching.
 We wish to point out that the efficient support of programs with high branching factor is much more important to MPC of typical programs than it may appear at the first sight.  
@@ -35,10 +36,10 @@ We wish to point out that the efficient support of programs with high branching 
 
 Our main observation is that free/cheap branching, such as what is achieved by our work, enables highly optimized handling of general flow control of programs. It is easiest to consider this by first considering an example.
 
-Consider a program $P$ consisting of a loop $L_1$ followed with a loop $L_2$.  Assume the total upper bound on runtime (total number of loop iterations $T$) of $P$ is known, as is usual in MPC. F However, we must protect the number of iterations $T_1$ of $L_1$ and $T_2$ of $L_2$. Implementing such a program with standard Yao GC requires us to pay double of the cost achievable with stacked garbling: we must execute loop $L_1$ $T$ times followed by executing $L_2$ $T$ times.  At the same time, SGC can simply execute the $\stack(L_1, L_2)$ $T$ times, a circuit twice smaller.  This observation corresponds to the following slightly more generalized program transformation:
+Consider a program $P$ consisting of a loop $L_1$ followed with a loop $L_2$.  Assume the total upper bound on runtime (total number of loop iterations $T$) of $P$ is known, as is usual in MPC. F However, we must protect the number of iterations $T_1$ of $L_1$ and $T_2$ of $L_2$. Implementing such a program with standard Yao GC requires us to pay double of the cost achievable with stacked garbling: we must execute loop $L_1$ $T$ times followed by executing $L_2$ $T$ times.  At the same time, SGC can simply execute  $\stack(L_1, L_2)$ $T$ times, a circuit twice smaller.  This observation corresponds to the following slightly more generalized program transformation: The program 
 \[{\tt loop_{T_1} \{ s_0 \} ; \ s_2;\ loop_{T_2} \{ s_1 \}} \]
 can be rewritten as 
-\[ {\tt loop_T \{\ switch  (cond):\{ s_0\ |\ s_1\ |\ s_1\ |\ \mathtt{no-op}\}\ \}}, \]
+\[ {\tt loop_T\ \{\ switch  (cond):\{ s_0\ |\ s_1\ |\ s_1\ |\ \mathtt{no-op}\}\ \}}, \]
 where ${\tt s_i}$ are straightline programs.
 Let's take this a step further, and consider the following program $P$ still bounded by $T$ total iterations of the inner loops:
 \[{\tt loop_{T_0}\ \{ loop_{T_1} \{ s_0 \};\ s_2;\  loop_{T_2} \{ s_1 \}\ \} }.\] 
@@ -47,6 +48,9 @@ This program can be still be rewritten as
 saving up to a factor $2T_0\times$ when evaluated with stacked garbling. \vlad{Here I want to add $s_i$ at i-th iteration of outer loop, so that our stacked program will have to have many branches.}
 
 We don't attempt to systematize the possible SGC-based optimizations of the generic flow control. One goal here is to illustrate that SGC is an essential tool that will enable this research, and the SGC performance with high branching factor is essential.
+
+
+
 
 
  
