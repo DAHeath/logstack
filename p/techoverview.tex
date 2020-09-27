@@ -27,7 +27,10 @@ Fix one of $b$ choices for \guess.  In contrast with previous work~\HK, which th
 we  let \truth  denote in which sibling subtree of \guess the executed branch resides (cf. notation and discussion in~\Cref{sec:intuition}). 
 Given a fixed \guess, there are only exactly  $\log b$ choices for \truth\footnote{Recall, we focus on the task of garbage collection due and consider only  incorrect guesses;  managing correctly recovered labels of correctly guessed branches is straightforward and cheap.}.
 
-Consider the illustrative example in~\Cref{fig:seed-tree}, where $\guess=0$.
+For concreteness and wlog,
+%in our discussion we 
+consider the illustrative example of an $8$-leaf tree in~\Cref{fig:seed-tree}, where $\guess=0$.  It will be clear that the discussion and arguments pertaining to this special case generalize to arbitrary $b$ and $\guess$.
+
 Consider the four scenarios where one of the branches $\cir_4-\cir_7$ is active.
 These four scenarios each correspond
 to $\truth = 1$: $\cir_4-\cir_7$ all belong to the level-$1$ sibling subtree of
