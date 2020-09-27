@@ -105,27 +105,28 @@ In more detail, \gadget can be described in two steps:\vlad{put gadget in frame?
   \]
     Where $s_\node'$ is a uniform string indistinguishable from
     $s_\node$. If \node is a sibling root of $\aid$, then
-    \E\ obtains the correct seed, and otherwise obtains a garbage
-    seed. The garbage seed is fixed for each node \node, and is independent of \aid.
-    We implement this function using only a single garbled row
+    \E\ obtains the correct seed $s_\node$, and otherwise obtains a garbage
+    seed $s_\node'$. $s_\node'$ is fixed for each node \node, and is independent of \aid.
+    We implement \gadget using only a single garbled row
     per node.
 \end{enumerate}
 
-For example in~\Cref{fig:seed-tree}, if active branch is $\aid=4$, then applying the gadget to nodes $\node_{0-3}, \node_{6-7}, \node_{5}$ will allow the reconstruction of correct seeds $s_{0-3}, s_{6-7}, s_{5}$.  Applying \gadget to other nodes (which would under the hood mean decrypting a correspondingly different garbled row) will result in \E obtaining garbage seeds.
+For example in~\Cref{fig:seed-tree}, if active branch is $\aid=4$, then applying the gadget to nodes $\node_{0-3}, \node_{6-7}, \node_{5}$ will allow the reconstruction of correct seeds $s_{0-3}, s_{6-7}, s_{5}$.  Applying \gadget to other nodes\vlad{ I removed ``(which would under the hood mean decrypting a correspondingly different garbled row)'' as it somewhat conflicts with descr of \gadget} will result in \E obtaining fixed garbage seeds.  If  active branch were $\aid=3$, then applying \gadget to nodes $\node_{4-7}, \node_{0-1}, \node_{2}$ will allow the reconstruction of correct seeds $s_{4-7}, s_{0-1}, s_{2}$. Garbage seeds reconstructed in, e.g., node $\node_{4-5}$ will be the {\em same} in both cases.
 
 
 \medskip
 
-It is now intuitive how \E will proceed with unstacking.  She will use the gadget and obtain a tree of random-looking seeds; of $2b$ seeds, only $\log b$ seeds just off the path to \aid (corresponding to sibling roots) will be correct.
-\E will guess \guess; assuming \guess, she will use (only) the sibling seeds of \guess to derive all the $b-1$ leaf seeds.  She then garbles all branches $\cir_i$ and unstacks the corresponding GCs $\gcir_i$.
+It is now intuitive how \E will proceed with unstacking.  She will apply the gadget \gadget and obtain a tree of random-looking seeds; of $2b$ seeds, only $\log b$ seeds just off the path to \aid (corresponding to sibling roots) will be correct.
+\E will guess \guess; assuming \guess, she will use (only) the sibling seeds of \guess to derive all  $b-1$ leaf seeds not equal to \guess.  She then garbles the $b-1$ branches $\cir_i$ and unstacks the corresponding GCs $\gcir_i$.
 
-Clearly, if $\guess=\aid$, she will reconstruct and unstack the intended garbled circuits, and therefore will obtain the intended circuit for evaluation.  Let's consider the case that her guess is wrong. Firstly, there is no security violation since she will never receive any additional valid seeds; \E will simply unstack wrong branches garbled with the wrong seeds.
-
-
-
+Clearly, if $\guess=\aid$, she will derive the intended leaf seeds $s_{i\neq\aid}$, unstack the intended garbled circuits $\gcir_{i\neq\aid}$, and therefore will obtain the correct GC $\gcir_\aid$.   Let's consider the case that her guess is wrong. %Firstly, there is no security violation since she will never receive any additional valid seeds;
+In this case, \E will simply unstack wrong branches garbled with the wrong seeds.  As we noted above, since \E will never receive any additional valid seeds, there is no securlity loss.  We next see that the number of different garbage labels we must collect is small, and further they can be collected efficiently.
 
 
-Finally, we note  that this argument clearly generalizes to the tree of every size.
+
+
+
+\vlad{Removed this too "Finally, we note  that this argument clearly generalizes to the tree of every size."}
 
 
 {\em Computational cost accounting.} Let's now verify that we indeed reduced the number of calls to \Gb\ and \Ev\ to $O(b \log b)$.  This is easily done by first considering how many such calls are made by \E.  
