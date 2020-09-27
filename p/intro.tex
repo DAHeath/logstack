@@ -10,12 +10,13 @@ the circuit \emph{all} branches must be computed.
 
 %
 Until recently, it was assumed that the players must not only compute
-all branches, but also transmit a string of \emph{material} (e.g., the garbled circuit itself) 
+all branches, but also transmit a string of \emph{material} (i.e., the garbled circuit itself) 
 proportional to all branches.  
-Since communication is the bottleneck in GC, transmission of this large string was
+Since communication is the bottleneck in GC, transmitting this large string was
 problematic for programs with conditional behavior.
 
-Stacked Garbling~\HK, which we (and \HK)  interchangeably call Stacked Garbled Circuit (SGC), shows that
+Stacked Garbling~\HK, which we %(and \HK) 
+interchangeably call Stacked Garbled Circuit (SGC), shows that
 this expensive branching-based communication blow-up is unnecessary: the players need only
 send enough material for the single longest branch. This single
 piece of \emph{stacked} material can be re-used across all conditional branches, thus
@@ -24,30 +25,83 @@ dramatically reducing communication cost.
 This improvement does come with one important downside:
 Stacked Garbling requires the players to compute far more than they
 would have without stacking.
-In particular, in a conditional with branching factor $b$, \HK GC generator garbles $b^2$ branches and hence pays $O(b^2)$ computation.  In contrast, standard garbling garbles each branch only once.
+In particular, for a conditional with branching factor $b$, the \HK GC
+generator must evaluate each branch under encryption $b-1$ times, and
+he hence pays $O(b^2)$ total computation.
+In contrast, standard garbling uses computation linear in the number
+of branches.
+
+In this work, we present a new construction for SGC that incurs
+only $O(b \log b)$ computation for both players while
+retaining the important communication improvement of \HK.
+%
+The construction also features low constants, and hence opens the door
+to using SGC even in the presence of very high branching factors
+without computation becoming prohibitive.
 
 
 \subsection{A case for a high branching factor}
 \label{sec:motivationHighB}
 
-Clearly,   branching is an essential feature in programming, and our work significantly improves the efficiency to secure evaluations of programs with branching.
-We wish to point out that the efficient support of programs with high branching factor is much more important to MPC of typical programs than it may appear at the first sight.  
-%it is less clear how prevalent is wide branching.  That is, how niche is addressing the case of, say, $30$ or $100$ or $1000$-branch conditionals.  In this section, we argue that the ability to handle wide branching is beneficial to MPC of typical programs.
+Clearly, conditional branching is ubiquitous in programming, and our work significantly
+improves the secure evaluation of programs with
+branching.
+Moreover, the efficient support for programs with \emph{high branching factor}
+is more important than it may first appear.
 
-Our main observation is that free/cheap branching, such as what is achieved by our work, enables highly optimized handling of general flow control of programs. It is easiest to consider this by first considering an example.
+Our main observation is that free/cheap branching, such as what is
+achieved by our work, enables optimized handling of \emph{arbitrary
+control flow}, including arbitrary repeated and/or nested loops.
+%
+Specifically, we can repeatedly \emph{refactor} the source program
+until the program is a single loop whose body conditionally dispatches
+over straightline fragments of the original program\footnote{%
+  As a brief argument that this is clearly possible, consider that a
+  CPU has this exact structure: in this case the `straightline
+  fragments' are the individual instruction types handled by the CPU.
+}.
+However, these types of refactorings often lead to conditionals with
+high branching factor.
 
-Consider a program $P$ consisting of a loop $L_1$ followed with a loop $L_2$.  Assume the total upper bound on runtime (total number of loop iterations $T$) of $P$ is known, as is usual in MPC. F However, we must protect the number of iterations $T_1$ of $L_1$ and $T_2$ of $L_2$. Implementing such a program with standard Yao GC requires us to pay double of the cost achievable with stacked garbling: we must execute loop $L_1$ $T$ times followed by executing $L_2$ $T$ times.  At the same time, SGC can simply execute  $\stack(L_1, L_2)$ $T$ times, a circuit twice smaller.  This observation corresponds to the following slightly more generalized program transformation: The program 
-\[{\tt loop_{T_1} \{ s_0 \} ; \ s_2;\ loop_{T_2} \{ s_1 \}} \]
-can be rewritten as 
-\[ {\tt loop_T\ \{\ switch  (cond):\{ s_0\ |\ s_1\ |\ s_1\ |\ \mathtt{no-op}\}\ \}}, \]
-where ${\tt s_i}$ are straightline programs.
-Let's take this a step further, and consider the following program $P$ still bounded by $T$ total iterations of the inner loops:
-\[{\tt loop_{T_0}\ \{ loop_{T_1} \{ s_0 \};\ s_2;\  loop_{T_2} \{ s_1 \}\ \} }.\] 
-This program can be still be rewritten as  
-\[{\tt loop_{T} \{\ switch  (cond):\{ s_0\ |\ s_1\ |\ s_2\ |\ \mathtt{no-op}\}\ \}},\] 
-saving up to a factor $2T_0\times$ when evaluated with stacked garbling. \vlad{Here I want to add $s_i$ at i-th iteration of outer loop, so that our stacked program will have to have many branches.}
+As a simple example,
+consider a program $P$ consisting of a loop $L_1$ followed by a loop
+$L_2$.  Assume the total upper bound on runtime (total number of loop
+iterations $T$) of $P$ is known, as is usual in MPC.
+For security, we must protect the number of iterations $T_1$ of $L_1$
+and $T_2$ of $L_2$.
+Implementing such a program with standard Yao GC requires us to
+pay double of the cost achievable with stacked garbling: we must
+execute loop $L_1$ $T$ times followed by executing $L_2$ $T$ times.
+At the same time, SGC can simply execute  $\stack(L_1, L_2)$ $T$
+times, a circuit with a significantly smaller garbling. This observation corresponds to the
+following refactoring:
+\[{\tt while (e_0) \{ s_0 \} ; \ while (e_1) \{ s_1 \}}
+\longrightarrow {\tt while (e_0 \lor e_1) \{\ if  (e_0) \{s_0\}\  else\  \{s_1\}\ \}} \]
+where ${\tt s_i}$ are nested programs and $e_i$ are predicates on program
+variables.
+Note that the result of this transformation is friendlier to the
+secure computation setting, since we have reduced the number of loops,
+but has introduced a conditional.
+Now, consider that $s_0$ and $s_1$ might themselves have conditionals
+that can now be flattened into a single conditional with all branches.
+By repeatedly applying refactorings like this one, even modest
+programs can have conditionals with very high branching factors.
 
-We don't attempt to systematize the possible SGC-based optimizations of the generic flow control. One goal here is to illustrate that SGC is an essential tool that will enable this research, and the SGC performance with high branching factor is essential.
+% Let's take this a step further, and consider the following program $P$ still bounded by $T$ total iterations of the inner loops:
+% \[{\tt loop_{T_0}\ \{ loop_{T_1} \{ s_0 \};\ s_2;\  loop_{T_2} \{ s_1 \}\ \} }.\] 
+% This program can be still be rewritten as  
+% \[{\tt loop_{T} \{\ switch  (cond):\{ s_0\ |\ s_1\ |\ s_2\ |\ \mathtt{no-op}\}\ \}},\] 
+% saving up to a factor $2T_0\times$ when evaluated with stacked garbling. \vlad{Here I want to add $s_i$ at i-th iteration of outer loop, so that our stacked program will have to have many branches.}
+
+In this work, we do not attempt to systematize the possible SGC-based
+optimizations of the generic flow control.
+% , but instead provide a
+% powerful approach for handling conditionals, even if they have high
+% branching factor.
+However, we firmly believe that SGC is an essential tool that will
+enable research into this direction, and further believe, as argued
+above, that performance in the presence of high branching factor is
+essential.
 
 
 
