@@ -86,8 +86,6 @@ double experiment(const Circuit& c) {
       Material material(c.nRow);
       auto g = garble(seed, k, c, material);
 
-      /* std::cout << g.inputEncoding.zeros.size() << '\n'; */
-
       const auto delta1 = g.inputEncoding.delta;
       const auto delta2 = g.outputEncoding.delta;
 
@@ -96,7 +94,23 @@ double experiment(const Circuit& c) {
         inp[i] = g.inputEncoding.zeros[i];
       }
 
-      ev(k, c, inp, material);
+      const auto out = ev(k, c, inp, material);
+
+
+      for (std::size_t i = 0; i < c.nOut; ++i) {
+        if (out[i] == g.outputEncoding.zeros[i]) {
+          std::cout << '0';
+        } else if (out[i] == (g.outputEncoding.zeros[i] ^ delta2)) {
+          std::cout << '1';
+        } else {
+          /* std::cerr << "ERROR!\n"; */
+          /* std::cerr << out[i] << '\n'; */
+          /* std::cerr << g.outputEncoding.zeros[i] << '\n'; */
+          /* std::cerr << (g.outputEncoding.zeros[i] ^ delta2) << '\n'; */
+          /* std::exit(1); */
+        }
+      }
+      std::cout << '\n';
     }));
   }
 
@@ -105,52 +119,57 @@ double experiment(const Circuit& c) {
 
 
 int main(int argc, char** argv) {
-  {
-    std::array<U32, 16> inp;
-    for (auto& i: inp) { i = U32::input(); }
+  /* { */
+  /*   std::array<u32, 16> inp; */
+  /*   for (auto& i: inp) { i = u32::input(); } */
 
-    const auto out = sha256(inp);
+  /*   const auto out = sha256(inp); */
 
-    for (const auto& o: out) { o.output(); }
-  }
-
-  const auto sha = Bool::compile();
-
-
-  /* Circuit c; */
-  /* if (n <= 1) { */
-  /*   c = sha; */
-  /* } else { */
-  /*   std::vector<Circuit> cs; */
-  /*   for (std::size_t i = 0; i < n; ++i) { */
-  /*     cs.push_back(sha); */
-  /*   } */
-  /*   c = conditional(cs); */
+  /*   for (const auto& o: out) { o.output(); } */
   /* } */
 
-  std::vector<Circuit> cs;
-  for (std::size_t i = 1; i <= 64; ++i) {
-    cs.push_back(sha);
-    experiment(conditional(cs));
-    /* std::cout << experiment(conditional(cs)) << '\n'; */
+  /* const auto sha = Bool::compile(); */
+
+  /* std::vector<Circuit> cs; */
+  /* for (std::size_t i = 1; i <= 64; ++i) { */
+  /*   cs.push_back(sha); */
+  /*   std::cout << experiment(conditional(cs)) << '\n'; */
+  /* } */
+
+
+  PRG prg;
+  PRF f;
+
+
+  const auto enc = genEncoding(prg, 3);
+
+  const auto b = 5;
+
+  std::vector<Label> seeds(2*b - 2);
+  for (std::size_t i = 0; i < 2*b - 2; ++i) {
+    seeds[i] = prg();
+  }
+
+  Material m(40);
+  for (auto& r: m) { r = 0; }
+  std::span<Label> mat(m);
+  const auto bad = gbGadget(b, f, enc.delta, seeds, enc.zeros, mat);
+
+
+  mat = m;
+
+  Labelling index = enc.zeros;
+  index[0] ^= enc.delta;
+  index[1] ^= enc.delta;
+
+  const auto actual = evGadget(b, f, index, mat);
+
+
+  for (std::size_t i = 0; i < seeds.size(); ++i) {
+    std::cout << actual[i] << '\n';
+    std::cout << seeds[i] << '\n';
+    std::cout << bad[i] << "\n\n";
   }
 
 
-
-
-
-  /* for (std::size_t i = 0; i < c.nOut; ++i) { */
-  /*   if (out[i] == g.outputEncoding.zeros[i]) { */
-  /*     std::cout << '0'; */
-  /*   } else if (out[i] == (g.outputEncoding.zeros[i] ^ delta2)) { */
-  /*     std::cout << '1'; */
-  /*   } else { */
-  /*     std::cerr << "ERROR!\n"; */
-  /*     std::cerr << out[i] << '\n'; */
-  /*     std::cerr << g.outputEncoding.zeros[i] << '\n'; */
-  /*     std::cerr << (g.outputEncoding.zeros[i] ^ delta2) << '\n'; */
-  /*     std::exit(1); */
-  /*   } */
-  /* } */
-  /* std::cout << '\n'; */
 }
