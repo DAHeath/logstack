@@ -1,0 +1,37 @@
+\begin{algorithm}[H]
+  \Fn{$\simulator_{prv}(1^\kappa, \cir, \cirout)$}{%
+    \Switch{\cir}{%
+      \Case{$\netlist(\cdot)$}{%
+        \Return{$\underscheme::\simulator_{prv}(1^\kappa,\cir,
+        \cirout)$}\\
+      }
+      \Case{$\sequential(\cir_0, \cir_1)$}{%
+        $(\mat_0, \gcirinp_0) \drawnfrom \simulator_{obv}(1^\kappa,\cir_0)$\\
+        $(\mat_1, \gcirinp_1, d_1) \drawnfrom
+        \simulator_{prv}(1^\kappa,\cir_1, \cirout)$\\
+        $\gcirout_0 \gets \gEv(\cir_0, \mat_0, \gcirinp_0)$\\
+        $\mat_{tr} \gets \simtranslate(\gcirout_0,\gcirinp_1)$\\
+        \Return{$(\mat_0||\mat_{tr}||\mat_1, e_0, d_1)$}
+      }
+      \Case{$\conditional\left(\cir_0, \cir_1\right)$}{%
+        $e \drawnfrom \genprojection(n)$\\
+        $d \drawnfrom projection.\simulator(\cirout)$\\
+        $\gcirinp \drawnfrom input.\simulator(e)$\\
+        $(S^0, S^1) \gets e[0]$\\
+        $(\mat_0, \cdot) \gets \simulator_{obv}(1^\kappa,\cir_0,S^1)$\\
+        $(\mat_1, \cdot) \gets \simulator_{obv}(1^\kappa,\cir_1,S^0)$\\
+        $(\mat_{dem}, \bar{\bot}_0, \bar{\bot}_1) \gets \simdem(e,\gcirinp_0,\gcirinp_1)$\\
+        $\mat_{cond} \gets \xor{\mat_0}{\mat_1}$\\
+        $(\mat_0', \cdot) \gets \simulator_{obv}(1^\kappa,\cir_0,S^0)$\\
+        $(\mat_1', \cdot) \gets \simulator_{obv}(1^\kappa,\cir_1,S^1)$\\
+        $\gcirout_0' \gets \gEv(\cir_0,\mat_{cond}\oplus{\mat_1'},\bar{\bot}_0)$\\
+        $\gcirout_1' \gets \gEv(\cir_1,\mat_{cond}\oplus{\mat_0'},\bar{\bot}_1)$\\
+        $\gcirout_0 \gets \gEv(\cir_0, \mat_0, \gcirinp_0)$\\
+        $\gcirout_1 \gets \gEv(\cir_1, \mat_1, \gcirinp_1)$\\
+        $\mat_{mux} \gets \simmux(d, \gcirout_0, \gcirout_1,
+        \gcirout_0', \gcirout_1')$\\
+        \Return{$(\mat_{dem}||\mat_{cond}||\mat_{mux}, \gcirinp, d)$}
+      }
+    }
+  }
+\end{algorithm}

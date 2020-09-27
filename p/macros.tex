@@ -1,4 +1,6 @@
 \newcommand{\ignore}[1]{}
+\newcommand{\xor}[2]{\ensuremath{#1\oplus #2}}           % bitwise XOR
+\newcommand{\drawnfrom}[1]{\ensuremath{\gets_{\$#1}}}            % randomly draw from sample
 
 \newcommand{\ourapproach}{\ensuremath{\textsf{OurApproach}}} % TODO
 
@@ -28,22 +30,52 @@
 \newcommand{\issr}{\ensuremath{\mathtt{isSR}}\xspace}
 \newcommand{\es}{\ensuremath{\mathtt{es}}\xspace}
 
-\newcommand{\gb}{\ensuremath{\mathtt{Gb}}\xspace}
-\newcommand{\ev}{\ensuremath{\mathtt{Ev}}\xspace}
-\newcommand{\evcond}{\ensuremath{\mathtt{EvCond}}\xspace}
-\newcommand{\gbcond}{\ensuremath{\mathtt{GbCond}}\xspace}
-\newcommand{\genprojection}{\ensuremath{\mathtt{GenProjection}}\xspace}
-
-
+\newcommand{\gb}{\ensuremath{\mathtt{Gb}}}
+\newcommand{\ev}{\ensuremath{\mathtt{Ev}}}
+\newcommand{\evcond}{\ensuremath{\mathtt{EvCond}}}
+\newcommand{\gbcond}{\ensuremath{\mathtt{GbCond}}}
+\newcommand{\genprojection}{\ensuremath{\mathtt{GenProjection}}}
 
 \newcommand{\codecomment}[1]{\triangleright~\text{#1}}
-\newcommand{\switch}{\ensuremath{\mathtt{switch}}\xspace}
-\newcommand{\cif}{\ensuremath{\mathtt{if}}\xspace}
+\newcommand{\switch}{\ensuremath{\mathtt{switch}}}
+\newcommand{\cif}{\ensuremath{\mathtt{if}}}
+\newcommand{\cfor}{\ensuremath{\mathtt{for}}}
 \newcommand{\celse}{\ensuremath{\mathtt{else}}}
-\newcommand{\ccase}{\ensuremath{\mathtt{case}}\xspace}
-\newcommand{\creturn}{\ensuremath{\mathtt{return}}\xspace}
+\newcommand{\ccase}{\ensuremath{\mathtt{case}}}
+\newcommand{\creturn}{\ensuremath{\mathtt{return}}}
 
 \newcommand{\HK}{\cite{EPRINT:HeaKol20b}\xspace}
 
 \newcommand{\vlad}[1]{{\todo{Vlad:{#1}}}}
 \newcommand{\dave}[1]{{\todo{Dave:{#1}}}}
+
+
+% macros taken from SGC
+\newcommand{\minus}{\scalebox{0.75}[1.0]{$-$}}
+\newcommand{\ourscheme}{\ensuremath{\textsf{LS}}}
+\newcommand{\underscheme}{\ensuremath{\textsf{Base}}}
+\newcommand{\netlist}{\ensuremath{\textsf{Netlist}}}
+\newcommand{\conditional}{\ensuremath{\textsf{Cond}}}
+\newcommand{\sequential}{\ensuremath{\textsf{Seq}}}
+\newcommand{\emptystring}{\ensuremath{\lambda}}
+\newcommand{\cirinp}{\ensuremath{\vec{x}}}
+\newcommand{\gcirinp}{\ensuremath{\vec{X}}}
+\newcommand{\cirout}{\ensuremath{\vec{y}}}
+\newcommand{\gcirout}{\ensuremath{\vec{Y}}}
+\newcommand{\gev}{\ensuremath{\textsf{ev}}}
+\newcommand{\gGb}{\ensuremath{\textsf{Gb}}}
+\newcommand{\gEn}{\ensuremath{\textsf{En}}}
+\newcommand{\gEv}{\ensuremath{\textsf{Ev}}}
+\newcommand{\gDe}{\ensuremath{\textsf{De}}}
+\newcommand{\evdem}{\ensuremath{demux.\gEv}}
+\newcommand{\evmux}{\ensuremath{mux.\gEv}}
+\newcommand{\gbdem}{\ensuremath{demux.\gGb}}
+\newcommand{\gbmux}{\ensuremath{mux.\gGb}}
+\newcommand{\evtranslate}{\ensuremath{trans.\gEv}}
+\newcommand{\gbtranslate}{\ensuremath{trans.\gGb}}
+\newcommand{\simtranslate}{\ensuremath{trans.\simulator}}
+\newcommand{\simmux}{\ensuremath{mux.\simulator}}
+\newcommand{\simdem}{\ensuremath{demux.\simulator}}
+
+
+

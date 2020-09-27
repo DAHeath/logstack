@@ -1,0 +1,14 @@
+\begin{algorithm}[H]
+  \Fn{$\gbtranslate(d, e)$}{%
+    $\mat \gets \emptystring$\\
+    \For{$i \in 0..|d| \minus 1$}{%
+      $(Y^0, Y^1) \gets d[i]$\\
+      $(X^0, X^1) \gets e[i]$\\
+      $c \gets \lcolor(Y^0)$\\
+      $row_0 \gets \xor{H(Y^c)}{X^c}$\\
+      $row_1 \gets \xor{H(Y^{\xor{1}{c}})}{X^{\xor{1}{c}}}$\\
+      $\mat \gets \mat || row_0 || row_1$
+    }
+    \Return{$\mat$}
+  }
+\end{algorithm}

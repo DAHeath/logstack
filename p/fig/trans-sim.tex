@@ -1,0 +1,14 @@
+\begin{algorithm}[H]
+  \Fn{$\simtranslate(\gcirout, \gcirinp)$}{%
+    $\mat \gets \emptystring$\\
+    \For{$i \in 0..|\gcirout| \minus 1$}{%
+      $Y \gets \gcirout[i]$\\
+      $X \gets \gcirinp[i]$\\
+      $c \gets \lcolor(Y)$\\
+      $row_c \gets \xor{H(Y)}{X}$\\
+      $row_{\xor{1}{c}} \drawnfrom{S} \bits$\\
+      $\mat \gets \mat || row_0 || row_1$\\
+    }
+    \Return{$\mat$}
+  }
+\end{algorithm}

@@ -1,0 +1,12 @@
+\begin{algorithm}[H]
+  \Fn{$\evtranslate(\gcirout, \mat)$}{%
+    $\gcirinp \gets \emptystring$\\
+    \For{$i \in 0..|\gcirout| \minus 1$}{%
+      $Y \gets \gcirout[i]$\\
+      $(row_0||row_1||\mat) \gets \mat$\\
+      $c \gets \lcolor(Y)$\\
+      $\gcirinp \gets \gcirinp || \xor{H(Y)}{row_c}$\\
+    }
+    \Return{$\gcirinp$}
+  }
+\end{algorithm}

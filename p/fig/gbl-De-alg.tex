@@ -1,0 +1,12 @@
+\begin{algorithm}[H]
+  \Fn{$\gDe(d, \gcirout)$}{%
+    $\cirout \gets \lambda$\\
+    \For{$i \in 0.. m\minus 1$}{%
+      $\left(Y^0, Y^1\right) \gets d[i]$\\
+      \lIf{$\gcirout[i] = Y^0$}{$\cirout[i] \gets 0$}
+      \ElseIf{$\gcirout[i] = Y^1$}{$\cirout[i] \gets 1$}
+      \lElse{\Return{$\bot$}}
+    }
+    \Return{$\cirout$}
+  }
+\end{algorithm}
