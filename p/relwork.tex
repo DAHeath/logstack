@@ -1,6 +1,24 @@
 \section{Related Work}\label{sec:relwork}
 
+\subsection{When to use \ourscheme: Computational constraints on branching factor}
 
+In this section, we discuss what practical constraints (e.g., wall clock time and implied upper bound on branching factor) are effected by the computational cost of our scheme. 
+
+\paragraph{Assumption: speed of GC generation vs transmission.}  To discuss the best strategy for applying \ourscheme, we must establish relative costs of GC generation and transmission.  Based on our experiments, as well as on~\cite{XiaoPersonalComm}, a commodity laptop running a single core can generate GCs at about $3\times$ the network bandwidth of $1$ Gbps channel.  Engaging  $4$ cores, a typical configuration, would imply up to $12\times$ higher GC generation speed vs transmission.   Desktop CPUs have both higher numbers of cores and per-core processing power.  At the same time, while 1Gbps is a typical speed in the LAN setting, WAN speeds are much lower, e.g. 100Mbps.
+
+In sum, we can conservatively set that computing device is $12\times$ faster than the transmission device.
+
+
+\medskip
+
+It is easiest to approach this evaluation by establishing the {\em baseline} against which we measure SGC and \ourscheme\ performance.    That is, our baseline is a circuit with conditionals \cir, which we must securely evaluate as-is, and to which we do not apply any program transformations.  We may compare 2PC based on \ourscheme with with Yao GC, both instantiated with base scheme half-gates~\cite{EC:ZahRosEva15}.
+
+
+
+\paragraph{Strategy: Always apply \ourscheme.}  With a few caveats described next, using \ourscheme for branching will {\em always} improve over standard GC.  Here is why:  Recall, we are given a circuit \cir which we  evaluate as-is.  Further, recall that GC generation is about $20\times$ faster than its transmission 
+
+
+\subsection{title}
 
 GC is the most popular and often the fastest approach to secure two-party computation
 (2PC).  Until recently, it was believed that it is necessary
