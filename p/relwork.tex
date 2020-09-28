@@ -7,19 +7,25 @@ Our ultimate goal is to optimize the total wall clock time for GC evaluation of 
 
 % Clearly,  and the  implied upper bound on branching factor and program transformations we may wish to apply prior to 
 
-\paragraph{Assumption: speed of GC generation vs transmission.}  To discuss the best strategy for applying \ourscheme, we must establish approximate relative costs of GC generation and transmission.  Based on our experiments, as well as on~\cite{XiaoPersonalComm}, a commodity laptop running a single core can generate GCs at about $3\times$ the network bandwidth of $1$ Gbps channel.  Engaging  $8$ virtual cores, a typical configuration on a mid-range laptop, would imply up to $\approx 24\times$ higher GC generation speed vs transmission.   At the same time, while 1Gbps is a typical speed in the LAN setting, WAN speeds are much lower, e.g. 100Mbps.  Of course, higher-end computing devices, such as desktop CPUs and GPUs have higher numbers of cores and/or per-core processing power, resulting in yet higher GC computation-to-transmission ratio.  Availability of precomputation (our \G is costlier than \E) and parallelization are additional factors.
+\paragraph{Assumption: speed of GC generation vs transmission.}  To discuss the best strategy for applying \ourscheme, we must establish approximate relative costs of GC generation and transmission.  Based on our experiments, as well as on~\cite{XiaoPersonalComm}, a commodity laptop running a single core can generate GCs at about $3\times$ the network bandwidth of $1$ Gbps channel.  Engaging  $8$ virtual cores, a typical configuration on a mid-range laptop, would imply up to $\approx 24\times$ higher GC generation speed vs transmission.   At the same time, while 1Gbps is a typical speed in the LAN setting, WAN speeds are much lower, e.g. 100Mbps.  Of course, higher-end computing devices, such as desktop CPUs and GPUs have higher numbers of cores and/or per-core processing power, resulting in yet higher GC computation-to-transmission ratio.  Availability of precomputation (our \G is costlier than \E) and parallelization are additional factors.  We assume GC material streaming is imlpemented:  material can be transmitted while it is generated, and the wall clock time is the maximum of generation and transmission times.
 
 Based on the above, we can conservatively set that computing device is (only) $24\times$ faster than the transmission device.
 
 
 
 
-\paragraph{Evaluation approach.}  It is easiest to approach this evaluation by considering the {\em baseline circuit} against which we measure SGC and \ourscheme\ performance.    That is, our baseline is a circuit with conditionals \cir, to which we apply garbling scheme directly, and to which we do not apply any program transformations.  We may compare 2PC based on \ourscheme with  Yao GC, both instantiated with base scheme half-gates~\cite{EC:ZahRosEva15}.
+\paragraph{Evaluation approach.}  It is natural to approach this evaluation by considering the {\em baseline circuit} against which we measure SGC and \ourscheme\ performance.    That is, our baseline is a circuit \cir\ with conditionals, to which we apply garbling scheme directly, and to which we do not apply any program transformations.  We may compare 2PC based on \ourscheme with  Yao GC, both instantiated with base scheme half-gates~\cite{EC:ZahRosEva15}.
 
 
 
-\paragraph{Strategy: Always apply \ourscheme.}  With a few caveats described next, using \ourscheme\ for branching will {\em always} improve over standard GC.  Here is why:  Recall, we are given a circuit \cir which we  evaluate as-is.  Further, recall that GC generation is about $20\times$ faster than its transmission 
+\paragraph{Rule of thumb: Always apply \ourscheme.}  Assuming the speed ratio of GC generation/transmission, and with a few caveats described next, using \ourscheme\ for branching will {\em always} improve over standard GC. 
 
+This is easy to see.  Indeed, we evaluate a given \cir\ as-is.  \G runs a more computationally demanding  process, garbling and efficiently combining exactly $2 b \log b$ branches.  Consider a conditional with $b$ branches.  Classic GC will transmit $b$ branches.  During this time, \G could perform $24 b$ branch garblings. Since \ourscheme's \G garbles $2\log b$ branches, the point where computation will cross over to become a bottleneck is $2^{12} = 4096$ branches.  We conclude that applying \ourscheme\ improves wal clock time for nearly all reasonable baseline circuits and settings.
+
+
+\paragraph{Limits on circuit transformations imposed by computational costs.}
+Above we have easily  established that \ourscheme\ is almost always better than standard GC.   It is much harder to provide heuristics or a rough suggestions for which circuit transformations (cf. in~\Cref{sec:motivationHighB}) to apply, and how aggressively should they be applied in conjunction with \ourscheme\ secure evaluation.  We emphasize that our computational performance improvement of SGC opens a {\em much} wider optimization space than what was possible with the prior scheme~\HK.  We leave detailed investigation of this direction as exciting future work.
+ 
 
 \subsection{title}
 
