@@ -194,9 +194,10 @@ look random.
 %
 This was problematic, because the output labels of the
 underlying scheme were used to implement garbled tables, meaning that
-the two labels were both used as private keys to a secret PRF.
+the two labels were both used as keys to a PRF.
 %
-
+Of course, using related PRF keys is outside the scope of the standard
+PRF security definition.
 %
 Thus, \HK were forced to assume the existence of a random oracle in
 order to ensure possible relationships in the output decoding string
@@ -207,18 +208,18 @@ string `looks random', and hence all labels must be independent.
 This added requirement on the underlying scheme allows us to push our
 proofs through in the standard model.
 
-We note that all standard schemes can easily meet point 2:
-if the scheme has randomly chosen labels, it trivially satisfies this
-point.
+We note that all standard schemes are easily strong stackable:
+if the scheme is stackable and has randomly chosen output labels, it
+trivially satisfies this point.
 %
-Free XOR based schemes~(\cite{ICALP:KolSch08}) assume that all
+Free XOR based schemes~\cite{ICALP:KolSch08} assume that all
 pairs of labels are separated by a fixed constant $\Delta$, and so
-they do not a priori meet point 2. However, it is easy to adjust such
-schemes such that the final output gates return uncorrelated labels.
+are not a priori strong stackable. However, it is easy to adjust such
+schemes such that the final output gates return unrelated labels.
 %
 As a final note, while our scheme is secure in the standard model, we
 of course adopt any additional security assumptions from the chosen
-underlying scheme: e.g., isntantiating \ourscheme\ with the efficient
+underlying scheme: e.g., instantiating \ourscheme\ with the efficient
 Half Gates scheme~\cite{EPRINT:ZahRosEva14} requires us to assume the
 existence of a correlation robust hash function.
 
