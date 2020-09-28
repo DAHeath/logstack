@@ -252,7 +252,7 @@ existence of a correlation robust hash function.
   We say `$x$ looks random' to denote that $x$ is indistinguishable from a uniform string of the same length.
   \begin{itemize}
     \item Suppose \cir\ is a netlist.
-      Then $\ourscheme.\gGb$ delegates to \underscheme,
+      Then $\ourscheme$ delegates to \underscheme,
       which is assumed to be strongly stackable.
     \item Suppose \cir\ is a sequence $\sequential(\cir_0, \cir_1)$.
       By induction,
@@ -314,8 +314,32 @@ immediate facts:
   Every strongly stackable scheme is oblivious.
 \end{lemma}
 \begin{theorem}\label{thm:oblivious}
-  \ourscheme\ is oblivious.
+  If \underscheme\ is strongly stackable, \ourscheme\ is oblivious.
 \end{theorem}
+
+\begin{definition}[Authenticity]\label{def:authenticity}
+  A garbling scheme is \textbf{authentic} if for
+  all circuits \cir,
+  all inputs $\cirinp$ of length $n$,
+  and all poly-time adversaries \adv 
+  the following probability is negligible in $\kappa$:
+  \[
+    \pr{\gcirout' \neq \gEv(\cir, \mat,\gcirinp)
+    \land
+    \gDe(d, \gcirout') \neq \bot}
+  \]
+  where
+  $S$ is uniform,
+  $(\mat, e, d) = \gGb(1^\kappa,\cir,S)$,
+  $\gcirinp = \gEn(e,\cirinp)$,
+  and $\gcirout' = \adv(\cir, \mat, \gcirinp)$
+\end{definition}
+
+\begin{theorem}\label{thm:authenticity}
+  If \underscheme\ is authentic, then \ourscheme\ is authentic.
+\end{theorem}
+\begin{proof}
+\end{proof}
 
 \begin{definition}[Privacy]\label{def:privacy}
   A garbling scheme is \textbf{private} if
@@ -336,31 +360,55 @@ immediate facts:
 \end{definition}
 
 \begin{theorem}
-  If \underscheme\ is stackable, then \ourscheme\ is private.
+  If \underscheme\ is private, authentic, and strongly stackable, then \ourscheme\ is private.
 \end{theorem}
 \begin{proof}
+  By induction on structure of $\cir$.
+  \begin{itemize}
+    \item Suppose \cir\ is a netlist. Then \ourscheme\ delegates to
+      \underscheme\ which is assumed private.
+    \item Suppose \cir\ is a sequence $\sequential(\cir_0, \cir_1)$.
+      Note that the garbling of $\cir_0$ is independent of
+      $\cir_1$, and so the garbling of $\cir_0$ cannot give any extra information when combined
+      with $d$ from $\cir_1$.
+      %
+      While the translator gadget is not independent of the garbling
+      of $\cir_1$ (its garbled rows include labels from the input
+      encoding of $\cir_1$), the information related to $\cir_1$ is
+      masked by secure evaluation of a PRF.
+      %
+      Thus, the following simulator suffices:
+      \begin{align*}
+        &\simulator_{prv}(1^\kappa, \sequential(\cir_0, \cir_1), \cirout):\\
+        &~~(\mat_0, \gcirinp_0) \gets \simulator_{obv}(1^\kappa, \cir_0)\\
+        &~~\gcirout \gets \gEv(\cir_0, \mat_0, \gcirinp_0)\\
+        &~~(\mat_1, \gcirinp_1, d) \gets \simulator_{prv}(1^\kappa, \cir_1, \cirout)\\
+        &~~\mat_{tr} \gets \simulator_{tr}(\gcirout, \gcirinp_0)\\
+        &~~\creturn~(\mat_0 \mid \mat_{tr} \mid \mat_1, \gcirinp_0, d)
+      \end{align*}
+      Where $\simulator_{tr}$ simulates a translator
+      mapping the encoded output $\gcirout$ to the encoded input
+      $\gcirinp_0$ (other rows that do not involve the labels in
+      $\gcirinp_0$ are simulated by uniformly sampling strings).
+    \item Suppose \cir\ is a conditional $\conditional(\vec \cir)$.
+      % Note first that the garbling of each branch is independent from
+      % the multiplexer, except that output labels from each branch are
+      % used as PRF keys.
+      In this case, the privacy simulator (1) garbles the conditional
+      using a uniform seed, (2) encodes an arbitrary input (say, the
+      all 0s input), and (3) evaluates the conditional.
+      Now, the simulator holds material $\mat$, an encoded input
+      $\gcirinp$, an output decoding $d$, and an encoded output
+      $\gcirout$.
+      The simulator conditionally swaps the labels in $d$ based on the
+      output $\cirout$ such that $\gDe(d, \gcirout) = \cirout$ and
+      outputs $(\mat, \gcirinp, d)$.
+      Note, labels in $d$ are chosen by the secure evaluation of a PRF
+      when constructing the final layer of garbled rows in the multiplexer.
+      Thus, these labels are computationally indistinguishable from
+      uniform strings.
+      Thus, this view is indistinguishable from the real view.
+  \end{itemize}
+  \ourscheme\ is private.
 \end{proof}
 
-\begin{definition}[Authenticity]\label{def:authenticity}
-  A garbling scheme is \textbf{authentic} if for
-  all circuits \cir,
-  all inputs $\cirinp$ of length $n$,
-  and all poly-time adversaries \adv 
-  the following probability is negligible in $\kappa$:
-  \[
-    \pr{\gcirout' \neq \gEv(\cir, \mat,\gcirinp)
-    \land
-    \gDe(d, \gcirout') \neq \bot}
-  \]
-  where
-  $S$ is uniform,
-  $(\mat, e, d) = \gGb(1^\kappa,\cir,S)$,
-  $\gcirinp = \gEn(e,\cirinp)$,
-  and $\gcirout' = \adv(\cir, \mat, \gcirinp)$
-\end{definition}
-
-\begin{theorem}\label{theorem:authenticity}
-  If \underscheme is authentic, then \ourscheme is authentic.
-\end{theorem}
-\begin{proof}
-\end{proof}
