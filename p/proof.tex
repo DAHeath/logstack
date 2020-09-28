@@ -16,30 +16,31 @@ In this work, we strengthen the definition of stackability.  This
 strengthening, which we call \textbf{strong stackability}, allows us to
 prove security under standard assumptions (an improvement over \HK,
 which required a random oracle assumption).
-Strong stackability is strictly stronger than stackability; all strong
+Strong stackability is strictly stronger than stackability; all
+strongly
 stackable schemes are stackable,
-and all lemmas that hold for stackable schemes hold also for strong
+and all lemmas that hold for stackable schemes hold also for strongly
 stackable schemes.
 A key application of this second fact is that all stackable schemes
-are trivially \textbf{oblivious}, so all strong stackable schemes are
+are trivially \textbf{oblivious}, so all strongly stackable schemes are
 also oblivious.
-We prove security given a strong stackable scheme.
+We prove security given a strongly stackable scheme.
 
 \HK\ showed that standard garbling schemes are stackable, including
 the state-of-the-art half-gates technique~\cite{EC:ZahRosEva15}.
-We further argue that such schemes either are strong stackable without
+We further argue that such schemes either are strongly stackable without
 modification or can be easily adjusted.
 Hence, our implementation can securely use half-gates as its underlying
 scheme to achieve high performance.
 
-We also show that \ourscheme\ is itself strong stackable, giving
+We also show that \ourscheme\ is itself strongly stackable, giving
 flexibility in usage: while by design \ourscheme\ handles vectors
 of conditional branches, we also support arbitrarily nested
 conditional control flow without modifying the source program.
 %
 We note that this nested usage \emph{does not} give $O(b\log b)$
 computation, and so vectorized branches should favored where possible.
-Because \ourscheme\ is strong stackable, it is trivially
+Because \ourscheme\ is strongly stackable, it is trivially
 \textbf{oblivious}~\HK,
 and so we do not discuss obliviousness further.
 
@@ -134,8 +135,13 @@ That is, a correct scheme implements the semantics specified by \gev.
 
 \subsection{Security}
 
+The following definition is derived from the corresponding definition
+of~\HK; we discuss its motivation (support for PRF-based garbling
+gadgets) and technical differences with \HK immediately after we
+present it formally below.
+
 \begin{definition}[Strong Stackability]\label{def:stackable}
-  A garbling scheme is \textbf{strong stackable} if:
+  A garbling scheme is \textbf{strongly stackable} if:
   \begin{enumerate}
     \item
       For
@@ -177,24 +183,38 @@ underlying scheme.
 Since strong stackability simply adds point 4, the following lemma is
 immediate:
 \begin{lemma}
-  Every strong stackable scheme is stackable.
+  Every strongly stackable scheme is stackable.
 \end{lemma}
+
+We briefly explain the role of \lcolor\ and \lkey. As with \HK, we
+use the output labels of the underlying scheme as keys in subsequent
+garbled gadgets.  The \lkey\ procedure allows us to extract a
+\emph{suitable PRF key} from each label. At the same time, we make use
+of the classic point-and-permute trick to reduce the number of PRF calls
+needed to evaluate garbled gadgets: we use the \lcolor\ as the bit
+that instructs which garbled rows to decrypt.  Note that because we
+essentially `split’ each output label into a key and a color, we
+`lose’ bits of the underlying scheme’s labels when we invoke
+\lkey. We stress that this is not an issue: the required key
+length for the next PRF application can be restored as we require
+\lkey\ output to be $\kappa$ bits long. All point-and-permute schemes
+have a similar approach.
 
 The added requirement (point 4) allows us to relax
 our security assumptions in comparison to \HK. In particular, for
-each projective output pair $A^0, A^1$, we require that $A^0$ and
-$A^1$ are unrelated.
+each projective output pair $A^0, A^1$, we require that $\lkey(A^0)$ and
+$\lkey(A^1)$ are unrelated.
 This is achieved by requiring that the concatenation of these two
 strings is indistinguishable from a random string of the same length.
 This allows us to circumvent a problem: the \HK definition allowed labels in the underlying
 scheme to be arbitrarily related to one another.
-More precisely, while point 1 requires any particular labels seen by
+More precisely, while point 1 requires that any particular set of labels seen by
 \E\ look random, it does not require that \emph{all labels together}
 look random.
 %
 This was problematic, because the output labels of the
 underlying scheme were used to implement garbled tables, meaning that
-the two labels were both used as keys to a PRF.
+the two (possibly related) labels were both used as PRF keys.
 %
 Of course, using related PRF keys is outside the scope of the standard
 PRF security definition.
@@ -208,14 +228,15 @@ string `looks random', and hence all labels must be independent.
 This added requirement on the underlying scheme allows us to push our
 proofs through in the standard model.
 
-We note that all standard schemes are easily strong stackable:
+
+We note that standard schemes are compatible with strong stackability:
 if the scheme is stackable and has randomly chosen output labels, it
 trivially satisfies this point.
 %
 Free XOR based schemes~\cite{ICALP:KolSch08} assume that all
 pairs of labels are separated by a fixed constant $\Delta$, and so
-are not a priori strong stackable. However, it is easy to adjust such
-schemes such that the final output gates return unrelated labels.
+are not a priori strongly stackable. However, it is easy to adjust such
+schemes such that the final output gates return independent labels.
 %
 As a final note, while our scheme is secure in the standard model, we
 of course adopt any additional security assumptions from the chosen
