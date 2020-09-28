@@ -86,6 +86,8 @@ Now, consider that $s_0$ and $s_1$ might themselves have conditionals
 that can now be flattened into a single conditional with all branches.
 By repeatedly applying refactorings like this one, even modest
 programs can have conditionals with very high branching factors.
+High-performance branching, enabled by our approach, will allow the
+efficient and secure evaluation of such programs.
 
 % Let's take this a step further, and consider the following program $P$ still bounded by $T$ total iterations of the inner loops:
 % \[{\tt loop_{T_0}\ \{ loop_{T_1} \{ s_0 \};\ s_2;\  loop_{T_2} \{ s_1 \}\ \} }.\] 
