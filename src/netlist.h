@@ -88,7 +88,7 @@ private:
 struct Gen {
   struct Ctxt {
     std::span<Label> material;
-    std::span<Label> inps;
+    std::span<const Label> inps;
     std::span<Label> outs;
     Label delta;
     std::size_t nonce;
@@ -166,7 +166,7 @@ struct Eval {
 };
 
 
-struct CircuitDesc {
+struct NetlistDesc {
   std::size_t nInp;
   std::size_t nOut;
   std::size_t nRow;
@@ -174,7 +174,7 @@ struct CircuitDesc {
 
 
 struct Count {
-  static thread_local CircuitDesc ctxt;
+  static thread_local NetlistDesc ctxt;
 
   struct Rep {
     static Rep input() { ++ctxt.nInp; return Rep { }; }
@@ -189,16 +189,16 @@ struct Count {
 };
 
 
-struct Circuit {
+struct Netlist {
   void (*gb)(void);
   void (*ev)(void);
-  CircuitDesc desc;
+  NetlistDesc desc;
 };
 
 
 template <typename Gb, typename Ev, typename Desc>
-Circuit compile(const Gb& gb, const Ev& ev, const Desc& desc) {
-  CircuitDesc tmp = Count::ctxt;
+Netlist compile(const Gb& gb, const Ev& ev, const Desc& desc) {
+  NetlistDesc tmp = Count::ctxt;
   Count::ctxt = { };
   desc();
   const auto d = Count::ctxt;
@@ -208,13 +208,13 @@ Circuit compile(const Gb& gb, const Ev& ev, const Desc& desc) {
 }
 
 
-#define CIRCUIT(name) \
+#define NETLIST(name) \
   template <typename Bool> \
   void name##IMPL() {
 
-#define END_CIRCUIT(name) \
+#define END_NETLIST(name) \
   } \
-  const Circuit name = compile(name##IMPL<Gen::Bool>, name##IMPL<Eval::Bool>, name##IMPL<Count::Bool>);
+  const Netlist name = compile(name##IMPL<Gen::Bool>, name##IMPL<Eval::Bool>, name##IMPL<Count::Bool>);
 
 
 using Labelling = std::vector<Label>;
@@ -231,8 +231,8 @@ struct Interface {
 };
 
 
-Interface circuitgb(PRG&, const PRF&, const Circuit&, std::span<Label>);
-Labelling circuitev(const PRF&, const Circuit&, const Labelling&, std::span<Label>);
+Encoding netlistgb(const PRF& prf, const Netlist& c, const Encoding& inpEnc, std::span<Label> mat);
+Labelling netlistev(const PRF&, const Netlist&, const Labelling&, std::span<Label>);
 
 
 #endif

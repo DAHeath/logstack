@@ -1,7 +1,7 @@
 #include "scheme.h"
+#include "gate.h"
 #include <thread>
 
-// TODO remove
 #include <iostream>
 
 void show(const Label& l) {
@@ -221,126 +221,6 @@ Labelling evMux(
 }
 
 
-Label gbAnd(
-    const PRF& f,
-    const Label& delta,
-    const Label& A0,
-    const Label& B0,
-    std::span<Label>& mat,
-    std::size_t& nonce) {
-  const auto nonce0 = Label { nonce };
-  const auto nonce1 = Label { nonce + 1 };
-  const auto hA0 = f(A0 ^ nonce0);
-  const auto hA1 = f(A0 ^ delta ^ nonce0);
-  const auto hB0 = f(B0 ^ nonce1);
-  const auto hB1 = f(B0 ^ delta ^ nonce1);
-  const auto A0D = A0 & delta;
-  const auto B0D = B0 & delta;
-
-  const auto X = A0[0] ? (hA1 ^ B0D) : hA0;
-  const auto Y = B0[0] ? (hB1 ^ A0D) : hB0;
-
-  mat[0] ^= hA0 ^ hA1 ^ B0D;
-  mat[1] ^= hB0 ^ hB1 ^ A0D;
-
-  nonce += 2;
-  mat = mat.subspan(2);
-
-  return A0&B0 ^ X ^ Y;
-}
-
-
-Label evAnd(
-    const PRF& f,
-    const Label& A,
-    const Label& B,
-    std::span<Label>& mat,
-    std::size_t& nonce) {
-  const auto nonce0 = Label { nonce };
-  const auto nonce1 = Label { nonce + 1 };
-  const auto hA = f(A ^ nonce0);
-  const auto hB = f(B ^ nonce1);
-  const auto X = A[0] ? hA ^ mat[0] : hA;
-  const auto Y = B[0] ? hB ^ mat[1] : hB;
-  mat = mat.subspan(2);
-  nonce += 2;
-  return (A&B) ^ X ^ Y;
-}
-
-
-void gbGate(
-    const PRF& f,
-    const Gate& g,
-    const Label& delta,
-    NetlistCtxt& ctxt) {
-
-  const auto& A0 = ctxt.w[g.inp0];
-  const auto& B0 = ctxt.w[g.inp1];
-  auto& C0 = ctxt.w[g.out];
-  switch (g.type) {
-    case GateType::INPUT:
-      // read in the next label from the input labelling
-      C0 = ctxt.inp[0];
-      ctxt.inp = ctxt.inp.subspan(1);
-      break;
-
-    case GateType::OUTPUT:
-      // write out to the end of the output labelling
-      ctxt.out[0] = A0;
-      ctxt.out = ctxt.out.subspan(1);
-      break;
-
-    case GateType::AND:
-      C0 = gbAnd(f, delta, A0, B0, ctxt.material, ctxt.nonce);
-      break;
-
-    case GateType::XOR:
-      C0 = A0 ^ B0;
-      break;
-
-    case GateType::NOT:
-      C0 = A0 ^ delta;
-      break;
-  }
-}
-
-
-void evGate(
-    const PRF& f,
-    const Gate& g,
-    NetlistCtxt& ctxt) {
-  const auto& A = ctxt.w[g.inp0];
-  const auto& B = ctxt.w[g.inp1];
-  auto& C = ctxt.w[g.out];
-  switch (g.type) {
-    case GateType::INPUT:
-      // read in the next label from the input labelling
-      C = ctxt.inp[0];
-      ctxt.inp = ctxt.inp.subspan(1);
-      break;
-
-    case GateType::OUTPUT:
-      // write out to the end of the output labelling
-      ctxt.out[0] = A;
-      ctxt.out = ctxt.out.subspan(1);
-      break;
-
-    case GateType::AND: {
-      C = evAnd(f, A, B, ctxt.material, ctxt.nonce);
-      break;
-    }
-
-    case GateType::XOR:
-      C = A ^ B;
-      break;
-
-    case GateType::NOT:
-      C = A;
-      break;
-  }
-}
-
-
 void gbGadget_rec(
     std::size_t b,
     const PRF& f,
@@ -455,7 +335,7 @@ Encoding gbCond_(const PRF& f, std::span<const Circuit> cs, const Label& seed, s
   PRG prg(seed);
 
   if (b == 1) {
-    return garble(prg, f, cs[0], mat).inputEncoding;
+    return garble(prg, f, cs[0], mat).inpEnc;
   } else {
     // Generate a fresh encoding.
     // All branches should have same number of inputs.
@@ -524,19 +404,19 @@ Labelling evCond(
     Labelling l0, l1;
 
     // garble straight into material so as to unstack
-    /* std::thread th0 ([&] { */
-    {
+    std::thread th0 ([&] {
+    /* { */
       gbCond_(f, cs1, S, mat0);
       l0 = evCond(f, cs0, inp0, mat0, muxMat0);
-    /* }); */
-    }
+    });
+    /* } */
 
     {
       gbCond_(f, cs0, S, mat1);
       l1 = evCond(f, cs1, inp1, mat1, muxMat1);
     }
 
-    /* th0.join(); */
+    th0.join();
 
     return evMux(f, S, l0, l1, muxMatNow);
   }
@@ -586,15 +466,15 @@ Interface gbCond(
     Material mat1(branchmat.size());
     // because garbling the conditional recursively involves unstacking and evaluating,
     // we cannot garble the material in place, and instead must garble into a fresh buffer.
-    /* std::thread th ([&] { */
-    {
+    std::thread th ([&] {
+    /* { */
       i0 = gbCond(f, cs0, S1, mat0, muxMat0);
-    /* }); */
-  }
+    });
+    /* } */
     {
       i1 = gbCond(f, cs1, S0, mat1, muxMat1);
     }
-    /* th.join(); */
+    th.join();
 
     branchmat ^= mat0;
     branchmat ^= mat1;
@@ -603,7 +483,7 @@ Interface gbCond(
     // into the front of the material
     std::span<Label> zeros { e.zeros };
     zeros = zeros.subspan(1);
-    auto bad = gbDem(prg, f, e.delta, S0, zeros, i0.inputEncoding, i1.inputEncoding, demMat);
+    auto bad = gbDem(prg, f, e.delta, S0, zeros, i0.inpEnc, i1.inpEnc, demMat);
     auto bad0 = bad.first;
     auto bad1 = bad.second;
 
@@ -612,25 +492,25 @@ Interface gbCond(
     // then garble a branch incorrectly to emulate bad evaluation of the other
     // branch (note garbling in place is safe because gbCond_ does not
     // recursively involve evaluation).
-    /* std::thread th2 ([&] { */
-    {
+    std::thread th2 ([&] {
+    /* { */
       Material mat0(branchmat.begin(), branchmat.end());
       e0_ = gbCond_(f, cs1, S1, mat0);
       bad0 = evCond(f, cs0, bad0, mat0, muxMat0);
-    /* }); */
-  }
+    });
+  /* } */
     {
       Material mat1(branchmat.begin(), branchmat.end());
       e1_ = gbCond_(f, cs0, S0, mat1);
       bad1 = evCond(f, cs1, bad1, mat1, muxMat1);
     }
-    /* th2.join(); */
+    th2.join();
 
 
     const auto eout = gbMux(
         prg, f, e.delta, S0,
-        i0.outputEncoding,
-        i1.outputEncoding,
+        i0.outEnc,
+        i1.outEnc,
         bad0,
         bad1,
         muxMatNow);
@@ -673,26 +553,10 @@ Labelling evTrans(const Labelling& inp, std::span<Label> mat) {
 }
 
 
-Encoding gb(const PRF& f, const Circuit& c, const Encoding& inputEncoding, std::span<Label> mat) {
+Encoding gb(const PRF& f, const Circuit& c, const Encoding& inpEnc, std::span<Label> mat) {
   return std::visit(overloaded {
     [&](const Netlist& n) {
-      const auto delta = inputEncoding.delta;
-      Encoding outputEncoding;
-      outputEncoding.delta = delta;
-      outputEncoding.zeros.resize(c.nOut);
-
-      NetlistCtxt ctxt;
-      ctxt.w = Wiring(n.size() - c.nOut + 2);
-      ctxt.material = mat;
-      ctxt.inp = std::span<const Label>(inputEncoding.zeros);
-      ctxt.out = std::span<Label>(outputEncoding.zeros);
-      ctxt.nonce = 0;
-
-      for (const auto& g: n) {
-        gbGate(f, g, delta, ctxt);
-      }
-
-      return outputEncoding;
+      return netlistgb(f, n, inpEnc, mat);
     },
     [&](const Conditional& cond) {
       PRG prg;
@@ -712,12 +576,12 @@ Encoding gb(const PRF& f, const Circuit& c, const Encoding& inputEncoding, std::
 
       const auto interface = gbCond(f, cond.cs, seed, bodyMat, muxMat);
 
-      gbTrans(prg, inputEncoding, interface.inputEncoding, transMat);
+      gbTrans(prg, inpEnc, interface.inpEnc, transMat);
 
-      return interface.outputEncoding;
+      return interface.outEnc;
     },
     [&](const Sequence& seq) {
-      auto encoding = inputEncoding;
+      auto encoding = inpEnc;
       for (const auto& c: seq) {
         encoding = gb(f, c, encoding, mat);
       }
@@ -729,8 +593,8 @@ Encoding gb(const PRF& f, const Circuit& c, const Encoding& inputEncoding, std::
 
 Interface garble(PRG& seed, const PRF& f, const Circuit& c, std::span<Label> mat) {
   Interface g;
-  g.inputEncoding = genEncoding(seed, c.nInp);
-  g.outputEncoding = gb(f, c, g.inputEncoding, mat);
+  g.inpEnc = genEncoding(seed, c.nInp);
+  g.outEnc = gb(f, c, g.inpEnc, mat);
   return g;
 }
 
@@ -738,20 +602,7 @@ Interface garble(PRG& seed, const PRF& f, const Circuit& c, std::span<Label> mat
 Labelling ev(const PRF& f, const Circuit& c, const Labelling& input, std::span<Label> mat) {
   return std::visit(overloaded {
     [&](const Netlist& n) {
-      Labelling output(c.nOut);
-
-      NetlistCtxt ctxt;
-      ctxt.w = Wiring(n.size() - c.nOut + 2);
-      ctxt.material = mat;
-      ctxt.inp = std::span<const Label>(input);
-      ctxt.out = std::span<Label>(output);
-      ctxt.nonce = 0;
-
-      for (const auto& g: n) {
-        evGate(f, g, ctxt);
-      }
-
-      return output;
+      return netlistev(f, n, input, mat);
     },
     [&](const Conditional& cond) {
       const auto b = cond.cs.size();

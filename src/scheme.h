@@ -8,8 +8,7 @@
 #include <bitset>
 #include <span>
 
-#include "prf.h"
-#include "prg.h"
+#include "netlist.h"
 
 
 template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
@@ -23,18 +22,6 @@ inline constexpr std::size_t ilog2(std::size_t n) {
   while (n >>= 1) { ++out; }
   return out;
 }
-
-
-enum class GateType : std::uint32_t { INPUT, OUTPUT, AND, XOR, NOT };
-
-
-struct Gate {
-  GateType type;
-  std::uint32_t inp0, inp1, out;
-};
-
-
-using Netlist = std::span<const Gate>;
 
 
 struct Circuit;
@@ -57,43 +44,13 @@ struct Circuit {
 
 
 
-using Label = std::bitset<128>;
-using Labelling = std::vector<Label>;
-
-
-struct Encoding {
-  Labelling zeros;
-  Label delta;
-};
-
-
 using Material = std::vector<Label>;
-
-
-struct Interface {
-  Encoding inputEncoding;
-  Encoding outputEncoding;
-};
-
-
-using Wiring = std::vector<Label>;
-
-
-struct NetlistCtxt {
-  Wiring w;
-  std::span<const Label> inp;
-  std::span<Label> out;
-  std::span<Label> material;
-  std::size_t nonce;
-};
 
 
 Interface garble(PRG& seed, const PRF&, const Circuit&, std::span<Label>);
 Encoding gb(const PRF&, const Circuit&, const Encoding&, std::span<Label>);
 Labelling ev(const PRF&, const Circuit&, const Labelling&, std::span<Label>);
 
-void gbGate(const PRF&, const Gate&, const Label& delta, NetlistCtxt&);
-void evGate(const PRF&, const Gate&, NetlistCtxt&);
 Encoding genEncoding(PRG&, std::size_t);
 
 Labelling evCond(
