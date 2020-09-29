@@ -232,16 +232,26 @@ By way of example, let's consider the special case of $\guess=0$ and $\truth = 1
 
 
 
-\subsection{Lower bound}
-\label{sec:techOverviewLB}
+%\subsection{Lower bound}
+%\label{sec:techOverviewLB}
 
 
 
 
 
 
-\subsection{Stacked garbling without Random Oracles}
+\subsection{Stacked garbling with and without Random Oracles}
 \label{sec:techOverviewRO}
+
+
+We eliminate the need for employing calls to RO in~\HK.   
+
+\HK (and we) operate with a generic garbling scheme \underscheme, and do not assume anything about \underscheme other than the standard BHR properties, as well as the {\em stackability} property.  Assuming only  these properties does not preclude \underscheme's labels being related to each other, which presents problems in the standard mode, and which~\HK handle by using RO for garbled rows in their gadgetry.
+
+We introduce a stronger requirement on \underscheme, which we call {\em strong stackability}.  Informally, it additionally requires that {\em all} output labels of \underscheme used in key derivation look uniformly random.  We show that this is sufficient for security in the standard model.
+
+Of course, RO-based security theorems and proofs also work (and we explicitly claim them), and our gadgets could be slightly optimized in a natural manner under this assumption.
+
 
 
 
