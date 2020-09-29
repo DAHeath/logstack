@@ -1,6 +1,7 @@
 #ifndef GATE_H__
 #define GATE_H__
 
+
 #include <span>
 #include "prf.h"
 
