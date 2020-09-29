@@ -17,6 +17,7 @@ auto timed(F f) {
 
 Circuit conditional(const std::vector<Circuit>& cs) {
   const auto b = cs.size();
+  const auto gadgetSize = b*3;
   const auto transSize = cs[0].nInp + 1;
   const auto demSize = 3*cs[0].nInp + 2;
   const auto muxSize = (b-1) * (cs[0].nOut + 2);
@@ -28,7 +29,7 @@ Circuit conditional(const std::vector<Circuit>& cs) {
 
   std::size_t nRow = 0;
   for (const auto& c: cs) { nRow = std::max(nRow, c.nRow); }
-  nRow += transSize + fullDemSize + muxSize;
+  nRow += gadgetSize + transSize + fullDemSize + muxSize;
 
   return Circuit {
     Conditional { cs },
@@ -62,20 +63,20 @@ double experiment(const Circuit& c) {
       const auto out = ev(k, c, inp, material);
 
 
-      /* for (std::size_t i = 0; i < c.nOut; ++i) { */
-      /*   if (out[i] == g.outEnc.zeros[i]) { */
-      /*     std::cout << '0'; */
-      /*   } else if (out[i] == (g.outEnc.zeros[i] ^ delta2)) { */
-      /*     std::cout << '1'; */
-      /*   } else { */
-      /*     /1* std::cerr << "ERROR!\n"; *1/ */
-      /*     /1* std::cerr << out[i] << '\n'; *1/ */
-      /*     /1* std::cerr << g.outputEncoding.zeros[i] << '\n'; *1/ */
-      /*     /1* std::cerr << (g.outputEncoding.zeros[i] ^ delta2) << '\n'; *1/ */
-      /*     /1* std::exit(1); *1/ */
-      /*   } */
-      /* } */
-      /* std::cout << '\n'; */
+      for (std::size_t i = 0; i < c.nOut; ++i) {
+        if (out[i] == g.outEnc.zeros[i]) {
+          std::cout << '0';
+        } else if (out[i] == (g.outEnc.zeros[i] ^ delta2)) {
+          std::cout << '1';
+        } else {
+          /* std::cerr << "ERROR!\n"; */
+          /* std::cerr << out[i] << '\n'; */
+          /* std::cerr << g.outputEncoding.zeros[i] << '\n'; */
+          /* std::cerr << (g.outputEncoding.zeros[i] ^ delta2) << '\n'; */
+          /* std::exit(1); */
+        }
+      }
+      std::cout << '\n';
     }));
   }
 
@@ -93,7 +94,11 @@ int main(int argc, char** argv) {
   std::vector<Circuit> cs;
   for (std::size_t i = 1; i <= 20; ++i) {
     cs.push_back(sha_netlist);
-    std::cout << experiment(conditional(cs)) << '\n';
+    if (cs.size() == 1) {
+      std::cout << experiment(cs[0]) << '\n';
+    } else {
+      std::cout << experiment(conditional(cs)) << '\n';
+    }
   }
 
 

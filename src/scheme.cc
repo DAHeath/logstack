@@ -367,6 +367,7 @@ Encoding gbCond_(const PRF& f, std::span<const Circuit> cs, const Label& seed, s
 Labelling evCond(
     const PRF& f,
     std::span<const Circuit> cs,
+    std::span<const Label> seeds,
     const Labelling& inp,
     std::span<Label> mat,
     std::span<Label> muxMat) {
@@ -376,6 +377,8 @@ Labelling evCond(
   if (b == 1) {
     return ev(f, cs[0], inp, mat);
   } else {
+    const auto bL = b/2;
+
     // split input into the branch condition and the remaining wires
     const auto S = inp[0];
     std::span<const Label> inp_(inp);
@@ -407,13 +410,13 @@ Labelling evCond(
     std::thread th0 ([&] {
     /* { */
       gbCond_(f, cs1, S, mat0);
-      l0 = evCond(f, cs0, inp0, mat0, muxMat0);
+      l0 = evCond(f, cs0, seeds.subspan(1, 2*bL-1), inp0, mat0, muxMat0);
     });
     /* } */
 
     {
       gbCond_(f, cs0, S, mat1);
-      l1 = evCond(f, cs1, inp1, mat1, muxMat1);
+      l1 = evCond(f, cs1, seeds.subspan(2*bL), inp1, mat1, muxMat1);
     }
 
     th0.join();
@@ -432,19 +435,21 @@ Labelling evCond(
 Interface gbCond(
     const PRF& f,
     std::span<const Circuit> cs,
-    const Label& seed,
+    std::span<const Label> goodSeeds,
+    std::span<const Label> badSeeds,
     std::span<Label> mat,
     std::span<Label> muxMat) {
   const auto b = cs.size();
-  PRG prg(seed);
+  PRG prg(goodSeeds[0]);
 
   if (b == 1) {
     return garble(prg, f, cs[0], mat);
   } else {
+    const auto bL = b/2;
+
     const auto n = cs[0].nInp + ilog2(cs.size());
     auto e = genEncoding(prg, n);
     const auto S0 = e.zeros[0];
-    const auto S1 = e.zeros[0] ^ e.delta;
 
     // split the vector of circuits
     const std::span<const Circuit> cs0 = cs.subspan(0, b/2);
@@ -468,11 +473,11 @@ Interface gbCond(
     // we cannot garble the material in place, and instead must garble into a fresh buffer.
     std::thread th ([&] {
     /* { */
-      i0 = gbCond(f, cs0, S1, mat0, muxMat0);
+      i0 = gbCond(f, cs0, goodSeeds.subspan(1, 2*bL-1), badSeeds.subspan(1, 2*bL-1), mat0, muxMat0);
     });
     /* } */
     {
-      i1 = gbCond(f, cs1, S0, mat1, muxMat1);
+      i1 = gbCond(f, cs1, goodSeeds.subspan(2*bL), badSeeds.subspan(2*bL), mat1, muxMat1);
     }
     th.join();
 
@@ -495,14 +500,14 @@ Interface gbCond(
     std::thread th2 ([&] {
     /* { */
       Material mat0(branchmat.begin(), branchmat.end());
-      e0_ = gbCond_(f, cs1, S1, mat0);
-      bad0 = evCond(f, cs0, bad0, mat0, muxMat0);
+      e0_ = gbCond_(f, cs1, badSeeds[0], mat0);
+      bad0 = evCond(f, cs0, badSeeds.subspan(1, 2*bL-1), bad0, mat0, muxMat0);
     });
   /* } */
     {
       Material mat1(branchmat.begin(), branchmat.end());
-      e1_ = gbCond_(f, cs0, S0, mat1);
-      bad1 = evCond(f, cs1, bad1, mat1, muxMat1);
+      e1_ = gbCond_(f, cs0, badSeeds[2*bL-1], mat1);
+      bad1 = evCond(f, cs1, badSeeds.subspan(1, 2*bL-1), bad1, mat1, muxMat1);
     }
     th2.join();
 
@@ -553,6 +558,29 @@ Labelling evTrans(const Labelling& inp, std::span<Label> mat) {
 }
 
 
+std::vector<Label> seedTree(const Label& root, std::size_t b) {
+  if (b <= 1) {
+    return { root };
+  } else {
+    PRG prg(root);
+    const auto l = prg();
+    const auto r = prg();
+
+    const auto bL = b/2;
+    const auto bR = b - bL;
+
+    const auto lSeeds = seedTree(l, bL);
+    const auto rSeeds = seedTree(r, bR);
+
+    std::vector<Label> out;
+    out.push_back(root);
+    std::copy(lSeeds.begin(), lSeeds.end(), std::back_inserter(out));
+    std::copy(rSeeds.begin(), rSeeds.end(), std::back_inserter(out));
+    return out;
+  }
+}
+
+
 Encoding gb(const PRF& f, const Circuit& c, const Encoding& inpEnc, std::span<Label> mat) {
   return std::visit(overloaded {
     [&](const Netlist& n) {
@@ -566,15 +594,23 @@ Encoding gb(const PRF& f, const Circuit& c, const Encoding& inpEnc, std::span<La
       const auto n = c.nInp;
       const auto m = c.nOut;
 
+      const auto gadgetSize = 3*b;
       const auto transSize = n+1;
-      const auto transMat = mat.subspan(0, transSize);
       const auto muxSize = (b-1)*(m+2);
+
+      auto gadgetMat = mat.subspan(0, gadgetSize);
+      const auto transMat = mat.subspan(gadgetSize, transSize);
       const auto bodyMat = mat.subspan(
-          transSize,
-          mat.size() - transSize - muxSize);
+          transSize + gadgetSize,
+          mat.size() - transSize - muxSize - gadgetSize);
       const auto muxMat = mat.subspan(mat.size() - muxSize);
 
-      const auto interface = gbCond(f, cond.cs, seed, bodyMat, muxMat);
+
+      std::span<const Label> inp = inpEnc.zeros;
+      const auto goodSeeds = seedTree(seed, b);
+      const auto badSeeds = gbGadget(b, f, inpEnc.delta, goodSeeds, inp.subspan(log2(b)), gadgetMat);
+
+      const auto interface = gbCond(f, cond.cs, goodSeeds, badSeeds, bodyMat, muxMat);
 
       gbTrans(prg, inpEnc, interface.inpEnc, transMat);
 
@@ -609,16 +645,22 @@ Labelling ev(const PRF& f, const Circuit& c, const Labelling& input, std::span<L
       const auto n = c.nInp;
       const auto m = c.nOut;
 
+      const auto gadgetSize = 3*b;
       const auto transSize = n+1;
-      const auto transMat = mat.subspan(0, transSize);
       const auto muxSize = (b-1)*(m+2);
+      const auto gadgetMat = mat.subspan(0, gadgetSize);
+      const auto transMat = mat.subspan(gadgetSize, transSize);
       const auto bodyMat = mat.subspan(
-          transSize,
-          mat.size() - transSize - muxSize);
+          transSize + gadgetSize,
+          mat.size() - transSize - muxSize - gadgetSize);
       const auto muxMat = mat.subspan(mat.size() - muxSize);
 
+      std::span<const Label> inps (input);
+      const auto seeds = evGadget(b, f, inps.subspan(0, log2(b)), mat);
+
+
       const auto translated = evTrans(input, transMat);
-      return evCond(f, cond.cs, translated, bodyMat, muxMat);
+      return evCond(f, cond.cs, seeds, translated, bodyMat, muxMat);
     },
     [&](const Sequence& seq) {
       auto labelling = input;

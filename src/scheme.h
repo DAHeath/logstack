@@ -56,6 +56,7 @@ Encoding genEncoding(PRG&, std::size_t);
 Labelling evCond(
     const PRF&,
     std::span<Circuit>,
+    std::span<const Label> seeds,
     const Labelling&,
     std::span<Label> mat,
     std::span<Label> muxMat);
@@ -69,7 +70,8 @@ Encoding gbCond_(
 Interface gbCond(
     const PRF&,
     std::span<const Circuit>,
-    const Label& seed,
+    std::span<const Label> goodSeeds,
+    std::span<const Label> badSeeds,
     std::span<Label> mat,
     std::span<Label> muxMat);
 
