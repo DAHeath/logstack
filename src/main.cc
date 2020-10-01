@@ -40,6 +40,14 @@ Circuit conditional(const std::vector<Circuit>& cs) {
 }
 
 
+Garbling garble(const PRF& f, const Circuit& c, PRG& prg) {
+  const auto inpEnc = genEncoding(prg, c.nInp);
+  Material m(c.nRow);
+  const auto outEnc = gb(f, c, inpEnc, m);
+  return { m, { inpEnc, outEnc } };
+}
+
+
 constexpr std::size_t n_repetitions = 1;
 
 double experiment(const Circuit& c) {
@@ -49,24 +57,23 @@ double experiment(const Circuit& c) {
       PRG seed;
       PRF k;
 
-      Material material(c.nRow);
-      auto g = garble(seed, k, c, material);
+      auto [material, interface] = garble(k, c, seed);
 
-      const auto delta1 = g.inpEnc.delta;
-      const auto delta2 = g.outEnc.delta;
+      const auto delta1 = interface.inpEnc.delta;
+      const auto delta2 = interface.outEnc.delta;
 
       Labelling inp(c.nInp);
       for (std::size_t i = 0; i < c.nInp; ++i) {
-        inp[i] = g.inpEnc.zeros[i];
+        inp[i] = interface.inpEnc.zeros[i];
       }
 
       const auto out = ev(k, c, inp, material);
 
 
       for (std::size_t i = 0; i < c.nOut; ++i) {
-        if (out[i] == g.outEnc.zeros[i]) {
+        if (out[i] == interface.outEnc.zeros[i]) {
           std::cout << '0';
-        } else if (out[i] == (g.outEnc.zeros[i] ^ delta2)) {
+        } else if (out[i] == (interface.outEnc.zeros[i] ^ delta2)) {
           std::cout << '1';
         } else {
           /* std::cerr << "ERROR!\n"; */

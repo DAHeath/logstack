@@ -47,7 +47,17 @@ struct Circuit {
 using Material = std::vector<Label>;
 
 
-Interface garble(PRG& seed, const PRF&, const Circuit&, std::span<Label>);
+struct Garbling {
+  Material material;
+  Interface interface;
+};
+
+struct CondGarbling {
+  Material material;
+  Encoding outEnc;
+  std::vector<Labelling> badOuts;
+};
+
 Encoding gb(const PRF&, const Circuit&, const Encoding&, std::span<Label>);
 Labelling ev(const PRF&, const Circuit&, const Labelling&, std::span<Label>);
 
@@ -60,12 +70,6 @@ Labelling evCond(
     const Labelling&,
     std::span<Label> mat,
     std::span<Label> muxMat);
-
-Encoding gbCond_(
-    const PRF&,
-    std::span<const Circuit>,
-    const Label& seed,
-    std::span<Label>);
 
 Interface gbCond(
     const PRF&,
