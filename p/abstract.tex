@@ -3,53 +3,65 @@
   efficiently achieved using garbled circuits (GC).
   Until recently, it was widely believed that a GC
   proportional to the entire program, including parts of the program
-  which are entirely discarded due to conditional branching, must
+  that are entirely discarded due to conditional branching, must
   be transmitted over a network.
-  Recent work shows that this belief is \emph{false}, and that instead
+  Recent work shows that this belief is \emph{false}, and that
   communication proportional only to the longest program execution
   path suffices (Heath and Kolesnikov, CRYPTO 20, \HK).
-  Although this recent work reduces the communication needed to evaluate
-  conditionals, it \emph{increases} the amount of computation
-  performed by the players.
-  For a circuit with conditional branching factor $b$, the players
-  perform $O(b^2)$ computation: GC generator garbles $b^2$ branches, while only $b$ branches are garbled in traditional GC.
+  Although this recent work reduces needed communication, it
+  \emph{increases} computation.
+  For a conditional with $b$ branches, the players use $O(b^2)$
+  computation (traditional GC uses only $O(b)$).
 
 \smallskip
   %We extend  \HK 
-  Our scheme \ourschemelong  reduces
-   computation overhead of stacked garbling from $O(b^2)$ to $O(b \log b)$, \vlad{or "the total of $3b \log b$"?} with {\em no} increase in communication.  \vlad{our gadget is slightly larger than HK.}
+  Our scheme \ourschemelong  reduces stacked garbling computation from
+  $O(b^2)$ to $O(b \log b)$
+   with essentially {\em no} increase in communication.
+   % \vlad{our gadget is slightly larger than HK.}
   We observe that the primary cause of the increased computation of~\HK is the
   oblivious collection of \emph{garbage labels} that emerge during the
-  oblivious evaluation of inactive conditional branches.
-  Garbage is collected by a \emph{multiplexer} component whose
-  instantiation is costly to generate.
-  At a high level, we redesign the stacking and garbage collection,
-  %our extension carefully places the multiplexer 
+  oblivious evaluation of inactive branches.
+  Garbage is collected by a \emph{multiplexer} component that is
+  costly to generate.
+  At a high level, we redesign stacking and garbage collection
   such that we avoid quadratic behavior.
-  
+
   \smallskip
-  Beyond just reducing the number of calls to the garbling and evaluation functions, our construction is much more {\em memory efficient}: while \HK require storing material of each of $b^2$ circuits, we only need $O(|C| \log b)$ RAM.  \vlad{correct?  Also, number of RAM accesses?}
-  This further significantly improves the advantage of our scheme.
+  Our construction is also more {\em space
+  efficient}: \HK algorithms require $O(b)$ space, while ours use only
+  $O(\log b)$ space.
+  This space efficiency allows even modest setups to handle huge numbers of branches.
+  % require storing material of each of $b^2$
+  % circuits, we only need $O(|C| \log b)$ RAM.  \vlad{correct?  Also,
+  % number of RAM accesses?}
+  % This further significantly improves the advantage of our scheme.
   
-  \smallskip
-  We discuss applicability of our improvement to general functions, including ones with narrow branching.  High performance of \ourschemelong opens rich opportunity for performance-improving program transformations which may dramatically increase  the branching factor and use of branching.
-\smallskip
-%\vlad{We should say smth in main about known schemes fitting into the assumptions we made.}
-%	Further,  for a natural class of garbling schemes, which includes all popular schemes, such as half-gates, this performance is near optimal.  We show that stacked garbling schemes making a linear in $b$ number of calls to garble (resp. evaluate) must make a quadratic in $b$ number of calls to evaluate (resp. garble).
-\vlad{removed LB claims}
+  %\smallskip
+  %We discuss applicability of our improvement to general functions, including ones with narrow branching.  High performance of \ourschemelong opens rich opportunity for performance-improving program transformations which may dramatically increase  the branching factor and use of branching.
+%\smallskip
+%%\vlad{We should say smth in main about known schemes fitting into the assumptions we made.}
+%%	Further,  for a natural class of garbling schemes, which includes all popular schemes, such as half-gates, this performance is near optimal.  We show that stacked garbling schemes making a linear in $b$ number of calls to garble (resp. evaluate) must make a quadratic in $b$ number of calls to evaluate (resp. garble).
+%\vlad{removed LB claims}
 
 \smallskip
-	\HK relies on the  random oracle (RO) assumption  in an essential way.  We track the source of this need and formalize a natural additional  assumption on base garbling scheme that allows to remove reliance on RO. \ourschemelong  is proven in the standard model. It can be instantiated correspondingly more efficiently in the stronger RO model.
+\HK relies on the  random oracle (RO) assumption  in an essential
+way.
+We track the source of this need,
+formalize a simple added additional assumption on the base garbling
+scheme,
+and remove reliance on RO:
+% that allows to remove
+% reliance on RO.
+\ourschemelong  is secure in the standard model.
+Nevertheless, \ourschemelong can still be instantiated with typical GC
+tricks based on non-standard assumptions (e.g. free XOR, half-gates),
+and hence is highly efficient given non-standard assumptions.
+% It
+% can be instantiated more efficiently in the stronger
+% RO model.
 
 \smallskip	
-	Finally, we implement our scheme (in the RO model, based on half-gates garbling) and report on its performance.  It improves over Heath and Kolesnikov by factor xx.
-	
-
-%  \todo{ are we doing this?}
- % With this extension in place, we then study the concrete constants
- %associated with stacked garbling and with our extension.
- % We demonstrate that the cheapest stacking strategies involve
- % compromising between so-called \emph{vectorized} branching and
- % nested branching.
- \vlad{removed that we are investigating stacking strategies interplay/compromize-- vectorized etc.}
+We implemented \ourschemelong (in the RO model, based on half-gates
+garbling) and report on performance.  It improves over \HK\ by factor xx.
 \end{abstract}
