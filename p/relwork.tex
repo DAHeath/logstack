@@ -1,42 +1,61 @@
 \section{Related Work}\label{sec:relwork}
 
 
-
-\subsection{title}
-
-GC is the most popular and often the fastest approach to secure two-party computation
-(2PC).  Until recently, it was believed that it is necessary
+GC is the most popular and often the fastest approach to secure two-party computation.  Until recently, it was believed that it is necessary
 to transmit the entire GC during 2PC, even for conditional branches that
 are not taken.  Recent breakthrough work~\HK showed that this folklore belief is false, and that  it is enough to only transmit GC material  proportional to the
 longest execution path rather than to the entire circuit.
 
-While the protocol of~\HK is concretely efficient, its quadratic computational cost presents a  limitation in settings where branching factor $b$ is beyond $5$ or, perhaps, $10$.  This estimate is based on the fact that on a commodity laptop and 1Gbps network, GC generation (and also evaluation by \E) is only about $20\times$ faster than its network transmission.  In most reasonable  settings and use cases, applying \HK to branching with factors beyond $30$ is not likely to improve total computation time.  Our work pushes this boundary significantly.
+We focus our comparison to prior work on~\HK, and then review other related work, such as universal circuits and  stacked garbling work.
+
+
+\paragraph{Comparison with~\HK.}
+While the protocol of~\HK is concretely efficient, its quadratic computational cost presents a  limitation in settings where branching factor $b$ is beyond $5$ or, perhaps, $10$.  This estimate is based on the fact that on a commodity laptop and 1Gbps network, GC generation (and also evaluation by \E) is only about $24\times$ faster than its network transmission (cf. discussion in~\Cref{sec:whentouse}).  Even in very favorable for~\HK settings, where communication is {\em much} more constrained than computation, applying \HK to branching with factors beyond $\approx 20$ or $30$ is not likely to improve total computation time.  Our work pushes this boundary significantly, as discussed in~\Cref{sec:whentouse}. \vlad{depending on our numbers, we could cite~\HK relatively low reported performance.}
 
 Above we only discussed the garbling costs in terms of the number of garbled circuits.  Crucially, memory management is a significant performance factor in GC in general, and in particular in~\HK garbling.  Indeed, retrieving an already-garbled material from RAM may take similar or longer time than regarbling from scratch while operating in cache.
 
-In addition to significantly improving computation cost (i.e. number of calls to \Gb\ and \Ev), our approach offers {\em dramatically} better memory utilization, as we discuss in~\Cref{sec:ourContrib}.  Quadratic construction of~\HK requires keeping track of a quadratic number of garbled circuits \vlad{to check}, while only XXX GCs are in memory at a time.  
+In addition to significantly improving computation cost (i.e. number of calls to \Gb\ and \Ev), our approach offers {\em dramatically} better memory utilization, as we discuss in~\Cref{sec:ourContrib}.  Quadratic construction of~\HK requires keeping track of a quadratic number of garbled circuits \vlad{to check}, while only XXX GCs are in memory at a time.  We discuss this aspect in technical detail in~\Cref{sec:memoryEfficiency}.
 
-As a result, in this work we essentially eliminate the concern of increased computation due to Stacked Garbling for standard settings (1 Gbps network, commodity laptop computing device).   That is, given a circuit
-
-\vlad{be clear: there are two ways to see comp performance. Starting with \cir, are we going to be slower than naive due to computation, and 2) compared to naive eval of netlist of material of same size as stacked material}
+In sum, as discussed in~\Cref{sec:whentouse,sec:memoryEfficiency}, we essentially eliminate the concern of increased computation due to Stacked Garbling for standard settings (1 Gbps network, commodity laptop computing device), and open the door to the possibility of applying a large class of efficiency-improving program transformations on the evaluated program.
 
 
-{\em Technical difference between our and~\HK binary braching.}
-%The multiplexer is \emph{not stacked}.
-The careful reader familiar with \cite{EPRINT:HeaKol20b} may be
-confused about our key idea: Stacked Garbling first presents a
-recursive binary tree approach to branching that they later
-discard in favor of a more efficient vector approach.
-So why is our binary tree approach better?
-The problem with \cite{EPRINT:HeaKol20b}'s recursive construction
-is that the evaluator recursively computes the multiplexer for
-nested sub-conditionals.
-However, doing so leads to a recursive emulation whereby \E
-emulates herself (and hence \G emulates himself as well).
-This recursion leads to quadratic cost for both players.
-The way out is to treat the multiplexer separately, and to opt not
-to stack it.
-If multiplexers are not stacked, then \E need not compute them.
+
+
+
+ 
+ 
+ 
+\paragraph{Universal circuits.}
+\vlad{needs adjustments as we address wider branching and UC potentially catches up better than \HK.}
+We use cryptographic techniques to reduce the cost of conditionals.  Our focus is the reduction of communication to that corresponding to the longest branch (SGC), while keeping the computational cost low.
+A related direction attempts to instead reduce such 2PC cost by choosing alternate Boolean circuit representations.
+Universal circuits (UCs) can be \emph{programmed} to implement any circuit in the entire universe of circuits of a given size $n$~\cite{STOC:Valiant76}.
+Researchers continue to search for smaller UC constructions;
+recent work achieves size $\approx 4.5 n \log n$~\cite{EPRINT:LipMohSad16,EC:KisSch16,AC:GunKisSch17,EPRINT:ZYZL19,EPRINT:AGKS19}.
+%
+UCs implement conditionals by programming the UC to be the taken branch. 
+When the GC generator knows the evaluated branch, the cost of UC programming is free as the generator directly programs the UC; otherwise programming is sent via $O(n\log n)$ OTs.
+However, even in the former ``free programming'' case, 
+implementing conditionals via UCs usually does not pay off.
+Even for branches with only $2^{10}$ gates, the UC is $4.5 \cdot 10 = 45$ times larger than a single branch. 
+For typical conditionals with only 2-3 branches, it is cheaper to separately encrypt and send each branch. 
+
+Motivated in part by branching,~\cite{AC:KenKolWil17} proposed a generalization of UCs called \emph{set} universal circuits ($\cal S$-UCs).
+An $\cal S$-UC implements a fixed set of circuits $\cal S$ rather than an entire size-$n$ universe.
+\cite{AC:KenKolWil17} focuses on the special case where $|\cal S|$ is small, capturing the case where $\cal S$ is a set of conditional branches.
+Their approach applies heuristics to embed $\cal S$ into one programmable circuit.
+\cite{AC:KenKolWil17} reports the performance of this heuristic for specific sets of circuits, achieving up to $6\times$ GC size reduction for $32$ branches.
+However, some sets did not improve over their original representations.  Our work achieves up to $32\times$ GC size reduction for $32$ branches and requires no per-gate overhead, which is significant  in~\cite{AC:KenKolWil17} (about $22$ garbled rows per gate).  
+The work of~\cite{AC:Kolesnikov18} (\Cref{review:ZK}) supersedes~\cite{AC:KenKolWil17} when the GC generator knows the taken branch. 
+
+
+\paragraph{Other related work.}
+
+There is a small number of works that address branching in secure computation, but are not GC/constant-round 2PC.  
+
+Kolesnikov~\cite{AC:Kolesnikov18} was the first to separate the GC {\em material} from the topology and proposed improved GC branching for the case when the generator \G knows the executed branch.  A subsequent work~\cite{EC:HeaKol20} considers a complementary setting where the GC evaluator \E knows the executed branch, and uses it to construct efficient ZK proofs for circuits with branching.
+Our work follows the line of work initated by~\cite{AC:Kolesnikov18,EC:HeaKol20}; it is general 2PC and is constant-round.
+
 
 
 
