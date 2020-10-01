@@ -127,7 +127,7 @@ The key idea of SGC is that the circuit generator \G\ garbles,
 starting from seeds, each branch $\cir_i$.
 He then \emph{stacks} these $b$ garbled circuits, yielding only a
 single piece of material proportional to the longest branch: $M =
-\bigoplus_i \gcir_i$.
+\bigoplus_i \gcir_i$. (Note,~\HK, as do we in this work,  pad each GC material $\gcir_i$ with randomness before stacking.  This ensures all $\gcir_i$ are of the same length.)
 Because the garblings are constructed starting from short seeds, the
 seeds are compact representations of the garblings.
 %
@@ -259,7 +259,7 @@ Our contributions include:
   \item High \emph{concrete performance}.
    \vlad{concrete numbers, report implementation stats}
   \item
-    A formalization in the \cite{CCS:BelHoaRog12} GC framework proved
+    A formalization in the \cite{CCS:BelHoaRog12} GC framework proved \vlad{I worried about saying under BHR since we must consider topology separately}
     secure under standard assumptions.
     \HK proved SGC secure by assuming the existence of a random oracle.
     We prove security using a standard PRprove security using a
@@ -274,9 +274,10 @@ Our contributions include:
 
 
 
-\subsection{When to use \ourscheme: Computational constraints on branching factor}
+\subsection{When to use \ourschemelong: a high-level costs consideration}
 \label{sec:whentouse}
 \dave{title? this doesn't seem accurate}
+\vlad{proposed candidate}
 
 We now informally discuss a broad question of
 practical importance:
@@ -319,7 +320,7 @@ The rest of this section argues this claim.
 To discuss the best strategy for applying \ourscheme, we must establish
 approximate relative costs of GC computation and communication.  Based
 on our experiments, as well as on~\cite{XiaoPersonalComm}, a commodity
-laptop running a single core can generate GCs at about $3\times$ the
+laptop running a single core can generate GC material at about $3\times$ the
 network bandwidth of $1$ Gbps channel.
 %
 However, if the GC includes conditional branching, it is easy to
@@ -344,7 +345,7 @@ additional factor.
 % material can be transmitted while it is generated, and the wall clock time is the maximum of generation and transmission times.
 
 Based on the above, we argue that typical settings allow that the
-computing device is (only) $24\times$ faster than the transmission
+material computing device is (only) $24\times$ faster than the material transmission
 device.
 
 
@@ -352,17 +353,17 @@ device.
 
 \paragraph{Evaluation approach.}  It is natural to approach this
 evaluation by considering the {\em baseline circuit} against which we
-measure SGC and \ourscheme\ performance.    That is, our baseline is a
+measure SGC and \ourschemelong\ performance.    That is, our baseline is a
 circuit \cir\ with conditionals, to which we apply garbling scheme
 directly, and to which we do not apply any program transformations.
-We may compare 2PC based on \ourscheme with  Yao GC, both instantiated
+We may compare 2PC based on \ourschemelong with  Yao GC, both instantiated
 with base scheme half-gates~\cite{EC:ZahRosEva15}.
 
 
 
 \paragraph{Rule of thumb: Always apply \ourscheme.}  Assuming the
 speed ratio of GC generation/transmission, and with a few caveats
-described next, using \ourscheme\ for branching will {\em always}
+described next, using \ourschemelong\ for branching will {\em always}
 improve over standard GC. 
 
 This is easy to see.  Indeed, we evaluate a given \cir\ as-is.  \G
@@ -370,18 +371,18 @@ runs a more computationally demanding  process, garbling and
 efficiently combining exactly $2 b \log b$ branches.  Consider a
 conditional with $b$ branches.  Classic GC will transmit $b$ branches.
 During this time, \G could perform $24 b$ branch garblings. Since
-\ourscheme's \G garbles $2\log b$ branches, the point where
+\ourschemelong's \G garbles $2\log b$ branches, the point where
 computation will cross over to become a bottleneck is $2^{12} = 4096$
-branches.  We conclude that applying \ourscheme\ improves wal clock
+branches.  We conclude that applying \ourschemelong\ improves wal clock
 time for nearly all reasonable baseline circuits and settings.
 
 
 \paragraph{Limits on circuit transformations imposed by computational costs.}
-Above we have easily  established that \ourscheme\ is almost always
+Above we have easily  established that \ourschemelong\ is almost always
 better than standard GC.   It is much harder to provide heuristics or
 a rough suggestions for which circuit transformations (cf.
 in~\Cref{sec:motivationHighB}) to apply, and how aggressively should
-they be applied in conjunction with \ourscheme\ secure evaluation.  We
+they be applied in conjunction with \ourschemelong\ secure evaluation.  We
 emphasize that our computational performance improvement of SGC opens
 a {\em much} wider optimization space than what was possible with the
 prior scheme~\HK.  We leave detailed investigation of this direction
