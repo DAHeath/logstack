@@ -383,13 +383,13 @@ immediate facts:
         &~~(\mat_0, \gcirinp_0) \gets \simulator_{obv}(1^\kappa, \cir_0)\\
         &~~\gcirout \gets \gEv(\cir_0, \mat_0, \gcirinp_0)\\
         &~~(\mat_1, \gcirinp_1, d) \gets \simulator_{prv}(1^\kappa, \cir_1, \cirout)\\
-        &~~\mat_{tr} \gets \simulator_{tr}(\gcirout, \gcirinp_0)\\
+        &~~\mat_{tr} \gets \simulator_{tr}(\gcirout, \gcirinp_1)\\
         &~~\creturn~(\mat_0 \mid \mat_{tr} \mid \mat_1, \gcirinp_0, d)
       \end{align*}
       Where $\simulator_{tr}$ simulates a translator
       mapping the encoded output $\gcirout$ to the encoded input
-      $\gcirinp_0$ (other rows that do not involve the labels in
-      $\gcirinp_0$ are simulated by uniformly sampling strings).
+      $\gcirinp_1$ (other rows that do not involve the labels in
+      $\gcirinp_1$ are simulated by uniformly sampling strings).
     \item Suppose \cir\ is a conditional $\conditional(\vec \cir)$.
       % Note first that the garbling of each branch is independent from
       % the multiplexer, except that output labels from each branch are
