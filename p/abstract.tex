@@ -45,17 +45,17 @@
 %\vlad{removed LB claims}
 
 \smallskip
-\HK relies on the existence of a random oracle (RO).
+\HK assumes random oracle (RO).
 We track the source of this need,
-formalize a simple added assumption on the base garbling
+formalize a simple and natural added assumption on the base garbling
 scheme,
 and remove reliance on RO:
 % that allows to remove
 % reliance on RO.
 \ourschemelong  is secure in the standard model.
 Nevertheless, \ourschemelong can be instantiated with typical GC
-tricks based on non-standard assumptions (e.g. free XOR, half-gates),
-and hence is highly efficient given non-standard assumptions.
+tricks based on non-standard assumptions, such as  free XOR, half-gates,
+and hence is highly efficient in this setting.
 % It
 % can be instantiated more efficiently in the stronger
 % RO model.
