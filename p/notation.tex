@@ -1,12 +1,60 @@
 \section{Notation and Assumptions}\label{sec:notation}
 
+\paragraph{Notation.}
+
+Our notation is mostly consistent with the notation of~\HK.
+\vlad{to check consistency.}
+
 \begin{itemize}
-  \item List out formal notation, focusing on any peculiarities.
-  \item $\kappa$ denotes the computational security parameter (e.g.
-    128).
-  \item $\sigma$ denotes the statistical security parameter (e.g. 40).
+	\item `\G' is the circuit generator. We refer to \G as
+	he, him, his, etc.
+	\item `\E' is the circuit evaluator. We refer to \E as
+	she, her, hers, etc.
+	\item `$\cir$' is a circuit.
+	Subcircuits are distinguished using annotations, e.g. $\cir_0, \cir_1, \cir'$...
+	\item Lowercase variables, e.g. $x, y$, refer to \emph{unencrypted} wire values.
+	That is, $x$ and $y$ are two different Boolean values held by two different wires.
+	\item Uppercase variables, e.g. $X, Y$, refer to wire labels which are the encryption of a wire value.
+	E.g., $X$ is the encryption of the value $x$.
+	\item This work discusses \emph{projective} garbling schemes, where each wire
+	has two labels. When the corresponding truth value for a label is known, we place the value as a superscript.
+	For example, we use $X^0$ to refer to the encryption of the bit $0$ on wire $x$.
+	Symmetrically, $X^1$ refers to the encryption of bit $1$.
+	Unannotated variables, e.g. $X$, refer to unknown wire encryptions: $X$ could be
+	either $X^0$ or $X^1$, but it is unspecified or unknown in the
+	given context.
+	\item The variables $s, S, S^0, S^1$ refer to the \emph{branch condition wire}. 
+	In the context of a conditional, $s$ decides which branch is taken.
+	\item Following SGC terminology introduced by~\cite{AC:Kolesnikov18}, $\mat$ refers to GC \emph{material}.
+	Informally, material is the data which, in conjunction with input labels, is used to compute output labels.
+	In standard garbling schemes, material is a vector of encrypted gate tables.
+	In this work, material can be encrypted gate tables or the XOR stacking of material from different branches.
+	In our work, material does not include the circuit topology or labels.
+	\item In the context of a conditional, subscripts $0$ and $1$
+	associate values with the first (resp.
+	second) branch. For example, $\mat_0$ is the material
+	for branch $\cir_0$.
+	\item The variables $n$ and $m$ respectively denote the number of input
+	wires and output wires of a given circuit.
+	\item Variables that represent vectors are written in bold. \vlad{I guess vec in this style is a vector bar, not bold}
+	For example, $\vec{x}$ is a vector of unencrypted truth values.
+	We use bracket notation to access indexes of vectors: $\vec{x}[0]$ accesses the $0$th index of $\vec{x}$.
+	\item We work with explicit pseudorandom seeds.
+	We write $a \drawnfrom{S} A$ to indicate that we pseudorandomly draw a value from the domain $A$ using the seed $S$ as a source of randomness and store the result in $a$.
+	When a seed $S$ is used to draw multiple values, we assume that
+	each draw uses a nonce to ensure independent randomness.
+	For simplicity, we leave the counter implicit.
+	\item We write $a \drawnfrom{} A$ to denote that $a$ is drawn uniformly from $A$.
+	\item $\indist$ denotes computational indistinguishability.
+	\item $\kappa$ denotes the computational security parameter and can be understood as the length of encryption keys (e.g. 128).
+	\item $\lambda$ denotes the empty string.
 \end{itemize}
 
-\paragraph{Assumptions.}
-Usually: List $H$ assumptions.
-Often: We assume a function $H$ modeled as a random oracle (RO).
+In this work, we evaluate GCs with input labels that are generated independently of the GC.
+I.e., these independent labels do not match the GC.
+We call such labels {\em garbage labels}.
+During GC evaluation,  garbage labels propagate and must eventually  be obliviously dropped in favor of valid labels.
+We call  the process of canceling out garbage labels {\em garbage collection}.
+
+\paragraph{Assumptions.} We assume a function $H$ modeled as a random oracle (RO).  Our main~\Cref{constr:} \ourschemelong is proven in the standard model. However, higher efficiency of both base schemes and our gadgets can be achieved under the RO assumption.
+

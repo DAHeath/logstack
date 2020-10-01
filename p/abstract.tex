@@ -12,15 +12,13 @@
   conditionals, it \emph{increases} the amount of computation
   performed by the players.
   For a circuit with conditional branching factor $b$, the players
-  perform $O(b^2)$ computation: GC generator garbles $b^2$ branches  instead of $b$ garbled in traditional GC.
+  perform $O(b^2)$ computation: GC generator garbles $b^2$ branches, while only $b$ branches are garbled in traditional GC.
 
 \smallskip
-  We extend 
-  %the work of Heath and Kolesnikov 
-  \HK 
-  by reducing
-  the computation overhead from $O(b^2)$ to $O(b \log b)$.
-  We observe that the primary cause of the increased computation is the
+  %We extend  \HK 
+  Our scheme \ourschemelong  reduces
+   computation overhead of stacked garbling from $O(b^2)$ to $O(b \log b)$, \vlad{or "the total of $3b \log b$"?} with {\em no} increase in communication.  \vlad{our gadget is slightly larger than HK.}
+  We observe that the primary cause of the increased computation of~\HK is the
   oblivious collection of \emph{garbage labels} that emerge during the
   oblivious evaluation of inactive conditional branches.
   Garbage is collected by a \emph{multiplexer} component whose
@@ -29,21 +27,29 @@
   %our extension carefully places the multiplexer 
   such that we avoid quadratic behavior.
   
+  \smallskip
+  Beyond just reducing the number of calls to the garbling and evaluation functions, our construction is much more {\em memory efficient}: while \HK require storing material of each of $b^2$ circuits, we only need $O(|C| \log b)$ RAM.  \vlad{correct?  Also, number of RAM accesses?}
+  This further significantly improves the advantage of our scheme.
+  
+  \smallskip
+  We discuss applicability of our improvement to general functions, including ones with narrow branching.  High performance of \ourschemelong opens rich opportunity for performance-improving program transformations which may dramatically increase  the branching factor and use of branching.
 \smallskip
-\vlad{We should say smth in main about known schemes fitting into the assumptions we made.}
-	Further,  for a natural class of garbling schemes, which includes all popular schemes, such as half-gates, this performance is near optimal.  We show that stacked garbling schemes making a linear in $b$ number of calls to garble (resp. evaluate) must make a quadratic in $b$ number of calls to evaluate (resp. garble).
+%\vlad{We should say smth in main about known schemes fitting into the assumptions we made.}
+%	Further,  for a natural class of garbling schemes, which includes all popular schemes, such as half-gates, this performance is near optimal.  We show that stacked garbling schemes making a linear in $b$ number of calls to garble (resp. evaluate) must make a quadratic in $b$ number of calls to evaluate (resp. garble).
+\vlad{removed LB claims}
 
 \smallskip
-	\HK relies on the  random oracle (RO) assumption  in an essential way.  We design a Stacked Garbling  variant which does not require RO.
+	\HK relies on the  random oracle (RO) assumption  in an essential way.  We track the source of this need and formalize a natural additional  assumption on base garbling scheme that allows to remove reliance on RO. \ourschemelong  is proven in the standard model. It can be instantiated correspondingly more efficiently in the stronger RO model.
 
 \smallskip	
 	Finally, we implement our scheme (in the RO model, based on half-gates garbling) and report on its performance.  It improves over Heath and Kolesnikov by factor xx.
 	
-\bigskip
-  \todo{ are we doing this?}
-  With this extension in place, we then study the concrete constants
-  associated with stacked garbling and with our extension.
-  We demonstrate that the cheapest stacking strategies involve
-  compromising between so-called \emph{vectorized} branching and
-  nested branching.
+
+%  \todo{ are we doing this?}
+ % With this extension in place, we then study the concrete constants
+ %associated with stacked garbling and with our extension.
+ % We demonstrate that the cheapest stacking strategies involve
+ % compromising between so-called \emph{vectorized} branching and
+ % nested branching.
+ \vlad{removed that we are investigating stacking strategies interplay/compromize-- vectorized etc.}
 \end{abstract}
