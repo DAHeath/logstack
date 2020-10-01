@@ -229,6 +229,26 @@ By way of example, let's consider the special case of $\guess=0$ and $\truth = 1
 % the material,
 
 
+\subsection{Technical difference between our and~\HK binary braching}
+\label{sec:techOverviewDiff}
+
+
+A careful reader familiar with~\HK may notice that they present two versions of stacked garbling: a 
+recursive binary tree approach, which they 
+discard in favor of a more efficient vector approach.
+Our work advocates the binary tree approach and substantially improves on~\HK.
+Why is our binary tree approach better?
+
+The problem with~\HK's recursive construction
+is that the evaluator \E recursively computes the multiplexer for
+nested sub-conditionals.
+However, doing so leads to a recursive emulation whereby \E
+emulates herself (and hence \G emulates himself as well).
+This recursion leads to quadratic cost for both players.
+The way out is to treat the multiplexer separately, and to opt not
+to stack it.
+If multiplexers are not stacked, then \E need not compute them.
+This observation notices the costly recursive emulation.  Its elimination was the fist step towards our construction, whose technical detail is described above in~\Cref{sec:techOverview}.
 
 
 
