@@ -134,97 +134,122 @@
   }\label{fig:gadget-func}
 \end{figure}
 
+\begin{figure}
+  \begin{align*}
+    &\gbtree(\vec{\cir}, i, j, es):\\
+    &~~\codecomment{$es$ refers to \E's seed for the node $\node_{i,j}$.}\\
+    &~~\codecomment{\G also invokes this procedure, but does so to emulate \E.}\\
+    &~~\cif~i = j:\\
+    &~~~~\codecomment{Base case of $1$ branch.}\\
+    &~~~~M, \cdot, \cdot \gets \gb(\vec\cir[i], es)\\
+    &~~~~\creturn~M\\
+    &~~\celse:\\
+    &~~~~\codecomment{Expand child seeds using PRF.}\\
+    &~~~~es_L \gets F_{es}(0)\\
+    &~~~~es_R \gets F_{es}(1)\\
+    &~~~~\codecomment{Recursively garble both child trees and stack
+    material.}\\
+    &~~~~\creturn~\gbtree(\vec{\cir}, i, \sfrac{j}{2}, es_L) \oplus
+    \gbtree(\vec{\cir}, \sfrac{j}{2} + 1, j, es_R)\\
+  \end{align*}
+  \caption{%
+    The helper algorithm \gbtree\ uses a single seed to recursively
+    garble all circuits $\cir_i - \cir_j$ and stacks (using XOR) all
+    resultant material.
+  }
+\end{figure}
 
 \begin{figure}
   \begin{align*}
-    &\evcond(\vec{\cir}, M, \vec{X}):\\
-    &~~\switch~\vec{\cir}:\\
-    &~~~~\ccase~(\cir):\\
-    &~~~~~~\codecomment{Base case of $1$ branch.}\\
-    &~~~~~~\creturn~\ev(\cir, M, \vec{X})\\
-    &~~~~\ccase~(\cir_1..\cir_b):\\
-    &~~~~~~\codecomment{General case of $b$ branches.}\\
-    &~~~~~~\codecomment{Split material into demultiplexer and body of subtrees.}\\
-    &~~~~~~(M_{dem}, M_{cond}) \gets M\\
-    &~~~~~~\codecomment{Split input into the branch condition and remaining wires.}\\
-    &~~~~~~S \gets \vec{X}[0]\\
-    &~~~~~~\vec{X}' \gets \vec{X}[1..]\\
-    &~~~~~~\codecomment{Garble both subtrees.}\\
-    &~~~~~~M_0,\cdot \gets \gbcond'((\cir_1..\cir_{\frac{b}{2}}), S)\\
-    &~~~~~~M_1,\cdot \gets \gbcond'((\cir_{\frac{b}{2}+1}..\cir_b), S)\\
-    &~~~~~~\codecomment{Demultiplex based on the branch condition.}\\
-    &~~~~~~\codecomment{One resultant vector is garbage and the other is valid.}\\
-    &~~~~~~\vec{X}_0, \vec{X}_1 \gets dem.\ev(M_{dem}, S, \vec{X}')\\
-    &~~~~~~Y_0 \gets \evcond((\cir_1..\cir_{\frac{b}{2}}), M \oplus M_1, \vec{X}_0)\\
-    &~~~~~~Y_1 \gets \evcond((\cir_{\frac{b}{2}+1}..\cir_b), M \oplus M_0, \vec{X}_1)\\
-    &~~~~~~\creturn~Y_0, Y_1
+    &\evcond(\vec{\cir}, \mat, X):\\
+    &~~b \gets | \vec{\cir} |\\
+    &~~\codecomment{Split the active branch index from the rest of the
+    input.}\\
+    &~~\aid \mid X' \gets X\\
+    &~~\codecomment{Split material up for gadgets and body of conditional.}\\
+    &~~\mat_\gadget \mid \mat_{dem} \mid \mat_{cond} \mid \mat_{mux} \gets \mat\\
+    &~~\codecomment{Run $\gadget$ to compute all of \E's seeds.}\\
+    &~~es \gets \gadget.\mathtt{Ev}(\aid, \mat_\gadget)\\
+    &~~\codecomment{Run the demultiplexer to compute input for each branch $\cir_i$}\\
+    &~~\vec{X} \gets \evdem(\aid, X, \mat_{dem})\\
+    &~~\codecomment{We define a recursive subprocedure that evaluates $\cir_i - \cir_j$ using material $\mat$.}\\
+    &~~\evcond'(\mat, i, j):\\
+    &~~~~\cif~i = j:\\
+    &~~~~~~\codecomment{Base case: compute output by evaluating the branch normally.}\\
+    &~~~~~~\gcirout_i \gets \ev(\cir_i, M, \gcirinp_i)\\
+    &~~~~\celse:\\
+    &~~~~~~\codecomment{Garble the right subtree using the available
+    seed,}\\
+    &~~~~~~\codecomment{unstack, and recursively evaluate the left
+    subtree.}\\
+    &~~~~~~\mat_R \gets \gbtree(\vec{\cir}, \sfrac{j}{2}+1, j, es_{\sfrac{j}{2}+1, j})\\
+    &~~~~~~\evcond'(\mat \oplus \mat_R, i, \sfrac{j}{2})\\
+    &~~~~~~\codecomment{Symmetrically evaluate the right subtree.}\\
+    &~~~~~~\mat_L \gets \gbtree(\vec{\cir}, i, \sfrac{j}{2}, es_{i,\sfrac{j}{2}})\\
+    &~~~~~~\evcond'(\mat \oplus \mat_L, \sfrac{j}{2}+1, j)\\
+    &~~\codecomment{Start recursive process from the top of the tree.}\\
+    &~~\evcond'(M_{cond}, 0, b-1)\\
+    &~~\codecomment{Eliminate garbage and propagate $\vec{Y}_\aid$ via
+    the multiplexer.}\\
+    &~~\creturn~\evmux(\aid, \vec{Y}, M_{mux})
   \end{align*}
   \caption{%
-    The algorithm for evaluating a conditional vector.
-    Given $b$ branches, \evcond returns $b$ output label vectors.
-    $b-1$ of these vectors will be garbage which must be captured by
-    the multiplexer.
-    One vector will be valid labels.
+    \E's procedure, \evcond, for evaluating a conditional with $b$ branches.
+    \evcond\ recursively evaluates each branch; $b-1$ evaluations
+    result in garbage outputs and $1$ (specifically the evaluation of
+    $\cir_\aid$) results in valid outputs.
+    The multiplexer collects garbage and propagates output from
+    $\cir_\aid$.
   }
 \end{figure}
+
+
 \begin{figure}
   \begin{align*}
     &\gbcond(\vec{\cir}, S):\\
-    &~~\switch~\vec{\cir}:\\
-    &~~~~\ccase~(\cir):\\
-    &~~~~~~\codecomment{Base case of $1$ branch.}\\
-    &~~~~~~M, e, d \gets \gb(\cir, S)\\
-    &~~~~~~\codecomment{Return material, encoding string, decoding string, and empty garbage outputs.}\\
-    &~~~~~~\creturn~M, e, d, \lambda\\
-    &~~~~\ccase~(\cir_1..\cir_b):\\
-    &~~~~~~\codecomment{General case of $b$ branches.}\\
-    &~~~~~~\codecomment{Split material into demultiplexer and body of subtrees.}\\
-    &~~~~~~e \gets \genprojection(n)\\
-    &~~~~~~S^0, S^1 \gets e[0]\\
-    &~~~~~~\codecomment{Garble both subtrees.}\\
-    &~~~~~~M_0,e_0,d_0,junk_0 \gets \gbcond((\cir_1..\cir_{\frac{b}{2}}), S^1)\\
-    &~~~~~~M_1,e_1,d_1,junk_1 \gets \gbcond((\cir_{\frac{b}{2}+1}..\cir_b), S^0)\\
-    &~~~~~~\codecomment{Garble both subtrees with ``bad'' seeds.}\\
-    &~~~~~~M_0',\cdot \gets \gbcond'((\cir_1..\cir_{\frac{b}{2}}), S^0)\\
-    &~~~~~~M_1',\cdot \gets \gbcond'((\cir_{\frac{b}{2}+1}..\cir_b), S^1)\\
-    &~~~~~~M_{dem},\bot_0, \bot_1 \gets dem.\gb(S^0, S^1, e, e_0, e_1)\\
-    &~~~~~~\bot_0' \gets \evcond((\cir_1..\cir_{\frac{b}{2}}), (M_0 \oplus M_1) \oplus M_1', \bot_0)\\
-    &~~~~~~\bot_1' \gets \evcond((\cir_{\frac{b}{2}+1}..\cir_b), (M_0 \oplus M_1) \oplus M_0', \bot_1)\\
-    &~~~~~~\creturn~M_{dem}|(M_0\oplus M_1), e, (d_0,d_1), (junk_0,\bot_0',junk_1,\bot_1')
+    &~~b \gets | \vec{\cir} |\\
+    &~~\codecomment{Recursively derive all `good' seeds for the entire tree.}\\
+    &~~s \gets \mathtt{SeedTree}(S)\\
+    &~~\codecomment{Uniformly sample an input encoding for the conditional.}\\
+    &~~e \gets \mathtt{UniformEncoding}(S)\\
+    &~~\codecomment{Split encoding into encoding of active branch
+    index and rest of encoding.}\\
+    &~~e_\aid, e' \gets e\\
+    &~~\codecomment{Garble \gadget\ based on the encoding of \aid.}\\
+    &~~\codecomment{This outputs material as well as the tree of all
+    `bad' seeds $s'$.}\\
+    &~~\mat_\gadget, s' \gets \gadget.\mathtt{Gb}(e_\aid, s)\\
+    &~~\mat_{dem}, \bot_{in} \gets \gbdem(e_\aid, e')\\
+    &~~\codecomment{We define a recursive subprocedure that garbles $\cir_i - \cir_j$.}\\
+    &~~\gbcond'(i, j, \vec{\mat}):\\
+    &~~~~\codecomment{Recursively garble $\cir_i - \cir_j$ \emph{and}
+    compute all possible garbage outputs.}\\
+    &~~~~\codecomment{$\vec{\mat}$ is a vector of the bad garblings of
+      all sibling roots of the current node.}\\
+    &~~~~\cif~i = j:\\
+    &~~~~~~\mat, \cdot, \vec{d}_i \gets \gb(\vec{\cir}[i], s_{i})\\
+    &~~~~~~acc \gets \mat\\
+    &~~~~~~\cfor~k \in 0..|\log b|:\\
+    &~~~~~~~~\codecomment{Emulate all possible bad evaluations of $\cir_i$.}\\
+    &~~~~~~~~acc \gets acc \oplus \vec{\mat}[k]\\
+    &~~~~~~~~\bot_{out}[i][k] \gets \mid \gEv(\vec{\cir}[i], acc,
+    \bot_{in}[k])\\
+    &~~~~~~\creturn~M\\
+    &~~~~\celse:\\
+    &~~~~~~\mat_R \gets \gbtree(\vec{\cir}, \sfrac{j}{2}+1, j, s_{\sfrac{j}{2}+1, j})\\
+    &~~~~~~\mat_R' \gets \gbtree(\vec{\cir}, \sfrac{j}{2}+1, j, s'_{\sfrac{j}{2}+1, j})\\
+    &~~~~~~\mat_L \gets \gbcond'(i, \sfrac{j}{2}, (\mat_R \oplus \mat_R') \mid \vec{\mat})\\
+    &~~~~~~\mat_L' \gets \gbtree(\vec{\cir}, i, \sfrac{j}{2}, s'_{i, \sfrac{j}{2}})\\
+    &~~~~~~\cdot \gets \gbcond'(\sfrac{j}{2}+1, j, (\mat_L \oplus \mat_L') \mid \vec{\mat})\\
+    &~~~~~~\creturn~\mat_L \oplus \mat_R\\
+    &~~\mat_{cond} \gets \gbcond'(0, b-1, [~])\\
+    &~~\mat_{mux} \gets \gbmux(e_\aid, d, \vec{d}, \bot_{out})\\
+    &~~\creturn~(\mat_\gadget \mid \mat_{dem} \mid \mat_{cond} \mid \mat_{mux}, e, d)
   \end{align*}
   \caption{%
     The algorithm for garbling a conditional vector.
     Given $b$ branches, \gbcond returns (1) the stacked material, (2)
     the input encoding string, (3) all $b$ output decoding strings,
     and (4) all $b\log b$ possible garbage output label vectors.
-  }
-\end{figure}
-
-\begin{figure}
-  \begin{align*}
-    &\gbcond'(\vec{\cir}, S):\\
-    &~~\switch~\vec{\cir}:\\
-    &~~~~\ccase~(\cir):\\
-    &~~~~~~\codecomment{Base case of $1$ branch.}\\
-    &~~~~~~M, e, \cdot \gets \gb(\cir, S)\\
-    &~~~~~~\creturn~M, e\\
-    &~~~~\ccase~(\cir_1..\cir_b):\\
-    &~~~~~~\codecomment{General case of $b$ branches.}\\
-    &~~~~~~\codecomment{Split material into demultiplexer and body of subtrees.}\\
-    &~~~~~~e \gets \genprojection(n)\\
-    &~~~~~~S^0, S^1 \gets e[0]\\
-    &~~~~~~\codecomment{Garble both subtrees.}\\
-    &~~~~~~M_0,e_0 \gets \gbcond'((\cir_1..\cir_{\frac{b}{2}}), S^1)\\
-    &~~~~~~M_1,e_1 \gets \gbcond'((\cir_{\frac{b}{2}+1}..\cir_b), S^0)\\
-    &~~~~~~M_{dem},\cdot, \cdot \gets dem.\gb(S^0, S^1, e, e_0, e_1)\\
-    &~~~~~~\creturn~M_{dem}|(M_0\oplus M_1), e
-  \end{align*}
-  \caption{%
-    The helper algorithm $\gbcond'$ garbles all $b$ branches, but does
-    not construct garbage material.
-    Notice that $\gbcond'$ is significantly cheaper than $\gbcond$:
-    $\gbcond'$ does not invoke $\evcond$ and hence has only linear
-    complexity.
-    This low complexity is central to our improved performance.
   }
 \end{figure}
