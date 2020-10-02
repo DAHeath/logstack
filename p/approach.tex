@@ -209,7 +209,7 @@
     &\gbcond(\vec{\cir}, S):\\
     &~~b \gets | \vec{\cir} |\\
     &~~\codecomment{Recursively derive all `good' seeds for the entire tree.}\\
-    &~~s \gets \mathtt{SeedTree}(S)\\
+    &~~s \gets \mathtt{DeriveSeedTree}(S)\\
     &~~\codecomment{Uniformly sample an input encoding for the conditional.}\\
     &~~e \gets \mathtt{UniformEncoding}(S)\\
     &~~\codecomment{Split encoding into encoding of active branch
