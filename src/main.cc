@@ -56,8 +56,10 @@ double experiment(const Circuit& c) {
     results.push_back(timed([&] {
       PRG seed;
       PRF k;
-
       auto [material, interface] = garble(k, c, seed);
+
+
+      std::cout << "HERE\n";
 
       const auto delta1 = interface.inpEnc.delta;
       const auto delta2 = interface.outEnc.delta;
@@ -68,6 +70,7 @@ double experiment(const Circuit& c) {
       }
 
       const auto out = ev(k, c, inp, material);
+      std::cout << "THERE\n";
 
 
       for (std::size_t i = 0; i < c.nOut; ++i) {
@@ -98,15 +101,30 @@ int main(int argc, char** argv) {
     sha.desc.nOut,
     sha.desc.nRow,
   };
-  std::vector<Circuit> cs;
-  for (std::size_t i = 1; i <= 20; ++i) {
-    cs.push_back(sha_netlist);
+  std::vector<Circuit> cs = { sha_netlist };
+  for (std::size_t i = 0; i <= 4; ++i) {
+    std::cout << (1 << i) << '\n';
+    std::cout << cs.size() << '\n';
+
     if (cs.size() == 1) {
       std::cout << experiment(cs[0]) << '\n';
     } else {
       std::cout << experiment(conditional(cs)) << '\n';
     }
+
+    for (std::size_t j = 0; j < (1 << i); ++j) {
+      cs.push_back(sha_netlist);
+    }
   }
+  /* for (std::size_t i = 1; i <= 8; ++i) { */
+  /*   std::cout << i << '\n'; */
+  /*   cs.push_back(sha_netlist); */
+  /*   if (cs.size() == 1) { */
+  /*     std::cout << experiment(cs[0]) << '\n'; */
+  /*   } else { */
+  /*     std::cout << experiment(conditional(cs)) << '\n'; */
+  /*   } */
+  /* } */
 
 
   /* PRG prg; */
