@@ -432,18 +432,20 @@ Labelling evCond(
     std::span<Label> mat1 { material1 };
 
     Labelling out0, out1;
-    std::thread th { [&] {
+    {
+    /* std::thread th { [&] { */
       PRG prg(s1);
       mat0 ^= gbCond_(f, cs1, genEncoding(prg, n-1), prg);
       out0 = evCond(f, cs0, seeds0, inp0, mat0, muxMat0);
-    }};
+    /* }}; */
+    }
     {
       PRG prg(s0);
       const auto toUnstack = gbCond_(f, cs0, genEncoding(prg, n-1), prg);
       mat1 ^= toUnstack;
       out1 = evCond(f, cs1, seeds1, inp1, mat1, muxMat1);
     }
-    th.join();
+    /* th.join(); */
 
     return evMux(f, S, out0, out1, muxMatNow);
   }
@@ -456,7 +458,7 @@ CondGarbling gbCond(
     PRG& prg,
     const Encoding& e,
     std::span<const Label> badSeeds,
-    std::vector<Labelling>& badInps,
+    const std::vector<Labelling>& badInps,
     std::vector<std::span<Label>> badSiblings,
     std::span<Label> muxMat) {
   const auto b = cs.size();
@@ -496,14 +498,14 @@ CondGarbling gbCond(
     const auto [bad0, bad1] = gbDem(prg, f, e.delta, zeros[0], zeros.subspan(1), e0, e1, material);
 
     Material scratch = material;
-    std::vector<Labelling>& badInps0 = badInps;
+    std::vector<Labelling> badInps0(badInps.size());
     std::vector<Labelling> badInps1(badInps.size());
     for (int i = badInps.size()-1; i >= 0; --i) {
       // peel off the demux portion of the material of each bad sibling
       // and add it to the scratch material
       scratch ^= badSiblings[i].subspan(0, 3*(n-1) + 2);
       badSiblings[i] = badSiblings[i].subspan(3*(n-1) + 2);
-      std::span<Label> badInpsSpan = badInps[i];
+      std::span<const Label> badInpsSpan = badInps[i];
       badInpsSpan = badInpsSpan.subspan(1);
       assert(badInpsSpan.size() == n-1);
       auto demuxed = evDem(f, badInps[i][0], badInpsSpan, scratch);
@@ -526,45 +528,35 @@ CondGarbling gbCond(
     const auto muxMatNow = muxMat.subspan(muxMatSize0 + muxMatSize1);
 
 
-    // immediately garble all of the right branches to compute good material
-    const auto m1 = gbCond_(f, cs1, e1, prg1);
-
-    Material m0;
-    Encoding d0, d1;
-    std::vector<Labelling> badOuts0, badOuts1;
-
+    // set up bad seeds and expand
+    Material m0_, m1_, m1;
     std::thread th { [&] {
-      // set up bad seed and expand
       PRG prg1_ { bads1 };
-      auto m1_ = gbCond_(f, cs1, genEncoding(prg1_, n-1), prg1_);
+      m1_ = gbCond_(f, cs1, genEncoding(prg1_, n-1), prg1_);
+      m1 = gbCond_(f, cs1, e1, prg1);
       m1_ ^= m1;
-
-      // now, recursively garble left branches, using garbage from right
-      auto badSiblings0 = badSiblings;
-      badSiblings0.push_back(m1_);
-      const auto gb0 = gbCond(f, cs0, prg0, e0, badSeeds0, badInps0, badSiblings0, muxMat0);
-      m0 = gb0.material;
-      d0 = gb0.outEnc;
-      badOuts0 = gb0.badOuts;
     }};
+    {
+      PRG prg0_ { bads0 };
+      m0_ = gbCond_(f, cs0, genEncoding(prg0_, n-1), prg0_);
+    }
+    th.join();
+
+    // immediately garble all of the right branches to compute good material
+
+    // now, recursively garble left branches, using garbage from right
+    auto badSiblings0 = badSiblings;
+    badSiblings0.push_back(m1_);
+    const auto [m0, d0, badOuts0] = gbCond(f, cs0, prg0, e0, badSeeds0, badInps0, badSiblings0, muxMat0);
 
     // now that garbage from left is available,
     // recursively garble right branches
+    m0_ ^= m0;
+    auto badSiblings1 = badSiblings;
+    badSiblings1.push_back(m0_);
 
-    {
-      PRG prg0_ { bads0 };
-      auto m0_ = gbCond_(f, cs0, genEncoding(prg0_, n-1), prg0_);
-      m0_ ^= m0;
-      auto badSiblings1 = badSiblings;
-      badSiblings1.push_back(m0_);
-
-      PRG prg1_re = seed1;
-      const auto gb1 = gbCond(f, cs1, prg1_re, e1, badSeeds1, badInps1, badSiblings1, muxMat1);
-      d1 = gb1.outEnc;
-      badOuts1 = gb1.badOuts;
-    }
-
-    th.join();
+    PRG prg1_re = seed1;
+    const auto [m1_re, d1, badOuts1] = gbCond(f, cs1, prg1_re, e1, badSeeds1, badInps1, badSiblings1, muxMat1);
 
     material.resize(material.size() + m0.size());
 
