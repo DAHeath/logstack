@@ -47,20 +47,20 @@ double experiment(const Circuit& c) {
       const auto out = ev(k, c, inp, material);
 
 
-      /* for (std::size_t i = 0; i < c.nOut; ++i) { */
-      /*   if (out[i] == interface.outEnc.zeros[i]) { */
-      /*     std::cout << '0'; */
-      /*   } else if (out[i] == (interface.outEnc.zeros[i] ^ delta2)) { */
-      /*     std::cout << '1'; */
-      /*   } else { */
-      /*     /1* std::cerr << "ERROR!\n"; *1/ */
-      /*     /1* std::cerr << out[i] << '\n'; *1/ */
-      /*     /1* std::cerr << g.outputEncoding.zeros[i] << '\n'; *1/ */
-      /*     /1* std::cerr << (g.outputEncoding.zeros[i] ^ delta2) << '\n'; *1/ */
-      /*     /1* std::exit(1); *1/ */
-      /*   } */
-      /* } */
-      /* std::cout << '\n'; */
+      for (std::size_t i = 0; i < c.nOut; ++i) {
+        if (out[i] == interface.outEnc.zeros[i]) {
+          std::cout << '0';
+        } else if (out[i] == (interface.outEnc.zeros[i] ^ delta2)) {
+          std::cout << '1';
+        } else {
+          /* std::cerr << "ERROR!\n"; */
+          /* std::cerr << out[i] << '\n'; */
+          /* std::cerr << g.outputEncoding.zeros[i] << '\n'; */
+          /* std::cerr << (g.outputEncoding.zeros[i] ^ delta2) << '\n'; */
+          /* std::exit(1); */
+        }
+      }
+      std::cout << '\n';
     }));
   }
 
