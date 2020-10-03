@@ -77,12 +77,6 @@ int main(int argc, char** argv) {
   std::vector<Circuit> cs = {
     sha_netlist, sha_netlist,
     sha_netlist, sha_netlist,
-    sha_netlist, sha_netlist,
-    sha_netlist, sha_netlist,
-    sha_netlist, sha_netlist,
-    sha_netlist, sha_netlist,
-    sha_netlist, sha_netlist,
-    sha_netlist, sha_netlist,
   };
   std::cout << experiment(conditional(cs)) << '\n';
 

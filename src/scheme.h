@@ -103,12 +103,30 @@ struct Garbling {
   Interface interface;
 };
 
-struct CondGarbling {
+
+struct HalfGarbling {
   Material material;
+  Encoding outEnc;
+};
+
+
+struct HalfGarblingView {
+  HalfGarblingView() = default;
+  HalfGarblingView(std::span<Label> material, const Encoding& outEnc)
+    : material(material), outEnc(outEnc) { }
+  HalfGarblingView(HalfGarbling& o) :
+    material(o.material),
+    outEnc(o.outEnc) { }
+
+  std::span<Label> material;
+  Encoding outEnc;
+};
+
+
+struct CondGarbling {
   Encoding outEnc;
   std::vector<Labelling> badOuts;
 };
-
 
 Encoding gb(const PRF&, const Circuit&, EncodingView, std::span<Label>);
 Labelling ev(const PRF&, const Circuit&, std::span<Label>, std::span<Label>);

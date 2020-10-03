@@ -37,6 +37,11 @@ Encoding operator^(const Encoding& x, const Encoding& y) {
 }
 
 
+HalfGarbling operator^(const HalfGarbling& x, const HalfGarbling& y) {
+  return { x.material ^ y.material, x.outEnc ^ y.outEnc };
+}
+
+
 std::pair<Labelling, Labelling> gbDem(
     PRG& seed,
     const PRF& f,
@@ -239,6 +244,7 @@ Labelling evMux(
 }
 
 
+
 void gbGadget_rec(
     std::size_t b,
     const PRF& f,
@@ -349,7 +355,7 @@ std::vector<Label> evGadget(
 
 
 
-Material gbCond_(const PRF& f, std::span<const Circuit> cs, EncodingView e, PRG& prg, std::size_t toFill) {
+HalfGarbling gbCond_(const PRF& f, std::span<const Circuit> cs, EncodingView e, PRG& prg, std::size_t toFill) {
   const auto b = cs.size();
 
   if (e.size() > ilog2(b) + cs[0].nInp) {
@@ -362,11 +368,11 @@ Material gbCond_(const PRF& f, std::span<const Circuit> cs, EncodingView e, PRG&
 
   if (b == 1) {
     Material mat (toFill);
-    gb(f, cs[0], e, mat);
+    const auto d = gb(f, cs[0], e, mat);
     for (std::size_t i = cs[0].nRow; i < toFill; ++i) {
       mat[i] = prg();
     }
-    return mat;
+    return { mat, d };
   } else {
     const auto n = e.size();
 
@@ -382,8 +388,8 @@ Material gbCond_(const PRF& f, std::span<const Circuit> cs, EncodingView e, PRG&
     const auto cs1 = cs.subspan(b0);
     const auto R = std::max(condSize(cs0), condSize(cs1));
 
-    const auto mat0 = gbCond_(f, cs0, e0, prg0, R);
-    const auto mat1 = gbCond_(f, cs1, e1, prg1, R);
+    const auto [mat0, d0] = gbCond_(f, cs0, e0, prg0, R);
+    const auto [mat1, d1] = gbCond_(f, cs1, e1, prg1, R);
 
     Material material(toFill);
 
@@ -400,7 +406,7 @@ Material gbCond_(const PRF& f, std::span<const Circuit> cs, EncodingView e, PRG&
       material[i] = prg();
     }
 
-    return material;
+    return { material, d0 ^ d1 };
   }
 }
 
@@ -468,14 +474,16 @@ Labelling evCond(
     std::thread th { [&] {
       PRG prg(s1);
       auto e1 = genEncoding(prg, n-1);
-      mat0 ^= gbCond_(f, cs1, e1, prg, R);
+      const auto [m1, d1] = gbCond_(f, cs1, e1, prg, R);
+      mat0 ^= m1;
       out0 = evCond(f, cs0, seeds0, inp0, mat0, muxMat0);
     }};
     /* } */
     {
       PRG prg(s0);
-      auto e1 = genEncoding(prg, n-1);
-      mat1 ^= gbCond_(f, cs0, e1, prg, R);
+      auto e0 = genEncoding(prg, n-1);
+      const auto [m0, d0] = gbCond_(f, cs0, e0, prg, R);
+      mat1 ^= m0;
       out1 = evCond(f, cs1, seeds1, inp1, mat1, muxMat1);
     }
     th.join();
@@ -490,6 +498,7 @@ CondGarbling gbCond(
     std::span<const Circuit> cs,
     PRG& prg,
     EncodingView e,
+    HalfGarblingView garbling,
     std::span<const Label> badSeeds,
     std::vector<std::span<Label>> badInps,
     std::vector<std::span<Label>> badSiblings,
@@ -512,21 +521,14 @@ CondGarbling gbCond(
   }
 
   if (b == 1) {
-    Material material (toFill);
-    const auto d = gb(f, cs[0], e, material);
-
     std::vector<Labelling> badouts(badInps.size());
-    Material scratch = material;
+    Material scratch { garbling.material.begin(), garbling.material.end() };
     for (int i = badInps.size()-1; i >= 0; --i) {
       scratch ^= badSiblings[i];
       badouts[i] = ev(f, cs[0], badInps[i], scratch);
     }
 
-    for (std::size_t i = cs[0].nRow; i < toFill; ++i) {
-      material[i] = prg();
-    }
-
-    return { material, d, badouts };
+    return { garbling.outEnc, badouts };
   } else {
     const auto n = e.zeros.size();
     const auto m = cs[0].nOut;
@@ -584,62 +586,65 @@ CondGarbling gbCond(
 
     const auto R = std::max(condSize(cs0), condSize(cs1));
 
+    auto garbling0 = gbCond_(f, cs0, e0, prg0, R);
+    HalfGarbling garbling1;
+    garbling.material = garbling.material.subspan(3*(n-1) + 2);
+    garbling1.material = { garbling.material.begin(), garbling.material.end() };
+    garbling1.outEnc = garbling.outEnc ^ garbling0.outEnc;
+    garbling1.material ^= garbling0.material;
+
+
+
     // set up bad seeds and expand
-    Material m0_, m1_, m1;
+    Material m0, m1;
+    Encoding d0, d1;
+    std::vector<Labelling> badOuts0, badOuts1;
     std::thread th { [&] {
     /* { */
       PRG prg1_ { bads1 };
       auto e1_ = genEncoding(prg1_, n-1);
-      m1_ = gbCond_(f, cs1, e1_ , prg1_, R);
-      m1 = gbCond_(f, cs1, e1, prg1, R);
-      m1_ ^= m1;
+      auto [m1_, d1_] = gbCond_(f, cs1, e1_ , prg1_, R);
+      m1_ ^= garbling1.material;
+      auto badSiblings0 = badSiblings;
+      badSiblings0.push_back(m1_);
+      PRG prg0_re = seed0;
+      auto gb0 = gbCond(f, cs0, prg0_re, e0, garbling0, badSeeds0, badInps0, badSiblings0, muxMat0, R);
+      badOuts0 = gb0.badOuts;
+      d0 = gb0.outEnc;
     }};
     /* } */
     {
       PRG prg0_ { bads0 };
       auto e0_ = genEncoding(prg0_, n-1);
-      m0_ = gbCond_(f, cs0, e0_, prg0_, R);
+      auto [m0_, d0_] = gbCond_(f, cs0, e0_, prg0_, R);
+
+      m0_ ^= garbling0.material;
+      auto badSiblings1 = badSiblings;
+      badSiblings1.push_back(m0_);
+
+      PRG prg1_re = seed1;
+      auto gb1 = gbCond(f, cs1, prg1_re, e1, garbling1, badSeeds1, badInps1, badSiblings1, muxMat1, R);
+      badOuts1 = gb1.badOuts;
+      d1 = gb1.outEnc;
     }
     th.join();
 
     // immediately garble all of the right branches to compute good material
 
     // now, recursively garble left branches, using garbage from right
-    auto badSiblings0 = badSiblings;
-    badSiblings0.push_back(m1_);
-    const auto [m0, d0, badOuts0] = gbCond(f, cs0, prg0, e0, badSeeds0, badInps0, badSiblings0, muxMat0, R);
 
     // now that garbage from left is available,
     // recursively garble right branches
-    m0_ ^= m0;
-    auto badSiblings1 = badSiblings;
-    badSiblings1.push_back(m0_);
 
-    PRG prg1_re = seed1;
-    const auto [m1_re, d1, badOuts1] = gbCond(f, cs1, prg1_re, e1, badSeeds1, badInps1, badSiblings1, muxMat1, R);
-
-    material.resize(toFill);
-
-    std::span<Label> mat = material;
-    mat = mat.subspan(3*(n-1) + 2);
-    mat ^= m0;
-    mat ^= m1;
-    assert(muxMatNow.size() == m + 2);
-
-
-    const auto d = gbMux(prg, f, e.delta, e.zeros[0], d0, d1, badOuts0.back(), badOuts1.back(), muxMatNow);
+    const auto d = gbMux(
+        prg, f, e.delta, e.zeros[0], d0, d1, badOuts0.back(), badOuts1.back(), muxMatNow);
 
     std::vector<Labelling> badOuts(badOuts0.size()-1);
-
     for (std::size_t i = 0; i < badOuts.size(); ++i) {
       badOuts[i] = evMux(f, badInps[i][0], badOuts0[i], badOuts1[i], muxMatNow);
     }
 
-    for (std::size_t i = R + 3*(n-1) + 2; i < toFill; ++i) {
-      material[i] = prg();
-    }
-
-    return { material, d, badOuts };
+    return { d, badOuts };
   }
 }
 
@@ -738,12 +743,17 @@ Encoding gb(const PRF& f, const Circuit& c, EncodingView inpEnc, std::span<Label
 
 
       PRG seedPRG(seed);
+
+      const auto [mat, dmid] = gbCond_(f, cond.cs, inpEnc, seedPRG, condSize(cond.cs));
+      bodyMat ^= mat;
+
       std::vector<std::span<Label>> badInps(0);
 
-      const auto [material, d, bo_] =
-        gbCond(f, cond.cs, seedPRG, inpEnc, badSeeds, badInps, { }, muxMat, condSize(cond.cs));
-      bodyMat ^= material;
-      std::cout << n_netlistgb << '\n';
+      PRG seedPRG2(seed);
+      HalfGarblingView view { bodyMat, dmid };
+      const auto [d, bo_] =
+        gbCond(f, cond.cs, seedPRG2,
+            inpEnc, view, badSeeds, badInps, { }, muxMat, condSize(cond.cs));
       return d;
     },
     [&](const Sequence& seq) {
