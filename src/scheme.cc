@@ -262,7 +262,7 @@ void gbGadget_rec(
     outseeds[2*b0-1] = inseeds[2*b0-1] ^ delta;
     mat = mat.subspan(2);
 
-    gbGadget_rec(b0, f, delta, inseeds.subspan(1, 2*b0-1), outseeds.subspan(1, 2*b0-1), index.subspan(1), isAncestorL0, mat);
+    gbGadget_rec(b0, f, delta, inseeds.subspan(1, 2*b0-2), outseeds.subspan(1, 2*b0-2), index.subspan(1), isAncestorL0, mat);
     gbGadget_rec(b1, f, delta, inseeds.subspan(2*b0), outseeds.subspan(2*b0), index.subspan(1), isAncestorR0, mat);
   }
 }
@@ -290,7 +290,7 @@ std::vector<Label> gbGadget(
   outseeds[2*b0-1] = inseeds[2*b0-1] ^ delta;
   mat = mat.subspan(2);
 
-  gbGadget_rec(b0, f, delta, inseeds.subspan(1, 2*b0-1), outseeds.subspan(1, 2*b0-1), index.subspan(1), isAncestorL0, mat);
+  gbGadget_rec(b0, f, delta, inseeds.subspan(1, 2*b0-2), outseeds.subspan(1, 2*b0-2), index.subspan(1), isAncestorL0, mat);
   gbGadget_rec(b1, f, delta, inseeds.subspan(2*b0), outseeds.subspan(2*b0), index.subspan(1), isAncestorR0, mat);
 
   return out;
@@ -316,7 +316,7 @@ void evGadget_rec(
     outseeds[2*b0-1] = mat[1] ^ isAncestorL;
     mat = mat.subspan(2);
 
-    evGadget_rec(b0, f, outseeds.subspan(1, 2*b0-1), index.subspan(1), isAncestorL, mat);
+    evGadget_rec(b0, f, outseeds.subspan(1, 2*b0-2), index.subspan(1), isAncestorL, mat);
     evGadget_rec(b1, f, outseeds.subspan(2*b0), index.subspan(1), isAncestorR, mat);
   }
 }
@@ -337,12 +337,14 @@ std::vector<Label> evGadget(
   const auto b0 = b/2;
   const auto b1 = b - b0;
 
+  std::cout << b0 << ' ' << b1 << '\n';
+
   outseeds[0] = mat[0] ^ isAncestor1;
   outseeds[2*b0-1] = mat[1] ^ isAncestor0;
   mat = mat.subspan(2);
 
-  evGadget_rec(b0, f, outseeds.subspan(1, 2*b0-1), index.subspan(1), isAncestor0, mat);
-  evGadget_rec(b1, f, outseeds.subspan(2*b1), index.subspan(1), isAncestor1, mat);
+  evGadget_rec(b0, f, outseeds.subspan(1, 2*b0-2), index.subspan(1), isAncestor0, mat);
+  evGadget_rec(b1, f, outseeds.subspan(2*b0), index.subspan(1), isAncestor1, mat);
 
   return out;
 }
@@ -438,9 +440,6 @@ Labelling evCond(
     const auto s1 = seeds[2*b0-1];
     const auto seeds1 = seeds.subspan(2*b0);
 
-    std::cout << std::dec << seeds0.size() << '\n';
-    std::cout << std::dec << seeds1.size() << '\n';
-
     const auto S = inp[0];
     const auto demOut = evDem(f, S, inp.subspan(1), mat);
     auto inp0 = demOut.first;
@@ -534,7 +533,7 @@ CondGarbling gbCond(
     const auto seed1 = prg.child();
     PRG prg0 = seed0;
     PRG prg1 = seed1;
-      show(seed1);
+    show(seed1);
 
     const auto b0 = b/2;
     const auto b1 = b - b0;
@@ -720,14 +719,14 @@ Encoding gb(const PRF& f, const Circuit& c, EncodingView inpEnc, std::span<Label
       std::span<const Label> inp = inpEnc.zeros;
       const auto goodSeeds = seedTree(seed, b);
 
-      std::cout << goodSeeds.size() << "\n";
-
       std::span<const Label> gSeeds = goodSeeds;
       // skip past the root seed
       gSeeds = gSeeds.subspan(1);
 
       const auto badSeeds = gbGadget(
           b, f, inpEnc.delta, gSeeds, inp.subspan(0, ilog2(b)), gadgetMat);
+
+
 
 
       PRG seedPRG(seed);
@@ -769,7 +768,7 @@ Labelling ev(const PRF& f, const Circuit& c, std::span<Label> input, std::span<L
       const auto muxMat = mat.subspan(mat.size() - muxSize);
 
       std::span<const Label> inps (input);
-      const auto seeds = evGadget(b, f, inps.subspan(0, log2(b)), gadgetMat);
+      const auto seeds = evGadget(b, f, inps.subspan(0, ilog2(b)), gadgetMat);
 
       return evCond(f, cond.cs, seeds, input, bodyMat, muxMat);
     },
