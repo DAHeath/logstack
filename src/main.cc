@@ -35,8 +35,6 @@ double experiment(const Circuit& c) {
       auto [material, interface] = garble(k, c, seed);
 
 
-      /* std::cout << "HERE\n"; */
-
       const auto delta1 = interface.inpEnc.delta;
       const auto delta2 = interface.outEnc.delta;
 
@@ -44,9 +42,9 @@ double experiment(const Circuit& c) {
       for (std::size_t i = 0; i < c.nInp; ++i) {
         inp[i] = interface.inpEnc.zeros[i];
       }
+      std::cout << "HERE\n";
 
       const auto out = ev(k, c, inp, material);
-      /* std::cout << "THERE\n"; */
 
 
       for (std::size_t i = 0; i < c.nOut; ++i) {
@@ -82,7 +80,8 @@ int main(int argc, char** argv) {
   /* }; */
   std::vector<Circuit> cs = {
     sha_netlist, sha_netlist,
-    sha_netlist,
+    sha_netlist, sha_netlist,
+    /* sha_netlist, */
   };
   std::cout << experiment(conditional(cs)) << '\n';
 

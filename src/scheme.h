@@ -109,8 +109,9 @@ struct CondGarbling {
   std::vector<Labelling> badOuts;
 };
 
-Encoding gb(const PRF&, const Circuit&, const Encoding&, std::span<Label>);
-Labelling ev(const PRF&, const Circuit&, const Labelling&, std::span<Label>);
+
+Encoding gb(const PRF&, const Circuit&, EncodingView, std::span<Label>);
+Labelling ev(const PRF&, const Circuit&, std::span<Label>, std::span<Label>);
 
 Encoding genEncoding(PRG&, std::size_t);
 
