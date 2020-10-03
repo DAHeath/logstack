@@ -432,17 +432,18 @@ Labelling evCond(
     std::span<Label> mat1 { material1 };
 
     Labelling out0, out1;
-    {
+    std::thread th { [&] {
       PRG prg(s1);
       mat0 ^= gbCond_(f, cs1, genEncoding(prg, n-1), prg);
       out0 = evCond(f, cs0, seeds0, inp0, mat0, muxMat0);
-    }
+    }};
     {
       PRG prg(s0);
       const auto toUnstack = gbCond_(f, cs0, genEncoding(prg, n-1), prg);
       mat1 ^= toUnstack;
       out1 = evCond(f, cs1, seeds1, inp1, mat1, muxMat1);
     }
+    th.join();
 
     return evMux(f, S, out0, out1, muxMatNow);
   }
@@ -528,26 +529,42 @@ CondGarbling gbCond(
     // immediately garble all of the right branches to compute good material
     const auto m1 = gbCond_(f, cs1, e1, prg1);
 
-    // set up bad seed and expand
-    PRG prg1_ { bads1 };
-    auto m1_ = gbCond_(f, cs1, genEncoding(prg1_, n-1), prg1_);
-    m1_ ^= m1;
+    Material m0;
+    Encoding d0, d1;
+    std::vector<Labelling> badOuts0, badOuts1;
 
-    // now, recursively garble left branches, using garbage from right
-    auto badSiblings0 = badSiblings;
-    badSiblings0.push_back(m1_);
-    const auto [m0, d0, badOuts0] = gbCond(f, cs0, prg0, e0, badSeeds0, badInps0, badSiblings0, muxMat0);
+    std::thread th { [&] {
+      // set up bad seed and expand
+      PRG prg1_ { bads1 };
+      auto m1_ = gbCond_(f, cs1, genEncoding(prg1_, n-1), prg1_);
+      m1_ ^= m1;
+
+      // now, recursively garble left branches, using garbage from right
+      auto badSiblings0 = badSiblings;
+      badSiblings0.push_back(m1_);
+      const auto gb0 = gbCond(f, cs0, prg0, e0, badSeeds0, badInps0, badSiblings0, muxMat0);
+      m0 = gb0.material;
+      d0 = gb0.outEnc;
+      badOuts0 = gb0.badOuts;
+    }};
 
     // now that garbage from left is available,
     // recursively garble right branches
-    PRG prg0_ { bads0 };
-    auto m0_ = gbCond_(f, cs0, genEncoding(prg0_, n-1), prg0_);
-    m0_ ^= m0;
-    auto badSiblings1 = badSiblings;
-    badSiblings1.push_back(m0_);
 
-    PRG prg1_re = seed1;
-    const auto [m1_re, d1, badOuts1] = gbCond(f, cs1, prg1_re, e1, badSeeds1, badInps1, badSiblings1, muxMat1);
+    {
+      PRG prg0_ { bads0 };
+      auto m0_ = gbCond_(f, cs0, genEncoding(prg0_, n-1), prg0_);
+      m0_ ^= m0;
+      auto badSiblings1 = badSiblings;
+      badSiblings1.push_back(m0_);
+
+      PRG prg1_re = seed1;
+      const auto gb1 = gbCond(f, cs1, prg1_re, e1, badSeeds1, badInps1, badSiblings1, muxMat1);
+      d1 = gb1.outEnc;
+      badOuts1 = gb1.badOuts;
+    }
+
+    th.join();
 
     material.resize(material.size() + m0.size());
 

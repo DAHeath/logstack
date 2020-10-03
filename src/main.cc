@@ -106,7 +106,7 @@ int main(int argc, char** argv) {
   /* std::cout << experiment(conditional(cs)) << '\n'; */
 
 
-  for (std::size_t i = 0; i <= 8; ++i) {
+  for (std::size_t i = 0; i <= 10; ++i) {
     /* std::cout << (1 << i) << '\n'; */
     /* std::cout << cs.size() << '\n'; */
 
