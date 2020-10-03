@@ -42,7 +42,6 @@ double experiment(const Circuit& c) {
       for (std::size_t i = 0; i < c.nInp; ++i) {
         inp[i] = interface.inpEnc.zeros[i];
       }
-      std::cout << "HERE\n";
 
       const auto out = ev(k, c, inp, material);
 
@@ -75,13 +74,15 @@ int main(int argc, char** argv) {
     sha.desc.nOut,
     sha.desc.nRow,
   };
-  /* std::vector<Circuit> cs = { */
-  /*   sha_netlist, sha_netlist, sha_netlist, */
-  /* }; */
   std::vector<Circuit> cs = {
     sha_netlist, sha_netlist,
     sha_netlist, sha_netlist,
-    /* sha_netlist, */
+    sha_netlist, sha_netlist,
+    sha_netlist, sha_netlist,
+    sha_netlist, sha_netlist,
+    sha_netlist, sha_netlist,
+    sha_netlist, sha_netlist,
+    sha_netlist, sha_netlist,
   };
   std::cout << experiment(conditional(cs)) << '\n';
 
@@ -100,8 +101,8 @@ int main(int argc, char** argv) {
   /* } */
 
 
-  /* for (std::size_t i = 1; i <= 8; ++i) { */
-  /*   std::cout << i << '\n'; */
+  /* std::vector<Circuit> cs; */
+  /* for (std::size_t i = 1; i <= 16; ++i) { */
   /*   cs.push_back(sha_netlist); */
   /*   if (cs.size() == 1) { */
   /*     std::cout << experiment(cs[0]) << '\n'; */

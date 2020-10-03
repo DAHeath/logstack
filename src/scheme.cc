@@ -464,21 +464,21 @@ Labelling evCond(
 
 
     Labelling out0, out1;
-    {
-    /* std::thread th { [&] { */
+    /* { */
+    std::thread th { [&] {
       PRG prg(s1);
       auto e1 = genEncoding(prg, n-1);
       mat0 ^= gbCond_(f, cs1, e1, prg, R);
       out0 = evCond(f, cs0, seeds0, inp0, mat0, muxMat0);
-    /* }}; */
-    }
+    }};
+    /* } */
     {
       PRG prg(s0);
       auto e1 = genEncoding(prg, n-1);
       mat1 ^= gbCond_(f, cs0, e1, prg, R);
       out1 = evCond(f, cs1, seeds1, inp1, mat1, muxMat1);
     }
-    /* th.join(); */
+    th.join();
 
     return evMux(f, S, out0, out1, muxMatNow);
   }
@@ -491,7 +491,7 @@ CondGarbling gbCond(
     PRG& prg,
     EncodingView e,
     std::span<const Label> badSeeds,
-    std::vector<Labelling> badInps,
+    std::vector<std::span<Label>> badInps,
     std::vector<std::span<Label>> badSiblings,
     std::span<Label> muxMat,
     std::size_t toFill) {
@@ -507,7 +507,7 @@ CondGarbling gbCond(
       for (int i = ilog2(b)-1; i >= 0; --i) {
         bi[i+1] = bi[i];
       }
-      bi.erase(bi.begin());
+      bi = bi.subspan(1);
     }
   }
 
@@ -548,19 +548,23 @@ CondGarbling gbCond(
     Material material(3*(n-1) + 2);
     std::span<const Label> zeros { e.zeros };
     zeros = zeros.subspan(1);
-    const auto [bad0, bad1] = gbDem(prg, f, e.delta, e.zeros[0], zeros, e0, e1, material);
+    auto [bad0, bad1] = gbDem(prg, f, e.delta, e.zeros[0], zeros, e0, e1, material);
 
     Material scratch = material;
-    std::vector<Labelling> badInps0(badInps.size());
-    std::vector<Labelling> badInps1(badInps.size());
+    std::vector<Labelling> badInpsStore0(badInps.size());
+    std::vector<Labelling> badInpsStore1(badInps.size());
+    std::vector<std::span<Label>> badInps0(badInps.size());
+    std::vector<std::span<Label>> badInps1(badInps.size());
     for (int i = badInps.size()-1; i >= 0; --i) {
       // peel off the demux portion of the material of each bad sibling
       // and add it to the scratch material
       scratch ^= badSiblings[i].subspan(0, 3*(n-1) + 2);
       badSiblings[i] = badSiblings[i].subspan(3*(n-1) + 2);
       auto demuxed = evDem(f, badInps[i][0], std::span { badInps[i] }.subspan(1), scratch);
-      badInps0[i] = demuxed.first;
-      badInps1[i] = demuxed.second;
+      badInpsStore0[i] = demuxed.first;
+      badInpsStore1[i] = demuxed.second;
+      badInps0[i] = badInpsStore0[i];
+      badInps1[i] = badInpsStore1[i];
     }
     badInps0.emplace_back(bad0);
     badInps1.emplace_back(bad1);
@@ -582,21 +586,21 @@ CondGarbling gbCond(
 
     // set up bad seeds and expand
     Material m0_, m1_, m1;
-    /* std::thread th { [&] { */
-    {
+    std::thread th { [&] {
+    /* { */
       PRG prg1_ { bads1 };
       auto e1_ = genEncoding(prg1_, n-1);
       m1_ = gbCond_(f, cs1, e1_ , prg1_, R);
       m1 = gbCond_(f, cs1, e1, prg1, R);
       m1_ ^= m1;
-    /* }}; */
-    }
+    }};
+    /* } */
     {
       PRG prg0_ { bads0 };
       auto e0_ = genEncoding(prg0_, n-1);
       m0_ = gbCond_(f, cs0, e0_, prg0_, R);
     }
-    /* th.join(); */
+    th.join();
 
     // immediately garble all of the right branches to compute good material
 
@@ -734,11 +738,12 @@ Encoding gb(const PRF& f, const Circuit& c, EncodingView inpEnc, std::span<Label
 
 
       PRG seedPRG(seed);
-      std::vector<Labelling> badInps;
+      std::vector<std::span<Label>> badInps(0);
 
       const auto [material, d, bo_] =
         gbCond(f, cond.cs, seedPRG, inpEnc, badSeeds, badInps, { }, muxMat, condSize(cond.cs));
       bodyMat ^= material;
+      std::cout << n_netlistgb << '\n';
       return d;
     },
     [&](const Sequence& seq) {
