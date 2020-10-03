@@ -17,9 +17,9 @@ auto timed(F f) {
 
 
 Garbling garble(const PRF& f, const Circuit& c, PRG& prg) {
-  const auto inpEnc = genEncoding(prg, c.nInp);
+  auto inpEnc = genEncoding(prg, c.nInp);
   Material m(c.nRow);
-  const auto outEnc = gb(f, c, inpEnc, m);
+  auto outEnc = gb(f, c, inpEnc, m);
   return { m, { inpEnc, outEnc } };
 }
 
@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
   /* }; */
   std::vector<Circuit> cs = {
     sha_netlist, sha_netlist,
-    sha_netlist,
+    sha_netlist, sha_netlist,
     /* sha_netlist, */
   };
   std::cout << experiment(conditional(cs)) << '\n';

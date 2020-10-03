@@ -337,8 +337,6 @@ std::vector<Label> evGadget(
   const auto b0 = b/2;
   const auto b1 = b - b0;
 
-  std::cout << b0 << ' ' << b1 << '\n';
-
   outseeds[0] = mat[0] ^ isAncestor1;
   outseeds[2*b0-1] = mat[1] ^ isAncestor0;
   mat = mat.subspan(2);
@@ -356,7 +354,9 @@ Material gbCond_(const PRF& f, std::span<const Circuit> cs, EncodingView e, PRG&
 
   if (e.size() > ilog2(b) + cs[0].nInp) {
     // special case, remove a branch condition non-full tree
-    e[1] = e[0];
+    for (int i = ilog2(b)-1; i >= 0; --i) {
+      e[i+1] = e[i];
+    }
     e = e.subview(1);
   }
 
@@ -375,8 +375,8 @@ Material gbCond_(const PRF& f, std::span<const Circuit> cs, EncodingView e, PRG&
 
     const auto b0 = b/2;
 
-    const auto e0 = genEncoding(prg0, n-1);
-    const auto e1 = genEncoding(prg1, n-1);
+    auto e0 = genEncoding(prg0, n-1);
+    auto e1 = genEncoding(prg1, n-1);
 
     const auto cs0 = cs.subspan(0, b0);
     const auto cs1 = cs.subspan(b0);
@@ -417,15 +417,15 @@ Labelling evCond(
 
   if (inp.size() > ilog2(b) + cs[0].nInp) {
     // special case, remove a branch condition non-full tree
-    inp[1] = inp[0];
+    for (int i = ilog2(b)-1; i >= 0; --i) {
+      inp[i+1] = inp[i];
+    }
     inp = inp.subspan(1);
   }
 
   if (b == 1) {
     // special case
     const auto out = ev(f, cs[0], inp, mat);
-    /* std::cout << "INP: "; show(inp[0]); */
-    /* std::cout << "OUT: "; show(out[0]); */
     return out;
   } else {
     const auto n = inp.size();
@@ -466,15 +466,16 @@ Labelling evCond(
     Labelling out0, out1;
     {
     /* std::thread th { [&] { */
-      show(s1);
       PRG prg(s1);
-      mat0 ^= gbCond_(f, cs1, genEncoding(prg, n-1), prg, R);
+      auto e1 = genEncoding(prg, n-1);
+      mat0 ^= gbCond_(f, cs1, e1, prg, R);
       out0 = evCond(f, cs0, seeds0, inp0, mat0, muxMat0);
     /* }}; */
     }
     {
       PRG prg(s0);
-      mat1 ^= gbCond_(f, cs0, genEncoding(prg, n-1), prg, R);
+      auto e1 = genEncoding(prg, n-1);
+      mat1 ^= gbCond_(f, cs0, e1, prg, R);
       out1 = evCond(f, cs1, seeds1, inp1, mat1, muxMat1);
     }
     /* th.join(); */
@@ -498,10 +499,14 @@ CondGarbling gbCond(
 
   if (e.size() > ilog2(b) + cs[0].nInp) {
     // special case, remove a branch condition non-full tree
-    e[1] = e[0];
+    for (int i = ilog2(b)-1; i >= 0; --i) {
+      e[i+1] = e[i];
+    }
     e = e.subview(1);
     for (auto& bi: badInps) {
-      bi[1] = bi[0];
+      for (int i = ilog2(b)-1; i >= 0; --i) {
+        bi[i+1] = bi[i];
+      }
       bi.erase(bi.begin());
     }
   }
@@ -509,8 +514,6 @@ CondGarbling gbCond(
   if (b == 1) {
     Material material (toFill);
     const auto d = gb(f, cs[0], e, material);
-    /* std::cout << "INP: "; show(e[0]); */
-    /* std::cout << "OUT: "; show(d.zeros[0]); */
 
     std::vector<Labelling> badouts(badInps.size());
     Material scratch = material;
@@ -533,13 +536,12 @@ CondGarbling gbCond(
     const auto seed1 = prg.child();
     PRG prg0 = seed0;
     PRG prg1 = seed1;
-    show(seed1);
 
     const auto b0 = b/2;
     const auto b1 = b - b0;
 
-    const auto e0 = genEncoding(prg0, n-1);
-    const auto e1 = genEncoding(prg1, n-1);
+    auto e0 = genEncoding(prg0, n-1);
+    auto e1 = genEncoding(prg1, n-1);
     const auto cs0 = cs.subspan(0, b0);
     const auto cs1 = cs.subspan(b0);
 
@@ -583,14 +585,16 @@ CondGarbling gbCond(
     /* std::thread th { [&] { */
     {
       PRG prg1_ { bads1 };
-      m1_ = gbCond_(f, cs1, genEncoding(prg1_, n-1), prg1_, R);
+      auto e1_ = genEncoding(prg1_, n-1);
+      m1_ = gbCond_(f, cs1, e1_ , prg1_, R);
       m1 = gbCond_(f, cs1, e1, prg1, R);
       m1_ ^= m1;
     /* }}; */
     }
     {
       PRG prg0_ { bads0 };
-      m0_ = gbCond_(f, cs0, genEncoding(prg0_, n-1), prg0_, R);
+      auto e0_ = genEncoding(prg0_, n-1);
+      m0_ = gbCond_(f, cs0, e0_, prg0_, R);
     }
     /* th.join(); */
 

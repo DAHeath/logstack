@@ -226,17 +226,18 @@ struct Encoding {
 
 
 struct EncodingView {
-  EncodingView(const Encoding& o) : zeros(o.zeros), delta(o.delta) { }
-  EncodingView(std::span<const Label> zeros, const Label& delta) : zeros(zeros), delta(delta) { }
+  EncodingView(Encoding& o) : zeros(o.zeros), delta(o.delta) { }
+  EncodingView(std::span<Label> zeros, const Label& delta) : zeros(zeros), delta(delta) { }
   EncodingView() { }
 
-  Label operator[](std::size_t ix) { return zeros[ix]; }
+  Label& operator[](std::size_t ix) { return zeros[ix]; }
+  /* const auto& operator[](std::size_t ix) const { return zeros[ix]; } */
 
   EncodingView subview(std::size_t ix) const { return { zeros.subspan(ix), delta }; }
 
   std::size_t size() const { return zeros.size(); }
 
-  std::span<const Label> zeros;
+  std::span<Label> zeros;
   Label delta;
 };
 
