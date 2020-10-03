@@ -28,7 +28,7 @@ struct Circuit;
 
 
 struct Conditional {
-  std::vector<Circuit> cs;
+  std::span<const Circuit> cs;
 };
 
 
@@ -41,6 +41,55 @@ struct Circuit {
   std::size_t nOut;
   std::size_t nRow;
 };
+
+
+inline std::size_t condSize(std::span<const Circuit> cs) {
+  const auto b = cs.size();
+  if (b == 1) {
+    return cs[0].nRow;
+  } else {
+    const auto n = cs[0].nInp;
+    const auto demSize = 3*n + 2;
+
+    const auto logb = ilog2(b);
+
+    const auto fullDemSize = demSize * logb + (3*(logb)*(logb-1))/2;
+
+    std::size_t nRow = 0;
+    for (const auto& c: cs) { nRow = std::max(nRow, c.nRow); }
+    return nRow + fullDemSize;
+  }
+}
+
+
+inline Circuit conditional(std::span<const Circuit> cs) {
+  const auto b = cs.size();
+  if (b == 1) {
+    return cs[0];
+  } else {
+    const auto n = cs[0].nInp;
+    const auto m = cs[0].nOut;
+    const auto gadgetSize = 3*b;
+    const auto demSize = 3*n + 2;
+    const auto muxSize = (b-1) * (m + 2);
+
+    const auto logb = ilog2(b);
+
+
+    const auto fullDemSize = demSize * logb + (3*(logb)*(logb-1))/2;
+
+    std::size_t nRow = 0;
+    for (const auto& c: cs) { nRow = std::max(nRow, c.nRow); }
+    nRow += gadgetSize + fullDemSize + muxSize;
+
+    return Circuit {
+      Conditional { cs },
+      cs[0].nInp + logb, // nInp
+      cs[0].nOut, // nInp
+      nRow, // nRow
+    };
+  }
+}
 
 void show(const Label&);
 

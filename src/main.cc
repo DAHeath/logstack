@@ -15,31 +15,6 @@ auto timed(F f) {
 }
 
 
-Circuit conditional(const std::vector<Circuit>& cs) {
-  const auto b = cs.size();
-  const auto n = cs[0].nInp;
-  const auto m = cs[0].nOut;
-  const auto gadgetSize = 3*b;
-  const auto demSize = 3*n + 2;
-  const auto muxSize = (b-1) * (m + 2);
-
-  const auto logb = ilog2(b);
-
-
-  const auto fullDemSize = demSize * logb + (3*(logb)*(logb-1))/2;
-
-  std::size_t nRow = 0;
-  for (const auto& c: cs) { nRow = std::max(nRow, c.nRow); }
-  nRow += gadgetSize + fullDemSize + muxSize;
-
-  return Circuit {
-    Conditional { cs },
-    cs[0].nInp + logb, // nInp
-    cs[0].nOut, // nInp
-    nRow, // nRow
-  };
-}
-
 
 Garbling garble(const PRF& f, const Circuit& c, PRG& prg) {
   const auto inpEnc = genEncoding(prg, c.nInp);
@@ -102,7 +77,13 @@ int main(int argc, char** argv) {
     sha.desc.nOut,
     sha.desc.nRow,
   };
-  std::vector<Circuit> cs = { sha_netlist, sha_netlist, sha_netlist, sha_netlist };
+  /* std::vector<Circuit> cs = { */
+  /*   sha_netlist, sha_netlist, sha_netlist, */
+  /* }; */
+  std::vector<Circuit> cs = {
+    sha_netlist, sha_netlist,
+    sha_netlist,
+  };
   std::cout << experiment(conditional(cs)) << '\n';
 
 

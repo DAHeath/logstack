@@ -349,11 +349,15 @@ std::vector<Label> evGadget(
 
 
 
-Material gbCond_(const PRF& f, std::span<const Circuit> cs, const Encoding& e, PRG& prg) {
+Material gbCond_(const PRF& f, std::span<const Circuit> cs, const Encoding& e, PRG& prg, std::size_t toFill) {
   const auto b = cs.size();
   if (b == 1) {
-    Material mat (cs[0].nRow);
+    Material mat (toFill);
     gb(f, cs[0], e, mat);
+    std::cout << "INPS: " << e.zeros.size() << '\n';
+    for (std::size_t i = cs[0].nRow; i < toFill; ++i) {
+      mat[i] = prg();
+    }
     return mat;
   } else {
     const auto n = e.zeros.size();
@@ -361,25 +365,37 @@ Material gbCond_(const PRF& f, std::span<const Circuit> cs, const Encoding& e, P
     PRG prg0 = prg.child();
     PRG prg1 = prg.child();
 
-    const auto e0 = genEncoding(prg0, n-1);
-    const auto e1 = genEncoding(prg1, n-1);
-
     const auto b0 = b/2;
+    const auto b1 = b - b0;
+
+    const auto e0 = genEncoding(prg0, n-(ilog2(b) - ilog2(b0)));
+    const auto e1 = genEncoding(prg1, n-(ilog2(b) - ilog2(b1)));
+
     const auto cs0 = cs.subspan(0, b0);
     const auto cs1 = cs.subspan(b0);
+    const auto R = std::max(condSize(cs0), condSize(cs1));
 
-    const auto mat0 = gbCond_(f, cs0, e0, prg0);
-    const auto mat1 = gbCond_(f, cs1, e1, prg1);
+    const auto mat0 = gbCond_(f, cs0, e0, prg0, R);
+    const auto mat1 = gbCond_(f, cs1, e1, prg1, R);
 
-    Material material(mat0.size() + 3*(n-1) + 2);
+    Material material(toFill);
 
     std::span<Label> mat { material };
 
     std::span<const Label> zeros { e.zeros };
-    gbDem(prg, f, e.delta, zeros[0], zeros.subspan(1), e0, e1, mat);
+    if (zeros.size() > ilog2(b) + cs[0].nInp) {
+      // special case, remove a branch condition non-full tree
+      zeros = zeros.subspan(1);
+    }
+    zeros = zeros.subspan(1);
+    gbDem(prg, f, e.delta, e.zeros[0], zeros, e0, e1, mat);
 
     mat.subspan(3*(n-1)+2) ^= mat0;
     mat.subspan(3*(n-1)+2) ^= mat1;
+
+    for (std::size_t i = R + 3*(n-1) + 2; i < toFill; ++i) {
+      material[i] = prg();
+    }
 
     return material;
   }
@@ -412,6 +428,10 @@ Labelling evCond(
 
     const auto S = inp[0];
     std::span<const Label> inp_(inp);
+    if (inp_.size() > ilog2(b) + cs[0].nInp) {
+      // special case, remove a branch condition non-full tree
+      inp_ = inp_.subspan(1);
+    }
     inp_ = inp_.subspan(1);
     const auto demOut = evDem(f, S, inp_, mat);
     const auto inp0 = demOut.first;
@@ -431,17 +451,19 @@ Labelling evCond(
     std::span<Label> mat0 = mat;
     std::span<Label> mat1 { material1 };
 
+    const auto R = std::max(condSize(cs0), condSize(cs1));
+
     Labelling out0, out1;
     {
     /* std::thread th { [&] { */
       PRG prg(s1);
-      mat0 ^= gbCond_(f, cs1, genEncoding(prg, n-1), prg);
+      mat0 ^= gbCond_(f, cs1, genEncoding(prg, n-(ilog2(b) - ilog2(b1))), prg, R);
       out0 = evCond(f, cs0, seeds0, inp0, mat0, muxMat0);
     /* }}; */
     }
     {
       PRG prg(s0);
-      const auto toUnstack = gbCond_(f, cs0, genEncoding(prg, n-1), prg);
+      const auto toUnstack = gbCond_(f, cs0, genEncoding(prg, n-(ilog2(b) - ilog2(b0))), prg, R);
       mat1 ^= toUnstack;
       out1 = evCond(f, cs1, seeds1, inp1, mat1, muxMat1);
     }
@@ -460,11 +482,12 @@ CondGarbling gbCond(
     std::span<const Label> badSeeds,
     const std::vector<Labelling>& badInps,
     std::vector<std::span<Label>> badSiblings,
-    std::span<Label> muxMat) {
+    std::span<Label> muxMat,
+    std::size_t toFill) {
   const auto b = cs.size();
 
   if (b == 1) {
-    Material material (cs[0].nRow);
+    Material material (toFill);
     const auto d = gb(f, cs[0], e, material);
 
     std::vector<Labelling> badouts(badInps.size());
@@ -472,6 +495,10 @@ CondGarbling gbCond(
     for (int i = badInps.size()-1; i >= 0; --i) {
       scratch ^= badSiblings[i];
       badouts[i] = ev(f, cs[0], badInps[i], scratch);
+    }
+
+    for (std::size_t i = cs[0].nRow; i < toFill; ++i) {
+      material[i] = prg();
     }
 
     return { material, d, badouts };
@@ -485,17 +512,23 @@ CondGarbling gbCond(
     PRG prg0 = seed0;
     PRG prg1 = seed1;
 
-    const auto e0 = genEncoding(prg0, n-1);
-    const auto e1 = genEncoding(prg1, n-1);
-
     const auto b0 = b/2;
     const auto b1 = b - b0;
+
+    const auto e0 = genEncoding(prg0, n-(ilog2(b) - ilog2(b0)));
+    const auto e1 = genEncoding(prg1, n-(ilog2(b) - ilog2(b1)));
     const auto cs0 = cs.subspan(0, b0);
     const auto cs1 = cs.subspan(b0);
 
     Material material(3*(n-1) + 2);
     std::span<const Label> zeros { e.zeros };
-    const auto [bad0, bad1] = gbDem(prg, f, e.delta, zeros[0], zeros.subspan(1), e0, e1, material);
+    if (zeros.size() > ilog2(b) + cs[0].nInp) {
+      // special case, remove a branch condition non-full tree
+      zeros = zeros.subspan(1);
+    }
+
+    zeros = zeros.subspan(1);
+    const auto [bad0, bad1] = gbDem(prg, f, e.delta, e.zeros[0], zeros, e0, e1, material);
 
     Material scratch = material;
     std::vector<Labelling> badInps0(badInps.size());
@@ -506,8 +539,7 @@ CondGarbling gbCond(
       scratch ^= badSiblings[i].subspan(0, 3*(n-1) + 2);
       badSiblings[i] = badSiblings[i].subspan(3*(n-1) + 2);
       std::span<const Label> badInpsSpan = badInps[i];
-      badInpsSpan = badInpsSpan.subspan(1);
-      assert(badInpsSpan.size() == n-1);
+      badInpsSpan = badInpsSpan.subspan(badInpsSpan.size() - zeros.size());
       auto demuxed = evDem(f, badInps[i][0], badInpsSpan, scratch);
       badInps0[i] = demuxed.first;
       badInps1[i] = demuxed.second;
@@ -528,26 +560,30 @@ CondGarbling gbCond(
     const auto muxMatNow = muxMat.subspan(muxMatSize0 + muxMatSize1);
 
 
+    const auto R = std::max(condSize(cs0), condSize(cs1));
+
     // set up bad seeds and expand
     Material m0_, m1_, m1;
-    std::thread th { [&] {
+    /* std::thread th { [&] { */
+    {
       PRG prg1_ { bads1 };
-      m1_ = gbCond_(f, cs1, genEncoding(prg1_, n-1), prg1_);
-      m1 = gbCond_(f, cs1, e1, prg1);
+      m1_ = gbCond_(f, cs1, genEncoding(prg1_, n-(ilog2(b) - ilog2(b1))), prg1_, R);
+      m1 = gbCond_(f, cs1, e1, prg1, R);
       m1_ ^= m1;
-    }};
+    /* }}; */
+    }
     {
       PRG prg0_ { bads0 };
-      m0_ = gbCond_(f, cs0, genEncoding(prg0_, n-1), prg0_);
+      m0_ = gbCond_(f, cs0, genEncoding(prg0_, n-(ilog2(b) - ilog2(b0))), prg0_, R);
     }
-    th.join();
+    /* th.join(); */
 
     // immediately garble all of the right branches to compute good material
 
     // now, recursively garble left branches, using garbage from right
     auto badSiblings0 = badSiblings;
     badSiblings0.push_back(m1_);
-    const auto [m0, d0, badOuts0] = gbCond(f, cs0, prg0, e0, badSeeds0, badInps0, badSiblings0, muxMat0);
+    const auto [m0, d0, badOuts0] = gbCond(f, cs0, prg0, e0, badSeeds0, badInps0, badSiblings0, muxMat0, R);
 
     // now that garbage from left is available,
     // recursively garble right branches
@@ -556,9 +592,9 @@ CondGarbling gbCond(
     badSiblings1.push_back(m0_);
 
     PRG prg1_re = seed1;
-    const auto [m1_re, d1, badOuts1] = gbCond(f, cs1, prg1_re, e1, badSeeds1, badInps1, badSiblings1, muxMat1);
+    const auto [m1_re, d1, badOuts1] = gbCond(f, cs1, prg1_re, e1, badSeeds1, badInps1, badSiblings1, muxMat1, R);
 
-    material.resize(material.size() + m0.size());
+    material.resize(toFill);
 
     std::span<Label> mat = material;
     mat = mat.subspan(3*(n-1) + 2);
@@ -573,6 +609,10 @@ CondGarbling gbCond(
 
     for (std::size_t i = 0; i < badOuts.size(); ++i) {
       badOuts[i] = evMux(f, badInps[i][0], badOuts0[i], badOuts1[i], muxMatNow);
+    }
+
+    for (std::size_t i = R + 3*(n-1) + 2; i < toFill; ++i) {
+      material[i] = prg();
     }
 
     return { material, d, badOuts };
@@ -668,13 +708,14 @@ Encoding gb(const PRF& f, const Circuit& c, const Encoding& inpEnc, std::span<La
       gSeeds = gSeeds.subspan(1);
 
       const auto badSeeds = gbGadget(
-          b, f, inpEnc.delta, gSeeds, inp.subspan(0, log2(b)), gadgetMat);
+          b, f, inpEnc.delta, gSeeds, inp.subspan(0, ilog2(b)), gadgetMat);
 
 
       PRG seedPRG(seed);
       std::vector<Labelling> badInps;
 
-      const auto [material, d, bo_] = gbCond(f, cond.cs, seedPRG, inpEnc, badSeeds, badInps, { }, muxMat);
+      const auto [material, d, bo_] =
+        gbCond(f, cond.cs, seedPRG, inpEnc, badSeeds, badInps, { }, muxMat, condSize(cond.cs));
       bodyMat ^= material;
       std::cout << n_netlistgb << '\n';
       return d;
