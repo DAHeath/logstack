@@ -383,6 +383,7 @@ HalfGarbling gbCond_(const PRF& f, std::span<const Circuit> cs, EncodingView e, 
     return { mat, d };
   } else {
     const auto n = e.size();
+    const auto demSize = 3*(n-1)+2;
 
     PRG prg0 = prg.child();
     PRG prg1 = prg.child();
@@ -391,12 +392,14 @@ HalfGarbling gbCond_(const PRF& f, std::span<const Circuit> cs, EncodingView e, 
 
     const auto cs0 = cs.subspan(0, b0);
     const auto cs1 = cs.subspan(b0);
-    const auto R = toFill - (3*(n-1)+2);
+    const auto R = toFill - demSize;
 
     auto e0 = genEncoding(prg0, n-1);
     auto e1 = genEncoding(prg1, n-1);
+
     const auto [mat0, d0] = gbCond_(f, cs0, e0, prg0, R);
     const auto [mat1, d1] = gbCond_(f, cs1, e1, prg1, R);
+
 
     Material material(toFill);
 
@@ -406,8 +409,13 @@ HalfGarbling gbCond_(const PRF& f, std::span<const Circuit> cs, EncodingView e, 
     zeros = zeros.subspan(1);
     gbDem(prg, f, e.delta, e.zeros[0], zeros, e0, e1, mat);
 
-    mat.subspan(3*(n-1)+2) ^= mat0;
-    mat.subspan(3*(n-1)+2) ^= mat1;
+    /* std::cout << "GB DEM\n"; */
+    /* show(e.zeros[0]); */
+    /* show(e0.zeros[0]); */
+    /* show(e1.zeros[0]); */
+
+    mat.subspan(demSize) ^= mat0;
+    mat.subspan(demSize) ^= mat1;
 
     return { material, d0 ^ d1 };
   }
@@ -437,6 +445,12 @@ parseSeeds(std::size_t b, std::span<Label> seeds) {
 }
 
 
+template <typename T>
+std::pair<std::span<T>, std::span<T>> halves(std::span<T> xs) {
+  return { xs.subspan(0, xs.size()/2), xs.subspan(xs.size()/2) };
+}
+
+
 
 Labelling evCond(
     const PRF& f,
@@ -463,9 +477,9 @@ Labelling evCond(
   } else {
     const auto n = inp.size();
     const auto m = cs[0].nOut;
-    const auto b0 = b/2;
-    const auto cs0 = cs.subspan(0, b0);
-    const auto cs1 = cs.subspan(b0);
+    const auto [cs0_, cs1_] = halves(cs);
+    const auto cs0 = cs0_;
+    const auto cs1 = cs1_;
 
     const auto [s0, seeds0_, s1_, seeds1] = parseSeeds(b, seeds);
     const auto seeds0 = seeds0_;
@@ -475,6 +489,11 @@ Labelling evCond(
     const auto demOut = evDem(f, S, inp.subspan(1), mat);
     auto inp0 = demOut.first;
     auto inp1 = demOut.second;
+
+    /* std::cout << "EV DEM\n"; */
+    /* show(inp[0]); */
+    /* show(inp0[0]); */
+    /* show(inp1[0]); */
 
     // move past the demux material
     mat = mat.subspan(3*(n-1) + 2);
@@ -490,15 +509,15 @@ Labelling evCond(
 
 
     Labelling out0, out1;
-    /* { */
-    std::thread th { [&] {
+    {
+    /* std::thread th { [&] { */
       PRG prg(s1);
       auto e1 = genEncoding(prg, n-1);
       const auto [m1, d1] = gbCond_(f, cs1, e1, prg, R);
       mat0 ^= m1;
       out0 = evCond(f, cs0, seeds0, inp0, mat0, muxMat0);
-    }};
-    /* } */
+    /* }}; */
+    }
     {
       PRG prg(s0);
       auto e0 = genEncoding(prg, n-1);
@@ -506,7 +525,7 @@ Labelling evCond(
       mat1 ^= m0;
       out1 = evCond(f, cs1, seeds1, inp1, mat1, muxMat1);
     }
-    th.join();
+    /* th.join(); */
 
     return evMux(f, S, out0, out1, muxMatNow);
   }
@@ -552,6 +571,7 @@ CondGarbling gbCond(
   } else {
     const auto n = e.zeros.size();
     const auto m = cs[0].nOut;
+    const auto demSize = 3*(n-1)+2;
 
     // derive children of the node seed
     const auto seed0 = prg.child();
@@ -566,7 +586,7 @@ CondGarbling gbCond(
     const auto cs0 = cs.subspan(0, b0);
     const auto cs1 = cs.subspan(b0);
 
-    Material material(3*(n-1) + 2);
+    Material material(demSize);
     std::span<const Label> zeros { e.zeros };
     zeros = zeros.subspan(1);
     auto [bad0, bad1] = gbDem(prg, f, e.delta, e.zeros[0], zeros, e0, e1, material);
@@ -579,8 +599,8 @@ CondGarbling gbCond(
     for (int i = badInps.size()-1; i >= 0; --i) {
       // peel off the demux portion of the material of each bad sibling
       // and add it to the scratch material
-      scratch ^= badSiblings[i].subspan(0, 3*(n-1) + 2);
-      badSiblings[i] = badSiblings[i].subspan(3*(n-1) + 2);
+      scratch ^= badSiblings[i].subspan(0, demSize);
+      badSiblings[i] = badSiblings[i].subspan(demSize);
       auto demuxed = evDem(f, badInps[i][0], std::span { badInps[i] }.subspan(1), scratch);
       badInpsStore0[i] = demuxed.first;
       badInpsStore1[i] = demuxed.second;
@@ -597,9 +617,9 @@ CondGarbling gbCond(
     const auto [muxMat0_, muxMat1, muxMatNow] = parseMux(b, m, muxMat);
     const auto muxMat0 = muxMat0_;
 
-    const auto R = toFill - (3*(n-1)+2);
+    const auto R = toFill - demSize;
 
-    garbling.material = garbling.material.subspan(3*(n-1) + 2, R);
+    garbling.material = garbling.material.subspan(demSize, R);
     auto garbling0 = gbCond_(f, cs0, e0, prg0, R);
     auto garbling1 = garbling0 ^ garbling;
 
@@ -607,8 +627,8 @@ CondGarbling gbCond(
     Material m0, m1;
     Encoding d0, d1;
     std::vector<Labelling> badOuts0, badOuts1;
-    std::thread th { [&] {
-    /* { */
+    /* std::thread th { [&] { */
+    {
       PRG prg1_ { bads1 };
       auto e1_ = genEncoding(prg1_, n-1);
       auto [m1_, d1_] = gbCond_(f, cs1, e1_ , prg1_, R);
@@ -619,8 +639,8 @@ CondGarbling gbCond(
       auto gb0 = gbCond(f, cs0, prg0_re, e0, garbling0, badSeeds0, badInps0, badSiblings0, muxMat0, R);
       badOuts0 = gb0.badOuts;
       d0 = gb0.outEnc;
-    }};
-    /* } */
+    /* }}; */
+    }
     {
       PRG prg0_ { bads0 };
       auto e0_ = genEncoding(prg0_, n-1);
@@ -635,7 +655,7 @@ CondGarbling gbCond(
       badOuts1 = gb1.badOuts;
       d1 = gb1.outEnc;
     }
-    th.join();
+    /* th.join(); */
 
     // immediately garble all of the right branches to compute good material
 
@@ -752,8 +772,12 @@ Encoding gb(const PRF& f, const Circuit& c, EncodingView inpEnc, std::span<Label
 
       PRG seedPRG(seed);
 
+      /* std::cout << "CHECK: "; show(inpEnc.zeros[0]); */
       const auto [mat, dmid] = gbCond_(f, cond.cs, inpEnc, seedPRG, condSize(cond.cs));
+      /* show(inpEnc.zeros[0]); */
       bodyMat ^= mat;
+
+      std::cout << "HERE\n";
 
       std::vector<std::span<Label>> badInps(0);
 
@@ -797,6 +821,7 @@ Labelling ev(const PRF& f, const Circuit& c, std::span<Label> input, std::span<L
       std::span<const Label> inps (input);
       auto seeds = evGadget(b, f, inps.subspan(0, ilog2(b)), gadgetMat);
 
+      /* show(input[0]); */
       return evCond(f, cond.cs, seeds, input, bodyMat, muxMat);
     },
     [&](const Sequence& seq) {

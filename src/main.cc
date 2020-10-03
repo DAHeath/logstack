@@ -42,7 +42,8 @@ double experiment(const Circuit& c) {
       for (std::size_t i = 0; i < c.nInp; ++i) {
         inp[i] = interface.inpEnc.zeros[i];
       }
-      inp[0] ^= delta1;
+
+      std::cout << "EV\n";
 
       const auto out = ev(k, c, inp, material);
 
@@ -75,12 +76,13 @@ int main(int argc, char** argv) {
     sha.desc.nOut,
     sha.desc.nRow,
   };
-  /* std::vector<Circuit> cs = { */
-  /*   sha_netlist, sha_netlist, */
-  /*   sha_netlist, sha_netlist, */
-  /*   sha_netlist, */
-  /* }; */
-  /* std::cout << experiment(conditional(cs)) << '\n'; */
+  std::vector<Circuit> cs = {
+    sha_netlist, sha_netlist,
+    sha_netlist, sha_netlist,
+    sha_netlist, sha_netlist,
+    sha_netlist, sha_netlist,
+  };
+  std::cout << experiment(conditional(cs)) << '\n';
 
 
   /* std::vector<Circuit> cs = { sha_netlist }; */
@@ -97,15 +99,15 @@ int main(int argc, char** argv) {
   /* } */
 
 
-  std::vector<Circuit> cs;
-  for (std::size_t i = 1; i <= 16; ++i) {
-    cs.push_back(sha_netlist);
-    if (cs.size() == 1) {
-      std::cout << experiment(cs[0]) << '\n';
-    } else {
-      std::cout << experiment(conditional(cs)) << '\n';
-    }
-  }
+  /* std::vector<Circuit> cs; */
+  /* for (std::size_t i = 1; i <= 16; ++i) { */
+  /*   cs.push_back(sha_netlist); */
+  /*   if (cs.size() == 1) { */
+  /*     std::cout << experiment(cs[0]) << '\n'; */
+  /*   } else { */
+  /*     std::cout << experiment(conditional(cs)) << '\n'; */
+  /*   } */
+  /* } */
 
 
 /*   PRG prg; */
