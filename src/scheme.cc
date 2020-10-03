@@ -36,10 +36,18 @@ Encoding operator^(const Encoding& x, const Encoding& y) {
   return { x.zeros ^ y.zeros, x.delta ^ y.delta };
 }
 
-
 HalfGarbling operator^(const HalfGarbling& x, const HalfGarbling& y) {
   return { x.material ^ y.material, x.outEnc ^ y.outEnc };
 }
+
+HalfGarbling operator^(const HalfGarbling& x, const HalfGarblingView& y) {
+  HalfGarbling out;
+  out.material = x.material;
+  out.material ^= y.material;
+  out.outEnc = x.outEnc ^ y.outEnc;
+  return out;
+}
+
 
 
 std::pair<Labelling, Labelling> gbDem(
@@ -411,10 +419,34 @@ HalfGarbling gbCond_(const PRF& f, std::span<const Circuit> cs, EncodingView e, 
 }
 
 
+std::tuple<std::span<Label>, std::span<Label>, std::span<Label>>
+parseMux(std::size_t b, std::size_t m, std::span<Label> muxMat) {
+  const auto b0 = b / 2;
+  const auto b1 = b - b0;
+  const auto muxMatSize0 = (b0 - 1) * (m + 2);
+  const auto muxMatSize1 = (b1 - 1) * (m + 2);
+
+  const auto muxMat0 = muxMat.subspan(0, muxMatSize0);
+  const auto muxMat1 = muxMat.subspan(muxMatSize0, muxMatSize1);
+  const auto muxMatNow = muxMat.subspan(muxMatSize0 + muxMatSize1);
+  assert(muxMatNow.size() == m + 2);
+
+  return { muxMat0, muxMat1, muxMatNow };
+}
+
+
+std::tuple<Label&, std::span<Label>, Label&, std::span<Label>>
+parseSeeds(std::size_t b, std::span<Label> seeds) {
+  const auto b0 = b/2;
+  return { seeds[0], seeds.subspan(1, 2*b0-2), seeds[2*b0-1], seeds.subspan(2*b0) };
+}
+
+
+
 Labelling evCond(
     const PRF& f,
     std::span<const Circuit> cs,
-    std::span<const Label> seeds,
+    std::span<Label> seeds,
     std::span<Label> inp,
     std::span<Label> mat,
     std::span<Label> muxMat) {
@@ -437,14 +469,12 @@ Labelling evCond(
     const auto n = inp.size();
     const auto m = cs[0].nOut;
     const auto b0 = b/2;
-    const auto b1 = b - b0;
     const auto cs0 = cs.subspan(0, b0);
     const auto cs1 = cs.subspan(b0);
 
-    const auto s0 = seeds[0];
-    const auto seeds0 = seeds.subspan(1, 2*b0-2);
-    const auto s1 = seeds[2*b0-1];
-    const auto seeds1 = seeds.subspan(2*b0);
+    const auto [s0, seeds0_, s1_, seeds1] = parseSeeds(b, seeds);
+    const auto seeds0 = seeds0_;
+    const auto s1 = s1_;
 
     const auto S = inp[0];
     const auto demOut = evDem(f, S, inp.subspan(1), mat);
@@ -454,13 +484,8 @@ Labelling evCond(
     // move past the demux material
     mat = mat.subspan(3*(n-1) + 2);
 
-    const auto muxMatSize0 = (b0 - 1) * (m + 2);
-    const auto muxMatSize1 = (b1 - 1) * (m + 2);
-
-    const auto muxMat0 = muxMat.subspan(0, muxMatSize0);
-    const auto muxMat1 = muxMat.subspan(muxMatSize0, muxMatSize1);
-    const auto muxMatNow = muxMat.subspan(muxMatSize0 + muxMatSize1);
-    assert(muxMatNow.size() == m + 2);
+    const auto [muxMat0_, muxMat1, muxMatNow] = parseMux(b, m, muxMat);
+    auto muxMat0 = muxMat0_;
 
     Material material1 { mat.begin(), mat.end() };
     std::span<Label> mat0 = mat;
@@ -499,7 +524,7 @@ CondGarbling gbCond(
     PRG& prg,
     EncodingView e,
     HalfGarblingView garbling,
-    std::span<const Label> badSeeds,
+    std::span<Label> badSeeds,
     std::vector<std::span<Label>> badInps,
     std::vector<std::span<Label>> badSiblings,
     std::span<Label> muxMat,
@@ -540,7 +565,6 @@ CondGarbling gbCond(
     PRG prg1 = seed1;
 
     const auto b0 = b/2;
-    const auto b1 = b - b0;
 
     auto e0 = genEncoding(prg0, n-1);
     auto e1 = genEncoding(prg1, n-1);
@@ -572,28 +596,18 @@ CondGarbling gbCond(
     badInps1.emplace_back(bad1);
 
 
-    const auto bads0 = badSeeds[0];
-    const auto badSeeds0 = badSeeds.subspan(1, 2*b0-2);
-    const auto bads1 = badSeeds[2*b0-1];
-    const auto badSeeds1 = badSeeds.subspan(2*b0);
+    const auto [bads0, badSeeds0_, bads1_, badSeeds1] = parseSeeds(b, badSeeds);
+    auto badSeeds0 = badSeeds0_;
+    auto bads1 = bads1_;
 
-    const auto muxMatSize0 = (b0-1) * (m + 2);
-    const auto muxMatSize1 = (b1-1) * (m+2);
-    const auto muxMat0 = muxMat.subspan(0, muxMatSize0);
-    const auto muxMat1 = muxMat.subspan(muxMatSize0, muxMatSize1);
-    const auto muxMatNow = muxMat.subspan(muxMatSize0 + muxMatSize1);
-
+    const auto [muxMat0_, muxMat1, muxMatNow] = parseMux(b, m, muxMat);
+    const auto muxMat0 = muxMat0_;
 
     const auto R = std::max(condSize(cs0), condSize(cs1));
 
-    auto garbling0 = gbCond_(f, cs0, e0, prg0, R);
-    HalfGarbling garbling1;
     garbling.material = garbling.material.subspan(3*(n-1) + 2);
-    garbling1.material = { garbling.material.begin(), garbling.material.end() };
-    garbling1.outEnc = garbling.outEnc ^ garbling0.outEnc;
-    garbling1.material ^= garbling0.material;
-
-
+    auto garbling0 = gbCond_(f, cs0, e0, prg0, R);
+    auto garbling1 = garbling0 ^ garbling;
 
     // set up bad seeds and expand
     Material m0, m1;
@@ -736,7 +750,7 @@ Encoding gb(const PRF& f, const Circuit& c, EncodingView inpEnc, std::span<Label
       // skip past the root seed
       gSeeds = gSeeds.subspan(1);
 
-      const auto badSeeds = gbGadget(
+      auto badSeeds = gbGadget(
           b, f, inpEnc.delta, gSeeds, inp.subspan(0, ilog2(b)), gadgetMat);
 
 
@@ -787,7 +801,7 @@ Labelling ev(const PRF& f, const Circuit& c, std::span<Label> input, std::span<L
       const auto muxMat = mat.subspan(mat.size() - muxSize);
 
       std::span<const Label> inps (input);
-      const auto seeds = evGadget(b, f, inps.subspan(0, ilog2(b)), gadgetMat);
+      auto seeds = evGadget(b, f, inps.subspan(0, ilog2(b)), gadgetMat);
 
       return evCond(f, cond.cs, seeds, input, bodyMat, muxMat);
     },
