@@ -394,7 +394,7 @@ HalfGarbling gbCond_(const PRF& f, std::span<const Circuit> cs, EncodingView e, 
 
     const auto cs0 = cs.subspan(0, b0);
     const auto cs1 = cs.subspan(b0);
-    const auto R = std::max(condSize(cs0), condSize(cs1));
+    const auto R = toFill - (3*(n-1)+2);
 
     const auto [mat0, d0] = gbCond_(f, cs0, e0, prg0, R);
     const auto [mat1, d1] = gbCond_(f, cs1, e1, prg1, R);
@@ -595,7 +595,6 @@ CondGarbling gbCond(
     badInps0.emplace_back(bad0);
     badInps1.emplace_back(bad1);
 
-
     const auto [bads0, badSeeds0_, bads1_, badSeeds1] = parseSeeds(b, badSeeds);
     auto badSeeds0 = badSeeds0_;
     auto bads1 = bads1_;
@@ -603,9 +602,9 @@ CondGarbling gbCond(
     const auto [muxMat0_, muxMat1, muxMatNow] = parseMux(b, m, muxMat);
     const auto muxMat0 = muxMat0_;
 
-    const auto R = std::max(condSize(cs0), condSize(cs1));
+    const auto R = toFill - (3*(n-1)+2);
 
-    garbling.material = garbling.material.subspan(3*(n-1) + 2);
+    garbling.material = garbling.material.subspan(3*(n-1) + 2, R);
     auto garbling0 = gbCond_(f, cs0, e0, prg0, R);
     auto garbling1 = garbling0 ^ garbling;
 
@@ -613,8 +612,8 @@ CondGarbling gbCond(
     Material m0, m1;
     Encoding d0, d1;
     std::vector<Labelling> badOuts0, badOuts1;
-    std::thread th { [&] {
-    /* { */
+    /* std::thread th { [&] { */
+    {
       PRG prg1_ { bads1 };
       auto e1_ = genEncoding(prg1_, n-1);
       auto [m1_, d1_] = gbCond_(f, cs1, e1_ , prg1_, R);
@@ -625,8 +624,8 @@ CondGarbling gbCond(
       auto gb0 = gbCond(f, cs0, prg0_re, e0, garbling0, badSeeds0, badInps0, badSiblings0, muxMat0, R);
       badOuts0 = gb0.badOuts;
       d0 = gb0.outEnc;
-    }};
-    /* } */
+    /* }}; */
+    }
     {
       PRG prg0_ { bads0 };
       auto e0_ = genEncoding(prg0_, n-1);
@@ -641,7 +640,7 @@ CondGarbling gbCond(
       badOuts1 = gb1.badOuts;
       d1 = gb1.outEnc;
     }
-    th.join();
+    /* th.join(); */
 
     // immediately garble all of the right branches to compute good material
 
