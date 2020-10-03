@@ -368,14 +368,16 @@ Material gbCond_(const PRF& f, std::span<const Circuit> cs, const Encoding& e, P
     const auto mat0 = gbCond_(f, cs0, e0, prg0);
     const auto mat1 = gbCond_(f, cs1, e1, prg1);
 
-    Material material { mat0.size() + 3*(n-1) + 2 };
+    Material material(mat0.size() + 3*(n-1) + 2);
 
     std::span<Label> mat { material };
 
     std::span<const Label> zeros { e.zeros };
     gbDem(prg, f, e.delta, zeros[0], zeros.subspan(1), e0, e1, mat);
+
     mat.subspan(3*(n-1)+2) ^= mat0;
     mat.subspan(3*(n-1)+2) ^= mat1;
+
     return material;
   }
 }
@@ -404,9 +406,6 @@ Labelling evCond(
     const auto seeds0 = seeds.subspan(1, 2*b0-1);
     const auto s1 = seeds[2*b0-1];
     const auto seeds1 = seeds.subspan(2*b0);
-
-/*     show(s0); */
-/*     show(s1); */
 
     const auto S = inp[0];
     std::span<const Label> inp_(inp);
