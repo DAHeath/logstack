@@ -4,6 +4,9 @@
 
 #include <iostream>
 
+std::size_t n_netlistgb = 0;
+
+
 void show(const Label& l) {
   std::uint64_t* xs = (std::uint64_t*)(&l);
   std::cout << std::hex << xs[0] << xs[1] << '\n';
@@ -436,7 +439,8 @@ Labelling evCond(
     }
     {
       PRG prg(s0);
-      mat1 ^= gbCond_(f, cs0, genEncoding(prg, n-1), prg);
+      const auto toUnstack = gbCond_(f, cs0, genEncoding(prg, n-1), prg);
+      mat1 ^= toUnstack;
       out1 = evCond(f, cs1, seeds1, inp1, mat1, muxMat1);
     }
 
@@ -531,7 +535,7 @@ CondGarbling gbCond(
 
     // now, recursively garble left branches, using garbage from right
     auto badSiblings0 = badSiblings;
-    badSiblings0.emplace_back(m1_);
+    badSiblings0.push_back(m1_);
     const auto [m0, d0, badOuts0] = gbCond(f, cs0, prg0, e0, badSeeds0, badInps0, badSiblings0, muxMat0);
 
     // now that garbage from left is available,
@@ -540,8 +544,10 @@ CondGarbling gbCond(
     auto m0_ = gbCond_(f, cs0, genEncoding(prg0_, n-1), prg0_);
     m0_ ^= m0;
     auto badSiblings1 = badSiblings;
-    badSiblings1.emplace_back(m0_);
-    const auto [m1_re, d1, badOuts1] = gbCond(f, cs1, prg1, e1, badSeeds1, badInps1, badSiblings1, muxMat1);
+    badSiblings1.push_back(m0_);
+
+    PRG prg1_re = seed1;
+    const auto [m1_re, d1, badOuts1] = gbCond(f, cs1, prg1_re, e1, badSeeds1, badInps1, badSiblings1, muxMat1);
 
     material.resize(material.size() + m0.size());
 
@@ -550,6 +556,8 @@ CondGarbling gbCond(
     mat ^= m0;
     mat ^= m1;
     assert(muxMatNow.size() == m + 2);
+
+
     const auto d = gbMux(prg, f, e.delta, e.zeros[0], d0, d1, badOuts0.back(), badOuts1.back(), muxMatNow);
 
     std::vector<Labelling> badOuts(badOuts0.size()-1);
@@ -622,9 +630,11 @@ std::vector<Label> seedTree(const Label& root, std::size_t b) {
 Encoding gb(const PRF& f, const Circuit& c, const Encoding& inpEnc, std::span<Label> mat) {
   return std::visit(overloaded {
     [&](const Netlist& n) {
+      ++n_netlistgb;
       return netlistgb(f, n, inpEnc, mat);
     },
     [&](const Conditional& cond) {
+      n_netlistgb = 0;
       const auto b = cond.cs.size();
       const auto m = c.nOut;
       PRG prg;
@@ -643,7 +653,6 @@ Encoding gb(const PRF& f, const Circuit& c, const Encoding& inpEnc, std::span<La
 
       std::span<const Label> inp = inpEnc.zeros;
       const auto goodSeeds = seedTree(seed, b);
-      std::cout << "SIZE: " << goodSeeds.size() << '\n';
 
       std::span<const Label> gSeeds = goodSeeds;
       // skip past the root seed
@@ -655,8 +664,10 @@ Encoding gb(const PRF& f, const Circuit& c, const Encoding& inpEnc, std::span<La
 
       PRG seedPRG(seed);
       std::vector<Labelling> badInps;
+
       const auto [material, d, bo_] = gbCond(f, cond.cs, seedPRG, inpEnc, badSeeds, badInps, { }, muxMat);
       bodyMat ^= material;
+      std::cout << n_netlistgb << '\n';
       return d;
     },
     [&](const Sequence& seq) {

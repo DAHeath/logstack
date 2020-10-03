@@ -20,18 +20,17 @@ Circuit conditional(const std::vector<Circuit>& cs) {
   const auto n = cs[0].nInp;
   const auto m = cs[0].nOut;
   const auto gadgetSize = 3*b;
-  const auto transSize = n + 1;
   const auto demSize = 3*n + 2;
   const auto muxSize = (b-1) * (m + 2);
 
   const auto logb = ilog2(b);
 
 
-  const auto fullDemSize = demSize * logb + 3*logb*logb;
+  const auto fullDemSize = demSize * logb + (3*(logb)*(logb-1))/2;
 
   std::size_t nRow = 0;
   for (const auto& c: cs) { nRow = std::max(nRow, c.nRow); }
-  nRow += gadgetSize + transSize + fullDemSize + muxSize;
+  nRow += gadgetSize + fullDemSize + muxSize;
 
   return Circuit {
     Conditional { cs },
@@ -61,7 +60,7 @@ double experiment(const Circuit& c) {
       auto [material, interface] = garble(k, c, seed);
 
 
-      std::cout << "HERE\n";
+      /* std::cout << "HERE\n"; */
 
       const auto delta1 = interface.inpEnc.delta;
       const auto delta2 = interface.outEnc.delta;
@@ -72,23 +71,23 @@ double experiment(const Circuit& c) {
       }
 
       const auto out = ev(k, c, inp, material);
-      std::cout << "THERE\n";
+      /* std::cout << "THERE\n"; */
 
 
-      for (std::size_t i = 0; i < c.nOut; ++i) {
-        if (out[i] == interface.outEnc.zeros[i]) {
-          std::cout << '0';
-        } else if (out[i] == (interface.outEnc.zeros[i] ^ delta2)) {
-          std::cout << '1';
-        } else {
-          /* std::cerr << "ERROR!\n"; */
-          /* std::cerr << out[i] << '\n'; */
-          /* std::cerr << g.outputEncoding.zeros[i] << '\n'; */
-          /* std::cerr << (g.outputEncoding.zeros[i] ^ delta2) << '\n'; */
-          /* std::exit(1); */
-        }
-      }
-      std::cout << '\n';
+      /* for (std::size_t i = 0; i < c.nOut; ++i) { */
+      /*   if (out[i] == interface.outEnc.zeros[i]) { */
+      /*     std::cout << '0'; */
+      /*   } else if (out[i] == (interface.outEnc.zeros[i] ^ delta2)) { */
+      /*     std::cout << '1'; */
+      /*   } else { */
+      /*     /1* std::cerr << "ERROR!\n"; *1/ */
+      /*     /1* std::cerr << out[i] << '\n'; *1/ */
+      /*     /1* std::cerr << g.outputEncoding.zeros[i] << '\n'; *1/ */
+      /*     /1* std::cerr << (g.outputEncoding.zeros[i] ^ delta2) << '\n'; *1/ */
+      /*     /1* std::exit(1); *1/ */
+      /*   } */
+      /* } */
+      /* std::cout << '\n'; */
     }));
   }
 
@@ -103,24 +102,24 @@ int main(int argc, char** argv) {
     sha.desc.nOut,
     sha.desc.nRow,
   };
-  std::vector<Circuit> cs = { sha_netlist, sha_netlist, sha_netlist, sha_netlist };
-  std::cout << experiment(conditional(cs)) << '\n';
+  std::vector<Circuit> cs = { sha_netlist };
+  /* std::cout << experiment(conditional(cs)) << '\n'; */
 
 
-  /* for (std::size_t i = 0; i <= 4; ++i) { */
-  /*   std::cout << (1 << i) << '\n'; */
-  /*   std::cout << cs.size() << '\n'; */
+  for (std::size_t i = 0; i <= 8; ++i) {
+    /* std::cout << (1 << i) << '\n'; */
+    /* std::cout << cs.size() << '\n'; */
 
-  /*   if (cs.size() == 1) { */
-  /*     std::cout << experiment(cs[0]) << '\n'; */
-  /*   } else { */
-  /*     std::cout << experiment(conditional(cs)) << '\n'; */
-  /*   } */
+    if (cs.size() == 1) {
+      std::cout << experiment(cs[0]) << '\n';
+    } else {
+      std::cout << experiment(conditional(cs)) << '\n';
+    }
 
-  /*   for (std::size_t j = 0; j < (1 << i); ++j) { */
-  /*     cs.push_back(sha_netlist); */
-  /*   } */
-  /* } */
+    for (std::size_t j = 0; j < (1 << i); ++j) {
+      cs.push_back(sha_netlist);
+    }
+  }
 
 
   /* for (std::size_t i = 1; i <= 8; ++i) { */
