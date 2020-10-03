@@ -17,10 +17,12 @@ auto timed(F f) {
 
 Circuit conditional(const std::vector<Circuit>& cs) {
   const auto b = cs.size();
-  const auto gadgetSize = b*3;
-  const auto transSize = cs[0].nInp + 1;
-  const auto demSize = 3*cs[0].nInp + 2;
-  const auto muxSize = (b-1) * (cs[0].nOut + 2);
+  const auto n = cs[0].nInp;
+  const auto m = cs[0].nOut;
+  const auto gadgetSize = 3*b;
+  const auto transSize = n + 1;
+  const auto demSize = 3*n + 2;
+  const auto muxSize = (b-1) * (m + 2);
 
   const auto logb = ilog2(b);
 
@@ -116,6 +118,8 @@ int main(int argc, char** argv) {
       cs.push_back(sha_netlist);
     }
   }
+
+
   /* for (std::size_t i = 1; i <= 8; ++i) { */
   /*   std::cout << i << '\n'; */
   /*   cs.push_back(sha_netlist); */
@@ -127,37 +131,37 @@ int main(int argc, char** argv) {
   /* } */
 
 
-  /* PRG prg; */
-  /* PRF f; */
+/*   PRG prg; */
+/*   PRF f; */
 
 
-  /* const auto enc = genEncoding(prg, 3); */
+/*   const auto enc = genEncoding(prg, 3); */
 
-  /* const auto b = 5; */
+/*   const auto b = 2; */
 
-  /* std::vector<Label> seeds(2*b - 2); */
-  /* for (std::size_t i = 0; i < 2*b - 2; ++i) { */
-  /*   seeds[i] = prg(); */
-  /* } */
+/*   std::vector<Label> seeds(2*b - 2); */
+/*   for (std::size_t i = 0; i < 2*b - 2; ++i) { */
+/*     seeds[i] = prg(); */
+/*   } */
 
-  /* Material m(40); */
-  /* for (auto& r: m) { r = 0; } */
-  /* std::span<Label> mat(m); */
-  /* const auto bad = gbGadget(b, f, enc.delta, seeds, enc.zeros, mat); */
-
-
-  /* mat = m; */
-
-  /* Labelling index = enc.zeros; */
-  /* index[0] ^= enc.delta; */
-  /* index[1] ^= enc.delta; */
-
-  /* const auto actual = evGadget(b, f, index, mat); */
+/*   Material m(40); */
+/*   for (auto& r: m) { r = 0; } */
+/*   std::span<Label> mat(m); */
+/*   const auto bad = gbGadget(b, f, enc.delta, seeds, enc.zeros, mat); */
 
 
-  /* for (std::size_t i = 0; i < seeds.size(); ++i) { */
-  /*   std::cout << actual[i] << '\n'; */
-  /*   std::cout << seeds[i] << '\n'; */
-  /*   std::cout << bad[i] << "\n\n"; */
-  /* } */
+/*   mat = m; */
+
+/*   Labelling index = enc.zeros; */
+/*   index[0] ^= enc.delta; */
+/*   index[1] ^= enc.delta; */
+
+/*   const auto actual = evGadget(b, f, index, mat); */
+
+
+/*   for (std::size_t i = 0; i < seeds.size(); ++i) { */
+/*     show(actual[i]); */
+/*     show(seeds[i]); */
+/*     show(bad[i]); */
+/*   } */
 }

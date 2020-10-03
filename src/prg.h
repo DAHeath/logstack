@@ -7,9 +7,10 @@
 
 struct PRG {
 public:
-  PRG() : nonce(0) { }
+  PRG() : nonce(0), child_nonce(0-1) { }
   PRG(PRF prf) : prf(std::move(prf)), nonce(0), child_nonce(0-1) { }
-  PRG(std::bitset<128> seed) : prf(std::move(seed)), nonce(0) { }
+  PRG(std::bitset<128> seed) :
+    prf(std::move(seed)), nonce(0), child_nonce(0-1) { }
 
   std::bitset<128> operator()() { return prf(nonce++); }
 

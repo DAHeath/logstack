@@ -42,6 +42,8 @@ struct Circuit {
   std::size_t nRow;
 };
 
+void show(const Label&);
+
 
 
 using Material = std::vector<Label>;
