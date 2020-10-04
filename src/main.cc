@@ -1,4 +1,5 @@
 #include "scheme.h"
+#include "protocol.h"
 #include "sha256.h"
 #include <iostream>
 #include <chrono>
@@ -16,52 +17,50 @@ auto timed(F f) {
 
 
 
-Garbling garble(const PRF& f, const Circuit& c, PRG& prg) {
-  auto inpEnc = genEncoding(prg, c.nInp);
-  Material m(c.nRow);
-  auto outEnc = gb(f, c, inpEnc, m);
-  return { m, { inpEnc, outEnc } };
-}
-
-
 constexpr std::size_t n_repetitions = 1;
+
+
+emp::NetIO* genChannel;
+emp::NetIO* evalChannel;
 
 double experiment(const Circuit& c) {
   std::vector<double> results;
   for (std::size_t i = 0; i < n_repetitions; ++i) {
     results.push_back(timed([&] {
-      PRG seed;
-      PRF k;
-      auto [material, interface] = garble(k, c, seed);
+
+      semihonest(c, *genChannel, *evalChannel);
+      /* PRG seed; */
+      /* PRF k; */
+      /* auto [material, interface] = garble(k, c, seed); */
 
 
-      const auto delta1 = interface.inpEnc.delta;
-      const auto delta2 = interface.outEnc.delta;
+      /* const auto delta1 = interface.inpEnc.delta; */
+      /* const auto delta2 = interface.outEnc.delta; */
 
-      Labelling inp(c.nInp);
-      for (std::size_t i = 0; i < c.nInp; ++i) {
-        inp[i] = interface.inpEnc.zeros[i];
-      }
+      /* Labelling inp(c.nInp); */
+      /* for (std::size_t i = 0; i < c.nInp; ++i) { */
+      /*   inp[i] = interface.inpEnc.zeros[i]; */
+      /* } */
 
-      std::cout << "EV\n";
+      /* /1* std::cout << "EV\n"; *1/ */
 
-      const auto out = ev(k, c, inp, material);
+      /* const auto out = ev(k, c, inp, material); */
 
 
-      for (std::size_t i = 0; i < c.nOut; ++i) {
-        if (out[i] == interface.outEnc.zeros[i]) {
-          std::cout << '0';
-        } else if (out[i] == (interface.outEnc.zeros[i] ^ delta2)) {
-          std::cout << '1';
-        } else {
-          /* std::cerr << "ERROR!\n"; */
-          /* std::cerr << out[i] << '\n'; */
-          /* std::cerr << g.outputEncoding.zeros[i] << '\n'; */
-          /* std::cerr << (g.outputEncoding.zeros[i] ^ delta2) << '\n'; */
-          /* std::exit(1); */
-        }
-      }
-      std::cout << '\n';
+      /* for (std::size_t i = 0; i < c.nOut; ++i) { */
+      /*   if (out[i] == interface.outEnc.zeros[i]) { */
+      /*     std::cout << '0'; */
+      /*   } else if (out[i] == (interface.outEnc.zeros[i] ^ delta2)) { */
+      /*     std::cout << '1'; */
+      /*   } else { */
+      /*     /1* std::cerr << "ERROR!\n"; *1/ */
+      /*     /1* std::cerr << out[i] << '\n'; *1/ */
+      /*     /1* std::cerr << g.outputEncoding.zeros[i] << '\n'; *1/ */
+      /*     /1* std::cerr << (g.outputEncoding.zeros[i] ^ delta2) << '\n'; *1/ */
+      /*     /1* std::exit(1); *1/ */
+      /*   } */
+      /* } */
+      /* std::cout << '\n'; */
     }));
   }
 
@@ -76,13 +75,13 @@ int main(int argc, char** argv) {
     sha.desc.nOut,
     sha.desc.nRow,
   };
-  std::vector<Circuit> cs = {
-    sha_netlist, sha_netlist,
-    sha_netlist, sha_netlist,
-    sha_netlist, sha_netlist,
-    sha_netlist, sha_netlist,
-  };
-  std::cout << experiment(conditional(cs)) << '\n';
+  /* std::vector<Circuit> cs = { */
+  /*   sha_netlist, sha_netlist, */
+  /*   sha_netlist, sha_netlist, */
+  /*   sha_netlist, sha_netlist, */
+  /*   sha_netlist, sha_netlist, */
+  /* }; */
+  /* std::cout << experiment(conditional(cs)) << '\n'; */
 
 
   /* std::vector<Circuit> cs = { sha_netlist }; */
@@ -99,15 +98,28 @@ int main(int argc, char** argv) {
   /* } */
 
 
-  /* std::vector<Circuit> cs; */
-  /* for (std::size_t i = 1; i <= 16; ++i) { */
+  std::thread th { [&] {
+    genChannel = new emp::NetIO(nullptr, 55557);
+  }};
+  sleep(1);
+  evalChannel = new emp::NetIO("127.0.0.1", 55557);
+  th.join();
+
+
+  std::vector<Circuit> cs;
+  /* for (std::size_t i = 0; i < 128; ++i) { */
   /*   cs.push_back(sha_netlist); */
-  /*   if (cs.size() == 1) { */
-  /*     std::cout << experiment(cs[0]) << '\n'; */
-  /*   } else { */
-  /*     std::cout << experiment(conditional(cs)) << '\n'; */
-  /*   } */
   /* } */
+  /* std::cout << experiment(conditional(cs)) << '\n'; */
+  for (std::size_t i = 1; i <= 64; ++i) {
+    /* std::cout << i << " ##################\n"; */
+    cs.push_back(sha_netlist);
+    if (cs.size() == 1) {
+      std::cout << experiment(cs[0]) << '\n';
+    } else {
+      std::cout << experiment(conditional(cs)) << '\n';
+    }
+  }
 
 
 /*   PRG prg; */

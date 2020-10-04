@@ -69,7 +69,7 @@ inline Circuit conditional(std::span<const Circuit> cs) {
   } else {
     const auto n = cs[0].nInp;
     const auto m = cs[0].nOut;
-    const auto gadgetSize = 3*b;
+    const auto gadgetSize = 4*b;
     const auto demSize = 3*n + 2;
     const auto muxSize = (b-1) * (m + 2);
 
@@ -198,6 +198,14 @@ std::vector<Label> evGadget(
     const PRF& f,
     std::span<const Label> index,
     std::span<Label>& mat);
+
+
+inline Garbling garble(const PRF& f, const Circuit& c, PRG& prg) {
+  auto inpEnc = genEncoding(prg, c.nInp);
+  Material m(c.nRow);
+  auto outEnc = gb(f, c, inpEnc, m);
+  return { m, { inpEnc, outEnc } };
+}
 
 
 #endif

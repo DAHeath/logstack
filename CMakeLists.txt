@@ -28,6 +28,7 @@ if(OPENSSL_FOUND)
     list(APPEND LIB_LIST ${OPENSSL_LIBRARIES})
   endif()
 endif()
+find_package(EMP-TOOL REQUIRED)
 
 file(GLOB sources "src/*.cc")
 

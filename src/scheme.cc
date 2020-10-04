@@ -7,6 +7,9 @@
 std::size_t n_netlistgb = 0;
 
 
+std::atomic<std::size_t> available_threads = 1;
+
+
 void show(const Label& l) {
   std::uint64_t* xs = (std::uint64_t*)(&l);
   std::cout << std::hex << xs[0] << xs[1] << '\n';
@@ -397,27 +400,42 @@ HalfGarbling gbCond_(const PRF& f, std::span<const Circuit> cs, EncodingView e, 
     auto e0 = genEncoding(prg0, n-1);
     auto e1 = genEncoding(prg1, n-1);
 
-    const auto [mat0, d0] = gbCond_(f, cs0, e0, prg0, R);
-    const auto [mat1, d1] = gbCond_(f, cs1, e1, prg1, R);
-
 
     Material material(toFill);
-
     std::span<Label> mat { material };
 
     std::span<const Label> zeros { e.zeros };
     zeros = zeros.subspan(1);
     gbDem(prg, f, e.delta, e.zeros[0], zeros, e0, e1, mat);
 
-    /* std::cout << "GB DEM\n"; */
-    /* show(e.zeros[0]); */
-    /* show(e0.zeros[0]); */
-    /* show(e1.zeros[0]); */
 
+    Material mat0, mat1;
+    Encoding d0, d1;
+
+    if (available_threads > 0) {
+      --available_threads;
+      std::thread th { [&] {
+        const auto gb0 = gbCond_(f, cs0, e0, prg0, R);
+        mat0 = gb0.material;
+        d0 = gb0.outEnc;
+      }};
+      const auto gb1 = gbCond_(f, cs1, e1, prg1, R);
+      mat1 = gb1.material;
+      d1 = gb1.outEnc;
+      th.join();
+      ++available_threads;
+    } else {
+      const auto gb0 = gbCond_(f, cs0, e0, prg0, R);
+      const auto gb1 = gbCond_(f, cs1, e1, prg1, R);
+      mat0 = gb0.material;
+      mat1 = gb1.material;
+      d0 = gb0.outEnc;
+      d1 = gb1.outEnc;
+    }
     mat.subspan(demSize) ^= mat0;
     mat.subspan(demSize) ^= mat1;
-
     return { material, d0 ^ d1 };
+
   }
 }
 
@@ -481,8 +499,10 @@ Labelling evCond(
     const auto cs0 = cs0_;
     const auto cs1 = cs1_;
 
-    const auto [s0, seeds0_, s1_, seeds1] = parseSeeds(b, seeds);
+    const auto [s0_, seeds0_, s1_, seeds1_] = parseSeeds(b, seeds);
     const auto seeds0 = seeds0_;
+    const auto seeds1 = seeds1_;
+    const auto s0 = s0_;
     const auto s1 = s1_;
 
     const auto S = inp[0];
@@ -490,16 +510,12 @@ Labelling evCond(
     auto inp0 = demOut.first;
     auto inp1 = demOut.second;
 
-    /* std::cout << "EV DEM\n"; */
-    /* show(inp[0]); */
-    /* show(inp0[0]); */
-    /* show(inp1[0]); */
-
     // move past the demux material
     mat = mat.subspan(3*(n-1) + 2);
 
-    const auto [muxMat0_, muxMat1, muxMatNow] = parseMux(b, m, muxMat);
+    const auto [muxMat0_, muxMat1_, muxMatNow] = parseMux(b, m, muxMat);
     auto muxMat0 = muxMat0_;
+    auto muxMat1 = muxMat1_;
 
     Material material1 { mat.begin(), mat.end() };
     std::span<Label> mat0 = mat;
@@ -509,23 +525,33 @@ Labelling evCond(
 
 
     Labelling out0, out1;
-    {
-    /* std::thread th { [&] { */
+    /* { */
+
+    const auto F = [&] {
       PRG prg(s1);
       auto e1 = genEncoding(prg, n-1);
       const auto [m1, d1] = gbCond_(f, cs1, e1, prg, R);
       mat0 ^= m1;
       out0 = evCond(f, cs0, seeds0, inp0, mat0, muxMat0);
-    /* }}; */
-    }
-    {
+    };
+    const auto G = [&] {
       PRG prg(s0);
       auto e0 = genEncoding(prg, n-1);
       const auto [m0, d0] = gbCond_(f, cs0, e0, prg, R);
       mat1 ^= m0;
       out1 = evCond(f, cs1, seeds1, inp1, mat1, muxMat1);
+    };
+
+    if (available_threads > 0) {
+      --available_threads;
+      std::thread th { F };
+      G();
+      th.join();
+      ++available_threads;
+    } else {
+      F();
+      G();
     }
-    /* th.join(); */
 
     return evMux(f, S, out0, out1, muxMatNow);
   }
@@ -610,12 +636,15 @@ CondGarbling gbCond(
     badInps0.emplace_back(bad0);
     badInps1.emplace_back(bad1);
 
-    const auto [bads0, badSeeds0_, bads1_, badSeeds1] = parseSeeds(b, badSeeds);
+    const auto [bads0_, badSeeds0_, bads1_, badSeeds1_] = parseSeeds(b, badSeeds);
     auto badSeeds0 = badSeeds0_;
+    auto badSeeds1 = badSeeds1_;
+    auto bads0 = bads0_;
     auto bads1 = bads1_;
 
-    const auto [muxMat0_, muxMat1, muxMatNow] = parseMux(b, m, muxMat);
+    const auto [muxMat0_, muxMat1_, muxMatNow] = parseMux(b, m, muxMat);
     const auto muxMat0 = muxMat0_;
+    const auto muxMat1 = muxMat1_;
 
     const auto R = toFill - demSize;
 
@@ -627,8 +656,9 @@ CondGarbling gbCond(
     Material m0, m1;
     Encoding d0, d1;
     std::vector<Labelling> badOuts0, badOuts1;
-    /* std::thread th { [&] { */
-    {
+
+
+    const auto F = [&] {
       PRG prg1_ { bads1 };
       auto e1_ = genEncoding(prg1_, n-1);
       auto [m1_, d1_] = gbCond_(f, cs1, e1_ , prg1_, R);
@@ -639,9 +669,8 @@ CondGarbling gbCond(
       auto gb0 = gbCond(f, cs0, prg0_re, e0, garbling0, badSeeds0, badInps0, badSiblings0, muxMat0, R);
       badOuts0 = gb0.badOuts;
       d0 = gb0.outEnc;
-    /* }}; */
-    }
-    {
+    };
+    const auto G = [&] {
       PRG prg0_ { bads0 };
       auto e0_ = genEncoding(prg0_, n-1);
       auto [m0_, d0_] = gbCond_(f, cs0, e0_, prg0_, R);
@@ -654,8 +683,18 @@ CondGarbling gbCond(
       auto gb1 = gbCond(f, cs1, prg1_re, e1, garbling1, badSeeds1, badInps1, badSiblings1, muxMat1, R);
       badOuts1 = gb1.badOuts;
       d1 = gb1.outEnc;
+    };
+
+    if (available_threads > 0) {
+      --available_threads;
+      std::thread th { F };
+      G();
+      th.join();
+      ++available_threads;
+    } else {
+      F();
+      G();
     }
-    /* th.join(); */
 
     // immediately garble all of the right branches to compute good material
 
@@ -747,7 +786,7 @@ Encoding gb(const PRF& f, const Circuit& c, EncodingView inpEnc, std::span<Label
       const auto seed = prg();
 
 
-      const auto gadgetSize = 3*b;
+      const auto gadgetSize = 4*b;
       const auto muxSize = (b-1)*(m+2);
 
       auto gadgetMat = mat.subspan(0, gadgetSize);
@@ -772,12 +811,9 @@ Encoding gb(const PRF& f, const Circuit& c, EncodingView inpEnc, std::span<Label
 
       PRG seedPRG(seed);
 
-      /* std::cout << "CHECK: "; show(inpEnc.zeros[0]); */
       const auto [mat, dmid] = gbCond_(f, cond.cs, inpEnc, seedPRG, condSize(cond.cs));
-      /* show(inpEnc.zeros[0]); */
       bodyMat ^= mat;
 
-      std::cout << "HERE\n";
 
       std::vector<std::span<Label>> badInps(0);
 
@@ -810,7 +846,7 @@ Labelling ev(const PRF& f, const Circuit& c, std::span<Label> input, std::span<L
       const auto b = cond.cs.size();
       const auto m = c.nOut;
 
-      const auto gadgetSize = 3*b;
+      const auto gadgetSize = 4*b;
       const auto muxSize = (b-1)*(m+2);
       auto gadgetMat = mat.subspan(0, gadgetSize);
       const auto bodyMat = mat.subspan(
@@ -821,7 +857,6 @@ Labelling ev(const PRF& f, const Circuit& c, std::span<Label> input, std::span<L
       std::span<const Label> inps (input);
       auto seeds = evGadget(b, f, inps.subspan(0, ilog2(b)), gadgetMat);
 
-      /* show(input[0]); */
       return evCond(f, cond.cs, seeds, input, bodyMat, muxMat);
     },
     [&](const Sequence& seq) {
