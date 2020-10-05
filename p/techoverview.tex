@@ -70,39 +70,42 @@ b$-bit integer that points to the active branch.
 
 \begin{figure}[t!]\centering\framebox{%
 \begin{minipage}{1.05\linewidth}
-
-% In more detail, \gadget can be described in two steps:\vlad{put gadget in frame?}
-\begin{enumerate}
-  \item
-    \gadget computes for each node \node in the tree the following function \issr(\node,\aid):
-    `Is \node a sibling root of $\aid$?' This Boolean function can be
-    efficiently realized using a GC with cost proportional to the size
-    of the tree (i.e. $2b$ AND gates). Let $\issr_\node$ be
-    the output of this function for node \node.
-  \item
-    \gadget outputs a seed \es(\E's seed) based on \issr():
-   %maps the above intermediate encrypted truth values to seeds for each \node as follows:
+\begin{itemize}
+  \item \textsc{Inputs:} \gadget takes as input the active branch id
+    \aid\ and
+    the number of branches $b$.
+  \item \textsc{Outputs:}
+    \gadget outputs a sequence of evaluator seeds that form a binary branching tree:
+  \[
+    \es_{0, b-1}, \es_{0, \frac{b-1}{2}}, \es_{\frac{b-1}{2}+1,b-1},
+    \ldots, \es_0, \es_1,\ldots \es_{b-1}
+  \]
+    such
+    that for each node \node:
    \[
    \es_\node =
    \begin{cases}
-       s_\node,& \text{if } \issr_\node\\
-       s_\node',& \text{otherwise}
+     s_\node,& \text{if $\node$ is a sibling root of $\aid$}\\
+     s_\node',& \text{otherwise}
    \end{cases}
   \]
-    Where $s_\node'$ is a uniform string indistinguishable from
-    $s_\node$. If \node is a sibling root of $\aid$, then
-    \E\ obtains the correct seed $s_\node$, and otherwise obtains a garbage
-    seed $s_\node'$. $s_\node'$ is fixed for each node \node, and is independent of \aid.
-    We implement \gadget using only a single garbled row
-    per node.
-\end{enumerate}
+  where $s_\node'$ is a uniform string indistinguishable from
+  $s_\node$.
+\end{itemize}
 \end{minipage}
-}\caption{The \gadget functionality. TODO
-finish.}\label{fig:sortinghat}
+}\caption{%
+  The \gadgetlong functionality. \gadgetlong (or \gadget) is
+  responsible for conveying only the sibling root seeds of \aid\ to \E.
+  For every other node, \E obtains a different, but indistinguishable,
+  seed that, when garbled, generates garbage material.
+  %
+  \gadgetlong is easily implemented as a garbled circuit gadget (i.e.,
+  built from garbled rows).
+}\label{fig:sortinghat}
 \end{figure}
 
 In the context of the example in~\Cref{fig:seed-tree}, \G  garbles branches  $\cir_0,...,\cir_7$ as follows.  \G chooses a random
-seed for the root of the tree (denoted $s_{0-7}$ for the $8$-leaf tree
+seed for the root of the tree (denoted $s_{0,7}$ for the $8$-leaf tree
 in~\Cref{fig:seed-tree}), and uses it to pseudorandomly derive seeds
 for each node of the tree.  This is done in the standard manner, e.g.,
 the immediate children of a seed $s$ are the PRF evaluations on inputs
@@ -144,14 +147,14 @@ seed.
 % \aid. This is easy to do.  Details follow:
 
 For example in~\Cref{fig:seed-tree}, if the active branch is $\aid=4$,
-then applying the gadget to nodes $\node_{0-3}, \node_{6-7},
-\node_{5}$ will reconstruct the correct seeds $s_{0-3}, s_{6-7}, s_{5}$.  Applying \gadget to other nodes
+then applying the gadget to nodes $\node_{0,3}, \node_{6,7},
+\node_{5}$ will reconstruct the correct seeds $s_{0,3}, s_{6,7}, s_{5}$.  Applying \gadget to other nodes
 will construct fixed garbage seeds.
 If the active branch were instead $\aid=3$, then \gadget
-would reconstruct the correct seeds $s_{4-7}, s_{0-1}, s_{2}$.
+would reconstruct the correct seeds $s_{4,7}, s_{0,1}, s_{2}$.
 Critically, the
 garbage seeds reconstructed
-in both cases, e.g. for node $\node_{4-5}$, will be the same.
+in both cases, e.g. for node $\node_{4,5}$, will be the same.
 
 
 \subsubsection{Actions of \E.}
@@ -176,96 +179,31 @@ there is no security loss.  We next see that the number of different
 garbage labels we must collect is small, and further they can be
 collected efficiently.
 
+\subsubsection{Computational cost accounting.} Let's now verify that
+we indeed reduced the number of calls to \Gb\ and \Ev\ to $O(b \log
+b)$.  This is easily done by first considering how many such calls are
+made by \E.  Consider branch $\cir_i$.  It is garbled $\log b$ times,
+once with a seed (ultimately) derived from each seed on the path to
+the root.  Thus, total number of calls by \E to \Gb\ is $b \log b$ and
+to \Ev\ is exactly $b$.  
 
-
-
-
-\vlad{Removed this too "Finally, we note  that this argument clearly generalizes to the tree of every size."}
-
-
-\subsubsection{Computational cost accounting.} Let's now verify that we indeed reduced the number of calls to \Gb\ and \Ev\ to $O(b \log b)$.  This is easily done by first considering how many such calls are made by \E.  
-Consider branch $\cir_i$.  It is garbled $\log b$ times, once with a seed (ultimately) derived from each seed on the path to the root.  Thus, total number of calls by \E to \Gb\ is $b \log b$ and to \Ev\ is exactly $b$.  
-
-
-
-
-To construct \gadget, \G must obtain all possible garbage labels. 
-We now demonstrate that the total cost to the generator is $b (\log b + 1)$ calls to \Gb\ and $b \log b$ calls to \Ev.
+To construct \gadget, \G must obtain all possible garbage labels.  We
+now demonstrate that the total cost to the generator is $b (\log b +
+1)$ calls to \Gb\ and $b \log b$ calls to \Ev.
 First let’s consider only \Gb\ and consider the number of ways \E\ can garble a specific circuit $\cir_i$. Clearly, this is exactly $\log b+1$.
 
-Now let’s consider the number of calls needed to \Ev.
-Recall that our goal was to ensure that \E constructs the same garbage output labels for a branch $\cir_i$ in each scenario where \aid is in some fixed sibling subtree of $\cir_i$. Note that the logic of our gadget ensures that \E will obtain the same sibling root seeds in each of these scenarios, and therefore she will construct the same garblings. Hence, since there are $\log b$ sibling subtrees of $\cir_i$, $\cir_i$ has only $\log b$ possible garbage output labels.
-
-
-
-\ignore{
-
- Hence \G emulates the work done by \E in its entirety  for {\em every} possible value of $\truth\in\{1,...,\log b\}$.  Hence it makes total  $b \log^2 b$ number of calls to \Gb\ and $b \log b$ calls to  \Ev.  
-%hence it  makes  $\log b$ calls per branch to \Gb\ and $b\log b$ total calls to \Ev\ to obtain all garbage labels.
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-\ignore{
-
-
-
-We want to allow \E to deterministically obtain any seed from any of its parents (i.e. nodes on the path to the root).  For example, \E should be able to deterministically obtain any of the seeds $s_4,...,s_7$ from seed $s_{4-7}$, and seeds $s_4, s_5$ -- from seed $s_{4-5}$. 
-
-
- Because derivation is deterministic, deriving from another seed in place of $s_{4-7}$, results in 
-Clearly, this is easy to achieve, e.g., using a suitable garbled table gadget.
-
-
-
-
-
-
-
-
- As in \HK, our \E will make a guess $\guess\in[0..b-1]$ and use these labels as seeds to reconstruct branches guessed as {\em not} taken.  If the guess was correct, then correct garbled branches will be unstacked, and \E will have obtained the correct garbling of the active branch.  Crucially, if the guess was incorrect, we obtain predictable garbage output labels.
-
-
-
-By way of example, let's consider the special case of $\guess=0$ and $\truth = 100$ and refer to the illustration of~\Cref{fig:seed-tree} depicting the $b=8$ branches and the binary tree built on it.  It will be clear that this idea naturally generalizes to any \guess.  \E starts processing at the root of the tree.  She made $\guess = 0$, while active branch is $C_4$.  
-
-
-
-
-
- Consider at each level of the tree the dichotomy of whether leaves indexed by \guess and \truth are in the same subtree. Our idea is, given a fixed \guess, to  enforce that \E identically processes \guess for {\em all} values of \truth which belong to the same sibling subtree of guess. This narrows \G’s uncertainty for each value of \guess: each value of \guess has only $\log b$ possible \truth options, one for each sibling subtree of \guess.  In turn, this results in $b\log b$  sets of garbage labels, and $b\log b$ garblings required by \G. \todo{and by \E?}
-
-
-}
-
-
-	
-	
-
-
-% At a high level, the circuit generator, i.e. the player who constructs
-% the material,
+Now let’s consider the number of calls needed to \Ev.  Recall that our
+goal was to ensure that \E constructs the same garbage output labels
+for a branch $\cir_i$ in each scenario where \aid is in some fixed
+sibling subtree of $\cir_i$. Note that the logic of our gadget ensures
+that \E will obtain the same sibling root seeds in each of these
+scenarios, and therefore she will construct the same garblings. Hence,
+since there are $\log b$ sibling subtrees of $\cir_i$, $\cir_i$ has
+only $\log b$ possible garbage output labels.
 
 
 \subsection{Technical difference between our and~\HK binary braching}
 \label{sec:techOverviewDiff}
-
 
 A careful reader familiar with~\HK may notice that they present two versions of stacked garbling: a 
 recursive binary tree approach, which they 
