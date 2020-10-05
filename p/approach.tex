@@ -1,69 +1,72 @@
 \section{Approach}\label{sec:approach}
 
 \begin{figure}
-  \centering
-  \begin{minipage}[t]{0.48\textwidth}
-    \vspace{0pt}
-    \input{fig/gbl-En-alg}
-  \end{minipage}
-  %
-  \begin{minipage}[t]{0.48\textwidth}
-    \vspace{0pt}
-    \input{fig/gbl-De-alg}
-  \end{minipage}
-  \caption{%
-    The input encoding algorithm \gEn and the output decoding
-    algorithm \gDe.
-    %
-    \gEn specifies how to encrypt input values, resulting in input labels.
-    %
-    Symmetrically, \gDe specifies how to decrypt output labels into cleartext output values.
-    \gEn and \gDe are generic and work for any
-    projective garbling scheme.
-  }\label{fig:EnDeProjective-scheme}
-\end{figure}
-
-\begin{figure}
   \begin{adjustwidth}{-0.1\textwidth}{-0.1\textwidth}
   \centering
   \begin{minipage}[t]{0.56\linewidth}
-    \vspace{0pt}
     \begin{align*}
       &\ourscheme.\gev(\cir, \cirinp):\\
+      &~~\codecomment{What are the circuit semantics?}\\
       &~~\switch~\cir:\\
       &~~~~\ccase~\netlist(\cdot): \creturn~\underscheme.\gev(\cir, \cirinp)\\
-      &~~~~\ccase~\sequential(\cir_0, \cir_1): \creturn~\ourscheme.\gev(\cir_1, \ourscheme.\gev(\cir_0, \cirinp)\\
+      &~~~~\ccase~\sequential(\cir_0, \cir_1):
+      \creturn~\ourscheme.\gev(\cir_1, \ourscheme.\gev(\cir_0,
+      \cirinp))\\
       &~~~~\ccase~\conditional(\vec{\cir}):\\
       &~~~~~~\codecomment{split branch index from input}\\
-      &~~~~~~index \gets \cirinp[0..\log |\vec \cir|]\\
+      &~~~~~~\aid \gets \cirinp[0..\log |\vec \cir|]\\
       &~~~~~~\cirinp' \gets \cirinp[\log |\vec \cir|..]\\
-      &~~~~~~\creturn~\ourscheme.\gev(\vec{\cir}[index], \cirinp')\\
+      &~~~~~~\codecomment{Run the active branch.}\\
+      &~~~~~~\creturn~\ourscheme.\gev(\vec{\cir}[\aid], \cirinp')\\
       \\
       &\ourscheme.\gEv(\cir,\mat,\gcirinp):\\
+      &~~\codecomment{How does \E evaluate the GC?}\\
       &~~\switch(\cir):\\
       &~~~~\ccase~\netlist(\cdot): \creturn~\underscheme.\gEv(\cir,\mat,\gcirinp)\\
       &~~~~\ccase~\sequential(\cir_0, \cir_1): \\
       &~~~~~~\mat_0\mid\mat_{tr}\mid\mat_1 \gets \mat\\
       &~~~~~~\creturn~\ourscheme.\gEv(\cir_1, \mat_1, \evtranslate(\ourscheme.\gEv(\cir_0, \mat_0, \cirinp), \mat_{tr})\\
-      &~~~~\ccase~\conditional(\vec \cir): \creturn~\evcond(\vec \cir, \mat, \gcirinp)
+      &~~~~\ccase~\conditional(\vec \cir): \creturn~\evcond(\vec \cir,
+      \mat, \gcirinp)\\
+      \\
+      &\ourscheme.\gEn(e,\cirinp):\\
+      &~~\codecomment{How do inputs map to labels?}\\
+      &~~\codecomment{This works for all projective schemes:}\\
+      &~~\gcirinp \gets \emptystring\\
+      &~~\cfor~i \in 0..n\minus 1:\\
+      &~~~~(X^0, X^1) \gets e[i]\\
+      &~~~~\cif~\cirinp[i] = 0:~\{~\gcirinp[i] \gets X^0~\}~\celse:~\{~\gcirinp[i] \gets X^1~\}\\
+      &~~\creturn~\gcirinp
     \end{align*}
   \end{minipage}
   %
   \begin{minipage}[t]{0.40\linewidth}
-    \vspace{0pt}
     \begin{align*}
       &\ourscheme.\gGb(1^\kappa, \cir, S)\\
+      &~~\codecomment{How does \G garble the GC?}\\
       &~~\switch~\cir:\\
       &~~~~\ccase~\netlist(\cdot):\\
       &~~~~~~\creturn~\underscheme.\gGb(1^\kappa,\cir,S)\\
       &~~~~\ccase~\sequential(\cir_0, \cir_1):\\
       &~~~~~~(\mat_0, e_0, d_0) \gets \ourscheme.\gGb(1^\kappa,\cir_0, S)\\
       &~~~~~~(\mat_1, e_1, d_1) \gets \ourscheme.\gGb(1^\kappa,\cir_1, S)\\
+      &~~~~~~\codecomment{Labels out of $\cir_0$ must be \emph{translated}}\\
+      &~~~~~~\codecomment{to labels into $\cir_1$.}\\
       &~~~~~~\mat_{tr} \gets \gbtranslate(d_0,e_1)\\
       &~~~~~~\mat \gets \mat_0\mid \mat_{tr}\mid \mat_1\\
       &~~~~~~\creturn~(\mat, e_0, d_1)\\
       &~~~~\ccase~\conditional(\vec \cir): \creturn~\gbcond(\vec \cir)\\
-      % \\
+      \\
+      &\ourscheme.\gDe(d, \gcirout):\\
+      &~~\codecomment{How do labels map to outputs?}\\
+      &~~\codecomment{This works for all projective schemes:}\\
+      &~~\cirout \gets \lambda\\
+      &~~\cfor~i \in 0.. m\minus 1:\\
+      &~~~~(Y^0, Y^1) \gets d[i]\\
+      &~~~~\cif~\gcirout[i] = Y^0:~\cirout[i] \gets 0\\
+      &~~~~\celse~\cif~\gcirout[i] = Y^1:~\cirout[i] \gets 1\\
+      &~~~~\celse:~\mathtt{ABORT}\\
+      &~~\creturn~\cirout
       % &\genprojection(n, S):\\
       % &~~p \gets \lambda\\
       % &~~\cfor~i \in 0..n\minus 1:\\
@@ -75,9 +78,13 @@
     \end{align*}
   \end{minipage}
   \end{adjustwidth}
-  %
   \caption{%
-    TODO fill out
+    Our garbling scheme \ourschemelong.
+    The included algorithms are typical except for the handling of
+    conditionals.
+    \gEv\ and \gGb\ delegate the core of our approach to
+    the delegation to
+    \evcond\ and \gbcond\ respectively.
   }\label{fig:scheme}
 \end{figure}
 
