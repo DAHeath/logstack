@@ -180,11 +180,43 @@ control flow.
 
 
 With our syntax established, we are ready to present our algorithms.
-\begin{construction}[\ourschemelong]
+\begin{construction}[\ourschemelong]\label{ourconstr}
   \ourschemelong\ is the tuple of algorithms:
   \[ (\ourscheme.\gev, \ourscheme.\gEv, \ourscheme.\gGb, \ourscheme.\gEn, \ourscheme.\gDe) \]
   Definitions for each algorithm are listed in \Cref{fig:scheme}.
 \end{construction}
+
+Theorems and lemmas that follow imply the following core theorems:
+\begin{theorem}
+  Let $\underscheme$ be a garbling scheme that is
+      \textbf{correct}, \textbf{strongly stackable},
+      \textbf{authentic}, and \textbf{private}.
+  Then \Cref{ourconstr} instantiated with $\underscheme$ is
+      \textbf{correct}, \textbf{strongly stackable},
+      \textbf{authentic}, and \textbf{private}.
+\end{theorem}
+
+\begin{theorem}
+  Let $\underscheme$ be a garbling scheme satisfying the following
+  property:
+  \begin{itemize}
+    \item Let $\cir$ be an arbitrary circuit and let $\nmat$ be the size of
+      material generated invoking $\underscheme.\gGb$ on $\cir$.
+      Then both $\underscheme.\gEv$ and $\underscheme.\gGb$, invoked
+      on $\cir$, run in $O(\nmat)$ time and $O(\nmat)$ space.
+  \end{itemize}
+  Then \Cref{ourconstr} instantiated with $\underscheme$ satisfies the
+  following property.
+  \begin{itemize}
+    \item Let $\vec{\cir}$ be an arbitrary vector of $b$ circuits. Let $\nmat$ be
+      the maximum size of the garblings constructed by calling
+      $\underscheme.\gGb$ on each of these $b$ branches.
+      Then both $\ourscheme.\gEv$ and $\ourscheme.\gGb$, invoked on
+      $\conditional(\vec{\cir})$, run in
+      $O(\nmat b \log b)$ time and $O(\nmat \log b$) space.
+  \end{itemize}
+\end{theorem}
+
 We draw attention to two key details of these algorithms:
 (1) $\ourscheme.\gEv$ delegates to a subprocedure \evcond\ and (2)
 $\ourscheme.\gGb$ delegates to a subprocedure \gbcond.
@@ -225,6 +257,16 @@ to an extended discussion of \evcond\ and \gbcond~(c.f. \Cref{sec:approach-cond}
 
 \subsection{Algorithms for Handling of Conditionals}\label{sec:approach-cond}
 
+With the remaining formalization out of the way, we focus specifically
+on conditional branching. Our specific goal is to formalize \evcond\
+and \gbcond, the key sub-procedures invoked by $\ourscheme.\gEv$ and
+$\ourscheme.\gGb$ respectively.
+Note, our presentation is a formalization of the discussion in
+\Cref{sec:techOverview}; the following explores the technical aspects
+of our construction, but the reader should refer to
+\Cref{sec:techOverview} for high level intuition.
+
+\subsubsection{Garbling Subtrees}
 \begin{figure}
   \begin{align*}
     &\gbtree(\vec{\cir}, i, j, seed):\\
@@ -244,7 +286,7 @@ to an extended discussion of \evcond\ and \gbcond~(c.f. \Cref{sec:approach-cond}
     &~~~~\creturn~(M_L \oplus M_R, e_L \mid e_R)\\
     \\
     &\halfway(i, j):\\
-    &~~\codecomment{Simple helper for range of branches (approximately) in half.}\\
+    &~~\codecomment{Simple helper for splitting range of branches (approximately) in half.}\\
     &~~\creturn~i+\left\lfloor \frac{j-i}{2} \right\rfloor\\
   \end{align*}
   \caption{%
@@ -255,15 +297,6 @@ to an extended discussion of \evcond\ and \gbcond~(c.f. \Cref{sec:approach-cond}
     encodings for all branches.
   }\label{fig:gbtree}
 \end{figure}
-
-With the remaining formalization out of the way, we focus specifically
-on conditional branching. Our specific goal is to formalize \evcond\
-and \gbcond, the key sub-procedures invoked by $\ourscheme.\gEv$ and
-$\ourscheme.\gGb$ respectively.
-Note, our presentation is a formalization of the discussion in
-\Cref{sec:techOverview}; the following explores the technical aspects
-of our construction, but the reader should refer to
-\Cref{sec:techOverview} for high level intuition.
 
 Recall, we organize the $b$ branches into a binary branching tree.
 Both \evcond\ and \gbcond\ frequently perform a common task:
@@ -291,20 +324,22 @@ We note two performance properties of \gbtree, recalling that we ignore
 the number of inputs/outputs and consider branches with maximum
 garbling size $\nmat$.
 \begin{lemma}\label{lemma:gbtreetime}
-  For all vectors of circuits $\vec \cir$, all $i, j \in \mathbb{N}$
-  such that $i \leq j$, and all $seed \in \{0, 1\}^\kappa$,
-  $\gbtree(\vec \cir, i, j, seed)$ invokes $\gGb$ $j - i + 1$ times.
+  Let $\vec{\cir}$ be a vector of $b$ circuits,
+  let $i, j \in \mathbb{N}$ satisfy $i \leq j$,
+  and let $seed \in \{0, 1\}^\kappa$ be an arbitrary string.
+  Then $\gbtree(\vec \cir, i, j, seed)$ invokes $\gGb$ $j - i + 1$ times.
 \end{lemma}
 \begin{proof}
   Immediate. The procedure only invokes $\gGb$ at the base case.
 \end{proof}
 In other words, the algorithm garbles each branch only once.
 
-\begin{lemma}\label{lemma:gbtreetime}
+\begin{lemma}\label{lemma:gbtreespace}
+  Let $\vec{\cir}$ be an arbitrary vector of $b$ circuits,
+  let $i, j \in \mathbb{N}$ satisfy $i \leq j$,
+  and let $seed \in \{0, 1\}^\kappa$ be a arbitrary string.
   If $\Gb$ runs in $O(\nmat)$ space,
-  then for all vectors of circuits $\vec \cir$, all $i, j \in \mathbb{N}$
-  such that $i \leq j$, and all $seed \in \{0, 1\}^\kappa$,
-  $\gbtree(\vec \cir, i, j, seed)$ runs in $O(\nmat \log (j-i+1))$ space.
+  then $\gbtree(\vec \cir, i, j, seed)$ runs in $O(\nmat \log (j-i+1))$ space.
 \end{lemma}
 \begin{proof}
   In the base case, $\gbtree$ invokes $\gb$. By assumption, this runs
@@ -321,6 +356,11 @@ In other words, the algorithm garbles each branch only once.
   in half, the recursive tree has depth $O(\log(j-i+1))$.
   Hence, the total required storage is $O(\nmat \log(j-i+1))$.
 \end{proof}
+
+\subsubsection{Gadgets}
+TODO
+
+\subsubsection{Evaluating Conditionals}
 
 \begin{figure}
   \begin{align*}
@@ -376,6 +416,79 @@ In other words, the algorithm garbles each branch only once.
   }
 \end{figure}
 
+TODO explain \evcond.
+
+
+Next, we examine the efficiency properties of \evcond.
+
+In terms of time complexity, we start by examining the \emph{concrete}
+efficiency on conditionals with $2^k$ branches for some $k$.
+%
+Of course, the following proof generalizes to a asymptotic efficiency
+regardless of the number of branches, but we include the concrete
+proof to emphasize the low constants involved.
+
+\begin{lemma}\label{lemma:evcondtime}
+  Let $b = 2^k$ for some $k \in \mathbb{N}$.
+  Let $\vec{\cir}$ be a vector of $b$ branches, $\mat$ be a string of
+  length $\nmat$, and $\gcirinp$ be a vector of labels of length
+  $\inpsize(\conditional(\vec{\cir}))$.
+  $\evcond(\vec{\cir}, \mat, \gcirinp)$ calls \gGb\ $b \log b$ times
+  and calls \gEv\ $b$ times.
+\end{lemma}
+\begin{proof}
+  First, it is trivial that \gEv\ is called $b$ times: the
+  procedure is called only at the base case, which is reached once per
+  branch.
+
+  Second, \gbtree\ is called twice in the general case, each on a
+  subtree of half of the current branches.
+  %
+  For example, at the root \gbtree\ is called on every branch, which, by
+  \Cref{lemma:gbtreetime}, implies $b$ calls to \Gb.
+  Now consider a binary branching tree whose leaves are the $b$
+  branches and whose internal nodes each correspond to
+  a recursive invocation of $\evcond'$.
+  At every level of the tree, each internal node garbles every
+  leaf below it, via \gbtree.
+  Hence, every level of the tree entails $b$ calls to \Gb.
+  Since the binary branching tree has $\log b$ levels, there are $b
+  \log b$ total calls to \Gb.
+\end{proof}
+
+By essentially exactly the same argument, one can prove the following
+lemma for arbitrary numbers of branches:
+\begin{lemma}\label{lemma:evcondtime-general}
+  Let $\vec{\cir}$ be a vector of $b$ circuits, $\mat$ be a string of
+  length $\nmat$, and $\gcirinp$ be a vector of labels of length
+  $\inpsize(\conditional(\vec{\cir}))$.
+  $\evcond(\vec{\cir}, \mat, \gcirinp)$ calls \gGb\ $O(b \log b)$ times
+  and calls \gEv\ $b$ times.
+\end{lemma}
+
+\begin{lemma}\label{lemma:evcondspace}
+  Let $\vec{\cir}$ be a vector of $b$ circuits, $\mat$ be a string of
+  length $\nmat$, and $\gcirinp$ be a vector of labels of length
+  $\inpsize(\conditional(\vec{\cir}))$.
+  $\evcond(\vec{\cir}, \mat, \gcirinp)$ runs in $O(\nmat \log b)$ space.
+\end{lemma}
+\begin{proof}
+  Trivial, since no material is stored at recursive call sites.
+  Thus the space complexity is inherited from
+  \gbtree~(\Cref{lemma:gbtreespace}).
+\end{proof}
+
+\subsubsection{Garbling Conditionals}
+
+\begin{lemma}\label{lemma:gbcondtime}
+\end{lemma}
+\begin{proof}
+\end{proof}
+
+\begin{lemma}\label{lemma:gbcondspace}
+\end{lemma}
+\begin{proof}
+\end{proof}
 
 \begin{figure}
   \begin{align*}
