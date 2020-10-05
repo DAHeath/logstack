@@ -328,7 +328,7 @@ on our experiments, as well as on~\cite{XiaoPersonalComm}, a commodity
 laptop running a single core can generate GC material at about $3\times$ the
 network bandwidth of $1$ Gbps channel.  
 However, while 1Gbps is a typical speed in the LAN setting, WAN
-speeds are much lower, e.g. $100$Mbps.  Other network speeds (bluetooth, cellular) are much lower yet.  Further, even on a LAN and even in a data center, typically we should not assume that our MPC application is allowed to consume the entire channel bandwidth. Rather, we should aim to use as small fraction of the bandwitdh as possible.  Based on this discussion, and erring on the conservative side,  we choose $200$Mbps as a high end of  ``typical'' available bandwidth.
+speeds are much lower, e.g. $100$Mbps.  Other network speeds (bluetooth, cellular) are much lower yet.  Further, even on a LAN and even in a data center, typically we should not assume that our MPC application is allowed to consume the entire channel bandwidth. Rather, we should aim to use as small fraction of the bandwitdh as possible.  Based on this discussion, and erring on the conservative side,  we choose $100$Mbps as a high end of  ``typical'' available bandwidth.
 %
 
 On the other hand, computation is a much more available resource.  Today a commodity laptop has four physical cores. Of course, higher-end computing devices, such as desktop CPUs and GPUs have higher numbers of cores and/or per-core processing power,
@@ -341,9 +341,9 @@ engage \emph{many} cores in parallel  to achieve the proportional performance im
 %
 Based on this discussion, and erring on the conservative side, we choose $2$ physical cores as a lower end of ``typical'' available computational power. 
 
-Calculating the raio for a typical setting with $2$ cores and $200$Mbps channel, we arrive at 
+Calculating the raio for a typical setting with $2$ cores and $100$Mbps channel, we arrive at 
 %Engaging $4$ cores, a typical configuration on a mid-range laptop, would imply up to
-$\approx 30 \times$ higher GC generation speed vs transmission.
+$\approx 60 \times$ higher GC generation speed vs transmission.
 %
 
 %
@@ -372,15 +372,17 @@ speed ratio of GC generation/transmission, and with a few caveats
 described next, using \ourschemelong\ for branching will {\em always}
 improve over standard GC. 
 
-This is easy to see.  Indeed, we evaluate a given \cir\ as-is.  \G
-runs a more computationally demanding  process, garbling and evaluating 
+This is easy to see.  Indeed, we evaluate a given \cir\ as-is.  \G and \E together 
+run a more computationally demanding  process, garbling and evaluating 
 %and efficiently combining
-branches exactly $2.5 b \log b$ total times ($1.5 b \log b$ garblings and $ b \log b$ cheaper evaluations).  Consider a
+branches exactly $3.5 b \log b + 2b$ total times ($2.5 b \log b + b$ garblings and $ b \log b + b$  evaluations).  Consider a
 conditional with $b$ branches.  Classic GC will transmit $b$ branches.
-During this time, \G could perform $30 b$ branch garblings. 
-\ourschemelong's \G garbles/evaluates $2.5 b \log b$ branches.  Thus,  the point where
-computation will cross over to become a bottleneck is obtained by solving $2.5b \log b > 30 b$, and is $b= 2^{12} = 4096$
+During this time, \G and \E could perform $60 b$ branch garbling/evaluations. 
+\ourschemelong  garbles/evaluates $3.5 b \log b$ branches.  Thus,  the point where
+computation will cross over to become a bottleneck is obtained by solving $3.5b \log b > 60 b$, and is $b \approx 2^{17} = 131072$
 branches.  Of course, this is a ``rule-of-thumb'' estimate based on the conservative assumptions discussed above.
+
+Note that if instead a full 1Gbps channel is available (i.e. $10\times$ of our network resource assumption),  to arrive at the same cross over  point, we would need ten times more cores than our computational resource assumption.  That equates to $20$ laptop cores; such power is easily available on mainstream servers.
 
 We conclude that applying \ourschemelong\ improves wall clock
 time for nearly all reasonable baseline circuits and settings.
