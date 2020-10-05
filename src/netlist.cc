@@ -26,7 +26,7 @@ Eval::Rep Eval::Rep::operator&(const Eval::Rep& o) const {
 }
 
 
-Encoding netlistgb(const PRF& prf, const Netlist& c, const Encoding& inpEnc, std::span<Label> mat) {
+Encoding netlistgb(const PRF& prf, const Netlist& c, EncodingView inpEnc, std::span<Label> mat) {
   Encoding outEnc;
   outEnc.zeros.resize(c.desc.nOut);
 
@@ -49,7 +49,7 @@ Encoding netlistgb(const PRF& prf, const Netlist& c, const Encoding& inpEnc, std
 }
 
 
-Labelling netlistev(const PRF& prf, const Netlist& c, const Labelling& inp, std::span<Label> mat) {
+Labelling netlistev(const PRF& prf, const Netlist& c, std::span<Label> inp, std::span<Label> mat) {
   Labelling out(c.desc.nOut);
 
   const auto stash = Eval::ctxt;

@@ -129,7 +129,7 @@ struct Gen {
 struct Eval {
   struct Ctxt {
     std::span<Label> material;
-    std::span<const Label> inps;
+    std::span<Label> inps;
     std::span<Label> outs;
     std::size_t nonce;
     PRF f;
@@ -225,14 +225,33 @@ struct Encoding {
 };
 
 
+struct EncodingView {
+  EncodingView(Encoding& o) : zeros(o.zeros), delta(o.delta) { }
+  EncodingView(std::span<Label> zeros, const Label& delta) : zeros(zeros), delta(delta) { }
+  EncodingView() { }
+
+  Label& operator[](std::size_t ix) { return zeros[ix]; }
+  /* const auto& operator[](std::size_t ix) const { return zeros[ix]; } */
+
+  EncodingView subview(std::size_t ix) const { return { zeros.subspan(ix), delta }; }
+
+  std::size_t size() const { return zeros.size(); }
+
+  std::span<Label> zeros;
+  Label delta;
+};
+
+
+
+
 struct Interface {
   Encoding inpEnc;
   Encoding outEnc;
 };
 
 
-Encoding netlistgb(const PRF& prf, const Netlist& c, const Encoding& inpEnc, std::span<Label> mat);
-Labelling netlistev(const PRF&, const Netlist&, const Labelling&, std::span<Label>);
+Encoding netlistgb(const PRF& prf, const Netlist& c, EncodingView inpEnc, std::span<Label> mat);
+Labelling netlistev(const PRF&, const Netlist&, std::span<Label>, std::span<Label>);
 
 
 #endif

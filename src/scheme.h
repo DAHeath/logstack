@@ -28,7 +28,7 @@ struct Circuit;
 
 
 struct Conditional {
-  std::vector<Circuit> cs;
+  std::span<const Circuit> cs;
 };
 
 
@@ -43,33 +43,109 @@ struct Circuit {
 };
 
 
+inline std::size_t condSize(std::span<const Circuit> cs) {
+  const auto b = cs.size();
+  if (b == 1) {
+    return cs[0].nRow;
+  } else {
+    const auto n = cs[0].nInp;
+    const auto demSize = 3*n + 2;
+
+    const auto logb = ilog2(b);
+
+    const auto fullDemSize = demSize * logb + (3*(logb)*(logb-1))/2;
+
+    std::size_t nRow = 0;
+    for (const auto& c: cs) { nRow = std::max(nRow, c.nRow); }
+    return nRow + fullDemSize;
+  }
+}
+
+
+inline Circuit conditional(std::span<const Circuit> cs) {
+  const auto b = cs.size();
+  if (b == 1) {
+    return cs[0];
+  } else {
+    const auto n = cs[0].nInp;
+    const auto m = cs[0].nOut;
+    const auto gadgetSize = 4*b;
+    const auto demSize = 3*n + 2;
+    const auto muxSize = (b-1) * (m + 2);
+
+    const auto logb = ilog2(b);
+
+
+    const auto fullDemSize = demSize * logb + (3*(logb)*(logb-1))/2;
+
+    std::size_t nRow = 0;
+    for (const auto& c: cs) { nRow = std::max(nRow, c.nRow); }
+    nRow += gadgetSize + fullDemSize + muxSize;
+
+    return Circuit {
+      Conditional { cs },
+      cs[0].nInp + logb, // nInp
+      cs[0].nOut, // nInp
+      nRow, // nRow
+    };
+  }
+}
+
+void show(const Label&);
+
+
 
 using Material = std::vector<Label>;
 
 
-Interface garble(PRG& seed, const PRF&, const Circuit&, std::span<Label>);
-Encoding gb(const PRF&, const Circuit&, const Encoding&, std::span<Label>);
-Labelling ev(const PRF&, const Circuit&, const Labelling&, std::span<Label>);
+struct Garbling {
+  Material material;
+  Interface interface;
+};
+
+
+struct HalfGarbling {
+  Material material;
+  Encoding outEnc;
+};
+
+
+struct HalfGarblingView {
+  HalfGarblingView() = default;
+  HalfGarblingView(std::span<Label> material, const Encoding& outEnc)
+    : material(material), outEnc(outEnc) { }
+  HalfGarblingView(HalfGarbling& o) :
+    material(o.material),
+    outEnc(o.outEnc) { }
+
+  std::span<Label> material;
+  Encoding outEnc;
+};
+
+
+struct CondGarbling {
+  Encoding outEnc;
+  std::vector<Labelling> badOuts;
+};
+
+Encoding gb(const PRF&, const Circuit&, EncodingView, std::span<Label>);
+Labelling ev(const PRF&, const Circuit&, std::span<Label>, std::span<Label>);
 
 Encoding genEncoding(PRG&, std::size_t);
 
 Labelling evCond(
     const PRF&,
     std::span<Circuit>,
+    std::span<const Label> seeds,
     const Labelling&,
     std::span<Label> mat,
     std::span<Label> muxMat);
 
-Encoding gbCond_(
-    const PRF&,
-    std::span<const Circuit>,
-    const Label& seed,
-    std::span<Label>);
-
 Interface gbCond(
     const PRF&,
     std::span<const Circuit>,
-    const Label& seed,
+    std::span<const Label> goodSeeds,
+    std::span<const Label> badSeeds,
     std::span<Label> mat,
     std::span<Label> muxMat);
 
@@ -122,6 +198,14 @@ std::vector<Label> evGadget(
     const PRF& f,
     std::span<const Label> index,
     std::span<Label>& mat);
+
+
+inline Garbling garble(const PRF& f, const Circuit& c, PRG& prg) {
+  auto inpEnc = genEncoding(prg, c.nInp);
+  Material m(c.nRow);
+  auto outEnc = gb(f, c, inpEnc, m);
+  return { m, { inpEnc, outEnc } };
+}
 
 
 #endif

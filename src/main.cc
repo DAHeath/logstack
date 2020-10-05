@@ -1,4 +1,5 @@
 #include "scheme.h"
+#include "protocol.h"
 #include "sha256.h"
 #include <iostream>
 #include <chrono>
@@ -15,67 +16,18 @@ auto timed(F f) {
 }
 
 
-Circuit conditional(const std::vector<Circuit>& cs) {
-  const auto b = cs.size();
-  const auto transSize = cs[0].nInp + 1;
-  const auto demSize = 3*cs[0].nInp + 2;
-  const auto muxSize = (b-1) * (cs[0].nOut + 2);
-
-  const auto logb = ilog2(b);
-
-
-  const auto fullDemSize = demSize * logb + 3*logb*logb;
-
-  std::size_t nRow = 0;
-  for (const auto& c: cs) { nRow = std::max(nRow, c.nRow); }
-  nRow += transSize + fullDemSize + muxSize;
-
-  return Circuit {
-    Conditional { cs },
-    cs[0].nInp + logb, // nInp
-    cs[0].nOut, // nInp
-    nRow, // nRow
-  };
-}
-
 
 constexpr std::size_t n_repetitions = 1;
+
+
+emp::NetIO* genChannel;
+emp::NetIO* evalChannel;
 
 double experiment(const Circuit& c) {
   std::vector<double> results;
   for (std::size_t i = 0; i < n_repetitions; ++i) {
     results.push_back(timed([&] {
-      PRG seed;
-      PRF k;
-
-      Material material(c.nRow);
-      auto g = garble(seed, k, c, material);
-
-      const auto delta1 = g.inpEnc.delta;
-      const auto delta2 = g.outEnc.delta;
-
-      Labelling inp(c.nInp);
-      for (std::size_t i = 0; i < c.nInp; ++i) {
-        inp[i] = g.inpEnc.zeros[i];
-      }
-
-      const auto out = ev(k, c, inp, material);
-
-
-      /* for (std::size_t i = 0; i < c.nOut; ++i) { */
-      /*   if (out[i] == g.outEnc.zeros[i]) { */
-      /*     std::cout << '0'; */
-      /*   } else if (out[i] == (g.outEnc.zeros[i] ^ delta2)) { */
-      /*     std::cout << '1'; */
-      /*   } else { */
-      /*     /1* std::cerr << "ERROR!\n"; *1/ */
-      /*     /1* std::cerr << out[i] << '\n'; *1/ */
-      /*     /1* std::cerr << g.outputEncoding.zeros[i] << '\n'; *1/ */
-      /*     /1* std::cerr << (g.outputEncoding.zeros[i] ^ delta2) << '\n'; *1/ */
-      /*     /1* std::exit(1); *1/ */
-      /*   } */
-      /* } */
-      /* std::cout << '\n'; */
+      semihonest(c, *genChannel, *evalChannel);
     }));
   }
 
@@ -90,44 +42,84 @@ int main(int argc, char** argv) {
     sha.desc.nOut,
     sha.desc.nRow,
   };
+  /* std::vector<Circuit> cs = { */
+  /*   sha_netlist, sha_netlist, */
+  /*   sha_netlist, sha_netlist, */
+  /*   sha_netlist, sha_netlist, */
+  /*   sha_netlist, sha_netlist, */
+  /* }; */
+  /* std::cout << experiment(conditional(cs)) << '\n'; */
+
+
+  /* std::vector<Circuit> cs = { sha_netlist }; */
+  /* for (std::size_t i = 0; i <= 10; ++i) { */
+  /*   if (cs.size() == 1) { */
+  /*     std::cout << experiment(cs[0]) << '\n'; */
+  /*   } else { */
+  /*     std::cout << experiment(conditional(cs)) << '\n'; */
+  /*   } */
+
+  /*   for (std::size_t j = 0; j < (1 << i); ++j) { */
+  /*     cs.push_back(sha_netlist); */
+  /*   } */
+  /* } */
+
+
+  std::thread th { [&] {
+    genChannel = new emp::NetIO(nullptr, 55556);
+  }};
+  sleep(1);
+  evalChannel = new emp::NetIO("127.0.0.1", 55555);
+  th.join();
+
+
   std::vector<Circuit> cs;
-  for (std::size_t i = 1; i <= 20; ++i) {
+  /* for (std::size_t i = 0; i < 128; ++i) { */
+  /*   cs.push_back(sha_netlist); */
+  /* } */
+  /* std::cout << experiment(conditional(cs)) << '\n'; */
+  for (std::size_t i = 1; i <= 64; ++i) {
+    /* std::cout << i << " ##################\n"; */
     cs.push_back(sha_netlist);
-    std::cout << experiment(conditional(cs)) << '\n';
+    if (cs.size() == 1) {
+      std::cout << experiment(cs[0]) << '\n';
+    } else {
+      std::cout << experiment(conditional(cs)) << '\n';
+    }
   }
 
 
-  /* PRG prg; */
-  /* PRF f; */
+/*   PRG prg; */
+/*   PRF f; */
 
 
-  /* const auto enc = genEncoding(prg, 3); */
+/*   const auto enc = genEncoding(prg, 3); */
 
-  /* const auto b = 5; */
+/*   const auto b = 2; */
 
-  /* std::vector<Label> seeds(2*b - 2); */
-  /* for (std::size_t i = 0; i < 2*b - 2; ++i) { */
-  /*   seeds[i] = prg(); */
-  /* } */
+/*   std::vector<Label> seeds(2*b - 2); */
+/*   for (std::size_t i = 0; i < 2*b - 2; ++i) { */
+/*     seeds[i] = prg(); */
+/*   } */
 
-  /* Material m(40); */
-  /* for (auto& r: m) { r = 0; } */
-  /* std::span<Label> mat(m); */
-  /* const auto bad = gbGadget(b, f, enc.delta, seeds, enc.zeros, mat); */
-
-
-  /* mat = m; */
-
-  /* Labelling index = enc.zeros; */
-  /* index[0] ^= enc.delta; */
-  /* index[1] ^= enc.delta; */
-
-  /* const auto actual = evGadget(b, f, index, mat); */
+/*   Material m(40); */
+/*   for (auto& r: m) { r = 0; } */
+/*   std::span<Label> mat(m); */
+/*   const auto bad = gbGadget(b, f, enc.delta, seeds, enc.zeros, mat); */
 
 
-  /* for (std::size_t i = 0; i < seeds.size(); ++i) { */
-  /*   std::cout << actual[i] << '\n'; */
-  /*   std::cout << seeds[i] << '\n'; */
-  /*   std::cout << bad[i] << "\n\n"; */
-  /* } */
+/*   mat = m; */
+
+/*   Labelling index = enc.zeros; */
+/*   index[0] ^= enc.delta; */
+/*   index[1] ^= enc.delta; */
+
+/*   const auto actual = evGadget(b, f, index, mat); */
+
+
+/*   for (std::size_t i = 0; i < seeds.size(); ++i) { */
+/*     show(actual[i]); */
+/*     show(seeds[i]); */
+/*     show(bad[i]); */
+/*   } */
 }
