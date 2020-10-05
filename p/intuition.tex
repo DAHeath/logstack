@@ -4,7 +4,7 @@
 
 Our main contribution is the reduction of SGC computation from
 $O(b^2)$ to $O(b \log b)$.  To this end, we redesign
-stacking/unstacking in order to \emph{reduce \G's
+stacking/unstacking to \emph{reduce \G's
 uncertainty}.
 %
 By doing so, we reduce the computation needed to implement garbage
@@ -18,15 +18,14 @@ uncertainty, which result in $b^2$ evaluations inside \G's emulation
 of \E: there are $b$ possible values for both variables \truth and \guess
 $(\truth \in\{0,b-1\}, \guess\in\{0,b-1\})$.
 %
-For each fixed pair  $(\truth,\guess)$, \G has a {\em fully
-deterministic view} of how \E evaluates the material and exactly
-what garbage she computes. 
-\G then uses the
-garbage labels to construct the garbage collecting multiplexer.
+For each fixed pair  $(\truth,\guess)$, \G has a fully
+deterministic view of \E's garbled evaluation, and hence a deterministic view of
+the garbage she computes.
+\G uses the garbage labels to construct the garbage collecting multiplexer.
 
 Our main idea is to ``consolidate'' the processing of many
-such $(\truth,\guess)$ pairs by ensuring that \E's execution is the {\em
-same} across these $(\truth,\guess)$ pairs.  Clearly, this would
+such $(\truth,\guess)$ pairs by ensuring that \E's execution is the
+same across these $(\truth,\guess)$ pairs.  Clearly, this would
 save computation.
 
 Here is how we approach this.
@@ -40,14 +39,19 @@ We call the root of a
 sibling subtree of a leaf $\ell$ a {\em sibling root of $\ell$}.
 Note, the $\log b$ sibling subtrees of a leaf $\ell$ 
 cover all leaves except for $\ell$.
-Consider an example of $b=8$ illustrated in~\Cref{fig:seed-tree}.  There, node $\cir_3$ has sibling roots $\node_2, \node_{0-1}, \node_{4-7}$.  \vlad{add \node notation to Fig}
-\dave{forward reference the figure?}
+Consider an example of $b=8$ illustrated in~\Cref{fig:seed-tree}.
+There, node $\cir_3$ has sibling roots $\node_2, \node_{0-1},
+\node_{4-7}$.
+\vlad{add \node notation to Fig}
 
-We reduce the number of possible \truth choices  {\em with respect to
-\guess}  by changing the semantics of \truth: it
-now \emph{will not} mean which of $b$ branches is active; instead \truth
-will denote in which sibling subtree of \guess holds the active branch
-($\truth=0$ denotes a correct guess).  There are $\log b + 1$
+We reduce the number of possible $(\truth, \guess)$ combinations by
+changing the semantics of $\truth$.
+$\truth$ will not denote the active branch. Instead \truth will
+now be defined \emph{with respect to a given guess} \guess.
+In particular, $\truth$ will denote the sibling subtree of $\guess$
+that contains the active branch ($\truth = 0$ denotes a correct
+guess).
+For a fixed \guess, there are $\log b + 1$
 choices for this \truth.  If \G and \E can efficiently process each
-of these $b\log b$  $(\truth,\guess)$ combinations  (we show that they
-can!), we achieve the improved $O(b\log b)$ computation cost.
+of these $b\log b$  $(\truth,\guess)$ combinations  (they
+can!), we achieve the improved $O(b\log b)$ computation.

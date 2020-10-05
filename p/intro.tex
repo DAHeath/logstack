@@ -20,13 +20,13 @@ interchangeably call Stacked Garbled Circuit (SGC), shows that
 expensive branching-based communication is unnecessary: the players need only
 send enough material for the single longest branch. This single
 piece of \emph{stacked} material can be re-used across all conditional branches,
-substantially reducing communication cost.
+substantially reducing communication.
 %
 Unfortunately, this improvement comes with one important downside:
 SGC requires the players to compute more than they would have without stacking.
 In particular, for a conditional with $b$ branches, the \HK GC
-generator must evaluate each branch under encryption $b-1$ times, and
-hence pays $O(b^2)$ total computation.
+generator must evaluate under encryption each branch $b-1$ times and
+hence must pay $O(b^2)$ total computation.
 In contrast, standard garbling uses computation linear in the number
 of branches.
 
@@ -36,9 +36,9 @@ retaining the important communication improvement of \HK.
 %
 The construction also features improved space complexity: While \HK
 requires the generator to store $O(b)$ intermediate garblings, our
-constructions requires only $O(\log b)$ space.
+construction requires only $O(\log b)$ space.
 %
-Finally, the construction features low constants, and hence opens the
+Finally, the construction features low constants and hence opens the
 door to using SGC even in the presence of very high branching factors
 without computation becoming prohibitive.
 % Next, we argue that
@@ -54,29 +54,30 @@ improves the secure evaluation of programs with branching.
 Moreover, the efficient support of \emph{high branching factor}
 is more important than it may first appear.
 
-Efficient branching, such as what is
-achieved by our work, enables optimized handling of \emph{arbitrary
-control flow}, including arbitrary repeated and/or nested loops.
+Efficient branching
+% , such as what is achieved by our work,
+enables optimized handling of \emph{arbitrary
+control flow}, including repeated and/or nested loops.
 %
-Specifically, we can repeatedly \emph{refactor} the source program
+Specifically, we can repeatedly refactor the source program
 until the program is a single loop whose body conditionally dispatches
 over straightline fragments of the original program\footnote{%
-  As a brief argument that this is clearly possible, consider that a
-  CPU has this exact structure: in this case the `straightline
-  fragments' are the individual instruction types handled by the CPU.
+  As a brief argument that this is possible, consider that a
+  CPU has this structure: in this case the `straightline
+  fragments' are the instruction types handled by the CPU.
 }.
 However, these types of refactorings often lead to conditionals with
 high branching factor.
 
-As a simple example,
+As an example,
 consider a program $P$ consisting of a loop $L_1$ followed by a loop
-$L_2$.  Assume the upper bound on runtime (total number of loop
-iterations $T$) of $P$ is known, as is usual in MPC.
+$L_2$.  Assume the total number of loop iterations $T$ of $P$ is
+known, as is usual in MPC.
 For security, we must protect the number of iterations $T_1$ of $L_1$
 and $T_2$ of $L_2$.
 Implementing such a program with standard Yao GC requires us to
-pay double of the cost achievable with stacked garbling: we must
-execute loop $L_1$ $T$ times followed by executing $L_2$ $T$ times.
+% pay double of the cost achievable with stacked garbling: we must
+execute loop $L_1$ $T$ times and then to execute $L_2$ $T$ times.
 At the same time, SGC can simply execute  $\stack(L_1, L_2)$ $T$
 times, a circuit with a significantly smaller garbling. This observation corresponds to the
 following refactoring:
@@ -95,13 +96,12 @@ Now, consider that $s_0$ and $s_1$ might themselves have conditionals
 that can be flattened into a single conditional with all branches.
 By repeatedly applying such refactorings, even modest
 programs can have conditionals with high branching factors.
-High-performance branching, enabled by our approach, will allow the
+High-performance branching, enabled by our approach, allows the
 efficient and secure evaluation of such programs.
 
 % In this work, we do not attempt to systematize the possible SGC-based
 % optimizations of generic flow control.
-We do not further explore the space of program refactorings while
-considering SGC.
+In this work, we do not further explore the space of program refactorings.
 % consideration 
 % , but instead provide a
 % powerful approach for handling conditionals, even if they have high
@@ -117,8 +117,8 @@ essential.
 \subsection{\HK and its $O(b^2)$ computation}
 \label{sec:bsquaredcost}
 
-Our approach is similar to \HK: we also stack material in
-order to decrease communication.
+Our approach is similar to \HK: we also stack material
+to decrease communication.
 The key difference is our reduced computation.
 It is thus instructive to review \HK,
 focusing on the source of its quadratic computation.
@@ -127,8 +127,10 @@ The key idea of SGC is that the circuit generator \G\ garbles,
 starting from seeds, each branch $\cir_i$.
 He then \emph{stacks} these $b$ garbled circuits, yielding only a
 single piece of material proportional to the longest branch: $M =
-\bigoplus_i \gcir_i$. (Note,~\HK, as do we in this work,  pad each GC material $\gcir_i$ with randomness before stacking.  This ensures all $\gcir_i$ are of the same length.)
-Because the garblings are constructed starting from short seeds, the
+\bigoplus_i \gcir_i$.\footnote{Note,~\HK, as do we in this work,  pad each GC
+material $\gcir_i$ with randomness before stacking.  This ensures all
+$\gcir_i$ are of the same length.}
+Because garblings are expanded from short seeds, the
 seeds are compact representations of the garblings.
 %
 Although it would be insecure for the evaluator \E\ to receive
@@ -139,36 +141,36 @@ Let $\aid$ be the id of the active branch.
 the material $\gcir_\aid$, and evaluate $\cir_\aid$ normally.
 %
 Of course, what is described so far is not secure: the above procedure
-implies that \E\ knows \aid, which of course she does not (in general)
+implies that \E\ knows \aid, which she does not in general
 know and which she should not learn.
 
 
-Thus, \HK\ supplies to \E a `bad' seed for the active branch (i.e.,
+Thus, \HK\ supplies to \E a `bad' seed for the active branch: i.e.,
 she receives a seed that is different yet indistinguishable from the
-seed used by \G).
-From here, the fundamental idea of SGC is that \E
+seed used by \G.
+From here, \E
 simply \emph{guesses which branch is taken} (she in fact tries  all $b$
 branches) and evaluates this guessed branch with the appropriately reconstructed material.
-For security, the guess is unverifiable by \E. 
+For security, each guess is unverifiable by \E. 
 Still, when she guesses right, she indeed evaluates the taken branch and
 computes valid GC output labels for that branch.
-However, when she guesses wrong, she evaluates the branch
+When she guesses wrong, she evaluates the branch
 with so-called garbage material (material that is a random-looking string, not
 an encryption of circuit truth tables), and computes
 \emph{garbage output labels} (i.e., labels that are not the encryption
 of $0$ or $1$, but are instead random-looking strings).
 %
 To proceed past the exit of the conditional and continue garbled evaluation, it is necessary to
-`collect'  these garbage labels, i.e., to obliviously  discard them in favor of the valid
-labels\footnote{Of course, the final output labels of the conditional
+`collect'  these garbage labels by obliviously  discarding them in favor of the valid
+labels.\footnote{Of course, the final output labels of the conditional
   are fresh,  such that they cannot be cross-referenced with those
-obtained in branch evaluation.}.
+obtained in branch evaluation.}
 
 
-\HK show how to collect garbage without
+\HK collect garbage without
 interaction using a garbled gadget called a \emph{multiplexer}.
 %
-The multiplexer can by non-interactively and straight-forwardly constructed by \G,
+The multiplexer can be non-interactively and straight-forwardly constructed by \G,
 but only if he \emph{knows all possible garbage labels}.
 Once this is satisfied, it is easy to see how \G can produce a gadget
 (e.g., an appropriately wired set of garbled translation tables)
@@ -190,7 +192,7 @@ To see how this can be done,
     they add an additional garbled gadget, the \emph{demultiplexer},
     that `zeros out' the wires into the inactive branches.
     This fully resolves this source of uncertainty.
-  \item True index of the actually taken branch, which we denote by \truth.
+  \item The index of the active branch, which we denote by \truth.
   \item \E's guess of value of \truth, which we denote by \guess.
 \end{itemize}
 
@@ -200,9 +202,10 @@ the incorrectly guessed branches.
 %
 
 
-To acquire all possible garbage labels (such that he can build the multiplexer
-for garbage collection), the \HK generator assumes all-zero inputs for
-inactive branches, and emulates ``in his head'' \E's evaluation of all possible (\truth,\guess) combinations.
+To acquire all possible garbage labels such that he can build the
+garbage collecting multiplexer, the \HK generator assumes an all-zero
+inputs for each
+inactive branch and emulates ``in his head'' \E's evaluation of all possible (\truth,\guess) combinations.
 % must construct all $b(b-1)$ sets of garbage labels,
 This requires that \G\ evaluate (i.e. call \Ev) $b(b-1)$ times on garbage material.
 This is the source of the $O(b^2)$ computation.
@@ -221,16 +224,16 @@ This is the source of the $O(b^2)$ computation.
 % be transmitted over a network.
 % The breakthrough result of~
 \HK shows that GC players need not send a GC
-proportional to the entire circuit:
-instead communication proportional to only the longest program execution
+proportional to the entire circuit.
+Instead, communication proportional to only the longest program execution
 path suffices.
 However, this improved communication comes at a cost:
 for a conditional $b$ branches, the players
 use $O(b^2)$ computation. 
 
-This is a usually a worthwhile trade-off: GC generation speed is usually much higher
-than network speeds (cf. our discussion in~\Cref{sec:whentouse}).
-However, as the branching factor grows large, computation
+This is a usually a worthwhile trade-off: GC generation is usually
+much faster than network transmission (cf. our discussion in~\Cref{sec:whentouse}).
+However, as the branching factor grows, computation
 can quickly become the bottleneck due to quadratic scaling.
 %
 Thus, as we argue in~\Cref{sec:motivationHighB},
@@ -256,14 +259,14 @@ Our contributions include:
     % efficient than~\HK...
     \vlad{compare to HK20.  Probably worth
     writing a subsection.}
-  \item High \emph{concrete performance}.
+  \item High concrete performance.
    \vlad{concrete numbers, report implementation stats}
   \item
-    A formalization in the \cite{CCS:BelHoaRog12} GC framework proved \vlad{I worried about saying under BHR since we must consider topology separately}
+    A formalization in the \cite{CCS:BelHoaRog12} framework (as
+    modified by \HK) proved
     secure under standard assumptions.
-    \HK proved SGC secure by assuming the existence of a random oracle.
-    We prove security using a standard PRprove security using a
-    standard PRF.
+    \HK proved SGC secure by assuming a random oracle.
+    We prove security assuming only a pseudorandom function.
     % Like \HK, we leave the processing of low level gates to an
     % underlying garbling scheme \underscheme.
     % Of course, if \underscheme relies on non-standard assumptions, we

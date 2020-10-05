@@ -17,43 +17,48 @@
   }\label{fig:seed-tree}
 \end{figure*}
 
-We  now review in our main contributions with sufficient  detail to present most interesting  technical challenges and  solutions.
+We now informally present our construction with sufficient detail to introduce
+the most interesting technical challenges and solutions.
 
 \subsection{$O(b\log b)$ Stacked Garbling}
 \label{sec:techOverviewSG}
 
 Our main contribution is the reduction of SGC computation
 from $O(b^2)$ to $O(b \log b)$.  Our constants are also
-low: together \G and \E make a total of $2 b \log b + b$ calls to \Gb\
-and $b(\log b + 1)$ calls  to \Ev.
+low: together \G and \E make a total of $\frac{5}{2} b \log b + b$ calls to \Gb\
+and $b\log b + b$ calls  to \Ev.
 
-We now continue the discussion from~\Cref{sec:intuition} in more detail.
+We continue the discussion from~\Cref{sec:intuition} in more detail.
 Our main task is the garbage collection of output labels of {\em
 incorrectly guessed} $(\truth, \guess)$ combinations 
 %w.r.t. taken (active) branch, 
 where
 \guess is \E's guess of the active branch, and \truth defines the active branch w.r.t. \guess.
 Wlog, let $b$ be a power of $2$ to simplify notation.
-Consider a binary tree where the leaves are the $b$ branches $\cir_1,...,\cir_b$.  The tree will provide a convenient infrastructure to group branches and cases to unify processing.
+Consider a binary tree where the leaves are the $b$ branches
+$\cir_0,...,\cir_{b-1}$.  The tree provides an infrastructure to group branches and to unify processing.
 
 
-Fix one of $b$ choices for \guess.  In contrast with previous work~\HK, which then considers $b$ choices for \truth independently from \guess, we define \truth\ {\em in relation} to \guess, and consider fewer \truth options.  Namely,
+Fix one of $b$ choices for \guess.  In contrast with~\HK, which then considers $b$ choices for \truth independently from \guess, we define \truth\ {\em in relation} to \guess, and consider fewer \truth options.  Namely,
 % for each tree level $i$, 
-we  let \truth  denote in which sibling subtree of \guess the executed branch resides (cf. notation and discussion in~\Cref{sec:intuition}). 
-Given a fixed \guess, there are only exactly  $\log b$ choices for \truth\footnote{Recall, we focus on the task of garbage collection due and consider only  incorrect guesses;  managing correctly recovered labels of correctly guessed branches is straightforward and cheap.}.
+we  let \truth  denote the sibling subtree of \guess that contains the
+active branch (cf. notation~\Cref{sec:intuition}). 
+Given a fixed incorrect \guess, there are only $\log b$ choices for
+\truth.\footnote{Recall, we focus on the task of garbage collection due and consider only  incorrect guesses;  managing correctly recovered labels of correctly guessed branches is straightforward and cheap.}
 
 For concreteness and wlog,
 %in our discussion we 
-consider the illustrative example of an $8$-leaf tree in~\Cref{fig:seed-tree}, where $\guess=0$.  It will be clear that the discussion and arguments pertaining to this special case generalize to arbitrary $b$ and $\guess$.
+consider the illustrative example of an $8$-leaf tree in~\Cref{fig:seed-tree} where $\guess=0$. 
+The discussion and arguments pertaining to this special case generalize to arbitrary $b$ and $\guess$.
 
 Consider the four scenarios where one of the branches $\cir_4-\cir_7$ is active.
 These four scenarios each correspond
 to $\truth = 1$: $\cir_4-\cir_7$ all belong to the level-$1$ sibling subtree of
 $\cir_0$.
 %
-Our objective is to ensure that \E's unstacking and evaluation in each
-of these four cases is \emph{identical}.  Similarly we want to achieve identical processing for all leaves of each level-$i$ sibling subtree.
-Let \aid denote the ID of the active branch. That is, \aid is a $\log
+We ensure that \E's unstacking and evaluation in each
+of these four cases is \emph{identical}.  More generally, we achieve identical processing for all leaves of each sibling subtree.
+Let \aid\ denote the index of the active branch. That is, \aid\ is a $\log
 b$-bit integer that points to the active branch.
 % To achieve our objective, \E will use garbled labels corresponding to
 % \aid to compute seeds for the various nodes in the tree.
@@ -63,7 +68,40 @@ b$-bit integer that points to the active branch.
 
 \subsubsection{Actions and gadgets of \G.}
 
-In the context of the exampe of~\Cref{fig:seed-tree}, \G  garbles branches  $\cir_0,...,\cir_7$ as follows.  \G chooses a random
+\begin{figure}[t!]\centering\framebox{%
+\begin{minipage}{1.05\linewidth}
+
+% In more detail, \gadget can be described in two steps:\vlad{put gadget in frame?}
+\begin{enumerate}
+  \item
+    \gadget computes for each node \node in the tree the following function \issr(\node,\aid):
+    `Is \node a sibling root of $\aid$?' This Boolean function can be
+    efficiently realized using a GC with cost proportional to the size
+    of the tree (i.e. $2b$ AND gates). Let $\issr_\node$ be
+    the output of this function for node \node.
+  \item
+    \gadget outputs a seed \es(\E's seed) based on \issr():
+   %maps the above intermediate encrypted truth values to seeds for each \node as follows:
+   \[
+   \es_\node =
+   \begin{cases}
+       s_\node,& \text{if } \issr_\node\\
+       s_\node',& \text{otherwise}
+   \end{cases}
+  \]
+    Where $s_\node'$ is a uniform string indistinguishable from
+    $s_\node$. If \node is a sibling root of $\aid$, then
+    \E\ obtains the correct seed $s_\node$, and otherwise obtains a garbage
+    seed $s_\node'$. $s_\node'$ is fixed for each node \node, and is independent of \aid.
+    We implement \gadget using only a single garbled row
+    per node.
+\end{enumerate}
+\end{minipage}
+}\caption{The \gadget functionality. TODO
+finish.}\label{fig:sortinghat}
+\end{figure}
+
+In the context of the example in~\Cref{fig:seed-tree}, \G  garbles branches  $\cir_0,...,\cir_7$ as follows.  \G chooses a random
 seed for the root of the tree (denoted $s_{0-7}$ for the $8$-leaf tree
 in~\Cref{fig:seed-tree}), and uses it to pseudorandomly derive seeds
 for each node of the tree.  This is done in the standard manner, e.g.,
@@ -76,7 +114,7 @@ across the network to \E.
 We note two facts about $\mat$ and about the active branch $\aid$.
 \begin{enumerate}
   \item \textbf{Correctness}: if \E\ obtains the $\log b$ seeds of the
-    \emph{sibling roots} (i.e. roots of sibling subtrees) of
+    sibling roots of
     $\aid$, then she can regarble all circuits $\gcir_{i\neq \act}$,
     unstack by XORing with \mat, and obtain $\gcir_\act$, allowing her to
     correctly evaluate $\cir_\act$.
@@ -92,9 +130,9 @@ We note two facts about $\mat$ and about the active branch $\aid$.
 To facilitate secure garbled evaluation of the conditional and meet the requirements of these two facts, in addition to \mat,
 \G  generates and sends to \E a small (linear in the
 number of branches with small constants) garbled gadget
-\gadget.  \gadget will aid \E in securely reconstructing branch material. 
-Specifically, \gadget takes as input labels corresponding to \aid and
-produces candidate seeds for {\em each} node in the tree.
+\gadget.  \gadget aids \E in her secure reconstruction of branch material. 
+Specifically, \gadget takes as input labels corresponding to \aid\ and
+produces candidate seeds for each node in the tree.
 For each node \node, \gadget constructs a correct (i.e. as generated by \G) seed $s_\node$
 if and only if \node is a sibling root  of the leaf \aid.
 \gadget can easily be implemented as a collection of garbled rows.
@@ -105,42 +143,38 @@ seed.
 % We need to ensure this garbage value is the same for every
 % \aid. This is easy to do.  Details follow:
 
-In more detail, \gadget can be described in two steps:\vlad{put gadget in frame?}
-\begin{enumerate}
-  \item
-    \gadget computes for each node \node in the tree the following function \issr(\node,\aid):
-    `Is \node a sibling root of $\aid$?' This Boolean function can be
-    efficiently realized using a GC with cost proportional to the size
-    of the tree (i.e. $2b$ AND gates). Let $\issr_\node$ be
-    the output of this function for node \node.
-  \item
-    \gadget outputs a seed \es(\E's seed) based on \issr():
-    %maps the above intermediate encrypted truth values to seeds for each \node as follows:
-    \[
-    \es_\node =
-    \begin{cases}
-        s_\node,& \text{if } \issr_\node\\
-        s_\node',& \text{otherwise}
-    \end{cases}
-  \]
-    Where $s_\node'$ is a uniform string indistinguishable from
-    $s_\node$. If \node is a sibling root of $\aid$, then
-    \E\ obtains the correct seed $s_\node$, and otherwise obtains a garbage
-    seed $s_\node'$. $s_\node'$ is fixed for each node \node, and is independent of \aid.
-    We implement \gadget using only a single garbled row
-    per node.
-\end{enumerate}
-
-For example in~\Cref{fig:seed-tree}, if active branch is $\aid=4$, then applying the gadget to nodes $\node_{0-3}, \node_{6-7}, \node_{5}$ will allow the reconstruction of correct seeds $s_{0-3}, s_{6-7}, s_{5}$.  Applying \gadget to other nodes\vlad{ I removed ``(which would under the hood mean decrypting a correspondingly different garbled row)'' as it somewhat conflicts with descr of \gadget} will result in \E obtaining fixed garbage seeds.  If  active branch were $\aid=3$, then applying \gadget to nodes $\node_{4-7}, \node_{0-1}, \node_{2}$ will allow the reconstruction of correct seeds $s_{4-7}, s_{0-1}, s_{2}$. Garbage seeds reconstructed in, e.g., node $\node_{4-5}$ will be the {\em same} in both cases.
+For example in~\Cref{fig:seed-tree}, if the active branch is $\aid=4$,
+then applying the gadget to nodes $\node_{0-3}, \node_{6-7},
+\node_{5}$ will reconstruct the correct seeds $s_{0-3}, s_{6-7}, s_{5}$.  Applying \gadget to other nodes
+will construct fixed garbage seeds.
+If the active branch were instead $\aid=3$, then \gadget
+would reconstruct the correct seeds $s_{4-7}, s_{0-1}, s_{2}$.
+Critically, the
+garbage seeds reconstructed
+in both cases, e.g. for node $\node_{4-5}$, will be the same.
 
 
 \subsubsection{Actions of \E.}
 
-It is now intuitive how \E will proceed with unstacking.  She will apply the gadget \gadget and obtain a tree of random-looking seeds; of $2b$ seeds, only $\log b$ seeds just off the path to \aid (corresponding to sibling roots) will be correct.
-\E will guess \guess; assuming \guess, she will use (only) the sibling seeds of \guess to derive all  $b-1$ leaf seeds not equal to \guess.  She then garbles the $b-1$ branches $\cir_i$ and unstacks the corresponding GCs $\gcir_i$.
+It is now intuitive how \E proceed with unstacking. 
+She applies
+the gadget \gadget and obtains a tree of random-looking seeds; of $2b$
+seeds, only $\log b$ seeds just off the path to \aid\ (corresponding
+to \aid's sibling roots) are correct.  \E guesses \guess; assuming
+\guess, she uses only the sibling seeds of \guess to derive all
+$b-1$ leaf seeds not equal to \guess.  She then garbles the $b-1$
+branches $\cir_i$ and unstacks the corresponding GCs $\gcir_i$.
 
-Clearly, if $\guess=\aid$, she will derive the intended leaf seeds $s_{i\neq\aid}$, unstack the intended garbled circuits $\gcir_{i\neq\aid}$, and therefore will obtain the correct GC $\gcir_\aid$.   Let's consider the case that her guess is wrong. %Firstly, there is no security violation since she will never receive any additional valid seeds;
-In this case, \E will simply unstack wrong branches garbled with the wrong seeds.  As we noted above, since \E will never receive any additional valid seeds, there is no securlity loss.  We next see that the number of different garbage labels we must collect is small, and further they can be collected efficiently.
+Clearly, if $\guess=\aid$, \E\ derives the intended leaf seeds
+$s_{i\neq\aid}$, unstacks the intended garbled circuits
+$\gcir_{i\neq\aid}$, and obtains the correct GC $\gcir_\aid$.
+%
+Consider the case where \E\ guesses wrong. %Firstly, there is no security violation since she will never receive any additional valid seeds;
+\E simply unstacks wrong branches garbled with the wrong seeds.
+Since \E never receives any additional valid seeds,
+there is no security loss.  We next see that the number of different
+garbage labels we must collect is small, and further they can be
+collected efficiently.
 
 
 
