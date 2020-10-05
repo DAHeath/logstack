@@ -27,40 +27,7 @@ double experiment(const Circuit& c) {
   std::vector<double> results;
   for (std::size_t i = 0; i < n_repetitions; ++i) {
     results.push_back(timed([&] {
-
       semihonest(c, *genChannel, *evalChannel);
-      /* PRG seed; */
-      /* PRF k; */
-      /* auto [material, interface] = garble(k, c, seed); */
-
-
-      /* const auto delta1 = interface.inpEnc.delta; */
-      /* const auto delta2 = interface.outEnc.delta; */
-
-      /* Labelling inp(c.nInp); */
-      /* for (std::size_t i = 0; i < c.nInp; ++i) { */
-      /*   inp[i] = interface.inpEnc.zeros[i]; */
-      /* } */
-
-      /* /1* std::cout << "EV\n"; *1/ */
-
-      /* const auto out = ev(k, c, inp, material); */
-
-
-      /* for (std::size_t i = 0; i < c.nOut; ++i) { */
-      /*   if (out[i] == interface.outEnc.zeros[i]) { */
-      /*     std::cout << '0'; */
-      /*   } else if (out[i] == (interface.outEnc.zeros[i] ^ delta2)) { */
-      /*     std::cout << '1'; */
-      /*   } else { */
-      /*     /1* std::cerr << "ERROR!\n"; *1/ */
-      /*     /1* std::cerr << out[i] << '\n'; *1/ */
-      /*     /1* std::cerr << g.outputEncoding.zeros[i] << '\n'; *1/ */
-      /*     /1* std::cerr << (g.outputEncoding.zeros[i] ^ delta2) << '\n'; *1/ */
-      /*     /1* std::exit(1); *1/ */
-      /*   } */
-      /* } */
-      /* std::cout << '\n'; */
     }));
   }
 
@@ -99,10 +66,10 @@ int main(int argc, char** argv) {
 
 
   std::thread th { [&] {
-    genChannel = new emp::NetIO(nullptr, 55557);
+    genChannel = new emp::NetIO(nullptr, 55556);
   }};
   sleep(1);
-  evalChannel = new emp::NetIO("127.0.0.1", 55557);
+  evalChannel = new emp::NetIO("127.0.0.1", 55555);
   th.join();
 
 
