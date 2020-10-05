@@ -1,24 +1,28 @@
-\section{Approach}\label{sec:approach}
+\section{The \ourschemelong\ Garbling Scheme}\label{sec:approach}
 In this section, we formalize our construction, \ourschemelong.
-Throughout this section, consider a circuit with a conditional with $b$
+Throughout this section, consider a conditional circuit with $b$
 branches.
-For simplicity of discussion, we ignore the number input and output
-wires and consider branches with a fixed constant number of gates.
+For simplicity, we ignore the number input and output wires.
 
-We adopt the above restriction because branching factor is the most interesting
+We adopt the above simplification because branching factor is the most interesting
 aspect of \ourschemelong. We emphasize that ignoring inputs/outputs
-and fixing the number of gates does not hide high costs.
-\ourschemelong scales linearly with the number of gates per branch.
+does not hide high costs.
+% \ourschemelong scales linearly with the number of gates per branch.
 While we scale with the product of the number of inputs and $b$ (and
 respectively the product of number of outputs and $b$), the
-constants are very low.
+constants are low.
 See \Cref{sec:eval} for evidence of these low constants.
+Thus, inputs/outputs are of secondary concern to the circuit size,
+which is often far larger than the number of inputs/outputs.
 
-Given that we consider only the branching factor $b$, \ourschemelong\ features:
+Consider garbled circuits $\gcir_i$ corresponding to each branch
+$\cir_i$. Let $\nmat$ be the size of the largest such garbling: $\nmat
+= \max_i |\gcir_i|$.
+Given branching factor $b$, \ourschemelong\ features:
 \begin{itemize}
-  \item $O(1)$ communication complexity.
-  \item $O(b \log b)$ time complexity.
-  \item $O(\log b)$ space complexity.
+  \item $O(\nmat)$ communication complexity.
+  \item $O(\nmat b \log b)$ time complexity.
+  \item $O(\nmat \log b)$ space complexity.
 \end{itemize}
 
 In this section, we formalize our algorithms and give proofs of the above
@@ -28,7 +32,9 @@ complexities. We postpone proofs of correctness and security to
 \ourschemelong\ is formalized as a \emph{garbling
 scheme}~\cite{CCS:BelHoaRog12}.
 Garbling schemes abstract the details of GC such that protocols can be written generically.
-More precisely, our formalization uses the modified garbling scheme
+That is, \ourschemelong is a modular collection of algorithms, not a
+protocol.
+Our formalization specifically uses the modified garbling scheme
 framework of \HK, which separates the \emph{topology} of circuits
 (i.e., the concrete circuit description) from circuit material
 (i.e., the collections of encryptions needed to securely evaluate the
@@ -60,7 +66,7 @@ an \emph{underlying garbling scheme} \underscheme.
 \underscheme\ is responsible for handling the collections of low level
 gates (typically AND and XOR gates) that we refer to as \emph{netlists}.
 In our implementation, we instantiate \underscheme\ with the efficient
-half-gates scheme~\cite{EC:ZahRosEva15}.
+half-gates scheme of~\cite{EC:ZahRosEva15}.
 We do not specify the syntax of netlists, and entirely leave their
 handling to \underscheme.
 Our circuit syntax is defined inductively:
@@ -76,7 +82,7 @@ circuits is defined as follows:
 That is, a circuit is either (1) a netlist, (2) a conditional dispatch
 over a vector of circuits (our focus), or (3) a sequence of two
 circuits.
-We note that sequences of circuits are necessary to allow arbitrary
+Sequences of circuits are necessary to allow arbitrary
 control flow.
 
 
@@ -124,18 +130,22 @@ control flow.
     \begin{align*}
       &\ourscheme.\gGb(1^\kappa, \cir, S)\\
       &~~\codecomment{How does \G garble the GC?}\\
+      &~~\codecomment{$S$ is an explicit seed.}\\
       &~~\switch~\cir:\\
       &~~~~\ccase~\netlist(\cdot):\\
       &~~~~~~\creturn~\underscheme.\gGb(1^\kappa,\cir,S)\\
       &~~~~\ccase~\sequential(\cir_0, \cir_1):\\
-      &~~~~~~(\mat_0, e_0, d_0) \gets \ourscheme.\gGb(1^\kappa,\cir_0, S)\\
-      &~~~~~~(\mat_1, e_1, d_1) \gets \ourscheme.\gGb(1^\kappa,\cir_1, S)\\
+      &~~~~~~\codecomment{Derive seeds for two circuits.}\\
+      &~~~~~~S_0 \gets F_S(0)\\
+      &~~~~~~S_1 \gets F_S(1)\\
+      &~~~~~~(\mat_0, e_0, d_0) \gets \ourscheme.\gGb(1^\kappa,\cir_0, S_0)\\
+      &~~~~~~(\mat_1, e_1, d_1) \gets \ourscheme.\gGb(1^\kappa,\cir_1, S_1)\\
       &~~~~~~\codecomment{Labels out of $\cir_0$ must be \emph{translated}}\\
       &~~~~~~\codecomment{to labels into $\cir_1$.}\\
       &~~~~~~\mat_{tr} \gets \gbtranslate(d_0,e_1)\\
       &~~~~~~\mat \gets \mat_0\mid \mat_{tr}\mid \mat_1\\
       &~~~~~~\creturn~(\mat, e_0, d_1)\\
-      &~~~~\ccase~\conditional(\vec \cir): \creturn~\gbcond(\vec \cir)\\
+      &~~~~\ccase~\conditional(\vec \cir): \creturn~\gbcond(\vec \cir, S)\\
       \\
       &\ourscheme.\gDe(d, \gcirout):\\
       &~~\codecomment{How do labels map to outputs?}\\
@@ -182,10 +192,12 @@ $\ourscheme.\gGb$ delegates to a subprocedure \gbcond.
 All details of conditionals are handled by these two subprocedures.
 %
 Aside from these delegations, the algorithms in \Cref{fig:scheme} are
-relatively uninteresting, but are given for completeness.
-We briefly discuss these less interesting algorithms before returning
-to an extended discussion of \evcond\ and
-\gbcond~(c.f. \Cref{sec:approach-cond}).
+relatively unsurprising:
+the algorithms closely match \HK's construction and essentially
+provide nothing more than infrastructure needed to host our contribution.
+%
+We briefly discuss details of these less interesting algorithms before returning
+to an extended discussion of \evcond\ and \gbcond~(c.f. \Cref{sec:approach-cond}).
 
 \begin{itemize}
   \item \textbf{Projectivity.} \ourschemelong\
@@ -199,12 +211,11 @@ to an extended discussion of \evcond\ and
     mappings between cleartext values and encoding/decoding strings.
   \item \textbf{Delegation to \underscheme.} Note that
     $\ourscheme.\gev$, $\ourscheme.\gEv$, and $\ourscheme.\gDe$ indeed
-    directly delegate to \underscheme\ in the cast of a netlist.
+    directly delegate to \underscheme\ in the case of a netlist.
   \item \textbf{Sequences and Translation.} In a sequence of two
-    circuits, all output wires of the first circuit are past as the inputs
-    to the second. However, these two circuits are garbled completely
-    independently (i.e., starting from different seeds). Thus, a
-    priori the output labels from $\cir_0$ will not match the required
+    circuits, all output wires of the first circuit are passed as the inputs
+    to the second. Because these two circuits are garbled starting
+    from different seeds, the output labels from $\cir_0$ will not match the required
     input encoding of $\cir_1$.
     %
     We thus implement a \emph{translation} component ($\evtranslate$
@@ -219,42 +230,56 @@ to an extended discussion of \evcond\ and
     &\gbtree(\vec{\cir}, i, j, seed):\\
     &~~\cif~i = j:\\
     &~~~~\codecomment{Base case of $1$ branch.}\\
-    &~~~~M, \cdot, \cdot \gets \gb(\vec\cir[i], seed)\\
-    &~~~~\creturn~M\\
+    &~~~~M, e, \cdot \gets \gb(\vec\cir[i], seed)\\
+    &~~~~\creturn~M, e\\
     &~~\celse:\\
     &~~~~\codecomment{Expand child seeds using PRF.}\\
     &~~~~seed_L \gets F_{seed}(0)\\
     &~~~~seed_R \gets F_{seed}(1)\\
     &~~~~\codecomment{Recursively garble both child trees and stack
     material.}\\
-    &~~~~\creturn~\gbtree(\vec{\cir}, i, \sfrac{j}{2}, seed_L) \oplus
-    \gbtree(\vec{\cir}, \sfrac{j}{2} + 1, j, seed_R)\\
+    &~~~~k \gets \halfway(i, j)\\
+    &~~~~M_L, e_L \gets \gbtree(\vec{\cir}, i, k, seed_L)\\
+    &~~~~M_R, e_R \gets \gbtree(\vec{\cir}, k + 1, j, seed_R)\\
+    &~~~~\creturn~(M_L \oplus M_R, e_L \mid e_R)\\
+    \\
+    &\halfway(i, j):\\
+    &~~\codecomment{Simple helper for range of branches (approximately) in half.}\\
+    &~~\creturn~i+\left\lfloor \frac{j-i}{2} \right\rfloor\\
   \end{align*}
   \caption{%
-    The helper algorithm \gbtree\ uses a single seed to recursively
-    garble all circuits $\cir_i - \cir_j$ and stacks (using XOR) all
-    resultant material.
+    The helper algorithm \gbtree\ starts from a single seed
+    at the root of a subtree $\node_{i,j}$, derives all seeds in the
+    subtree, garbles all branches in the subtree, and stacks (using
+    XOR) all resultant material. The procedure also returns the input
+    encodings for all branches.
   }\label{fig:gbtree}
 \end{figure}
 
 With the remaining formalization out of the way, we focus specifically
 on conditional branching. Our specific goal is to formalize \evcond\
-and \gbcond.
-We start by defining a simpler procedure, \gbtree~(\Cref{fig:gbtree}),
-which is a crucial ingredient for both \evcond\ and \gbcond.
-Recall from our technical overview (\Cref{sec:techOverview}) that we
-organized the $b$ branches into a binary branching tree.
+and \gbcond, the key sub-procedures invoked by $\ourscheme.\gEv$ and
+$\ourscheme.\gGb$ respectively.
+Note, our presentation is a formalization of the discussion in
+\Cref{sec:techOverview}; the following explores the technical aspects
+of our construction, but the reader should refer to
+\Cref{sec:techOverview} for high level intuition.
+
+Recall, we organize the $b$ branches into a binary branching tree.
+Both \evcond\ and \gbcond\ frequently perform a common task:
+they garble all branches in an entire subtree and stack together all
+material.
 %
-Indeed, we use this same organization in our formalization.
-\gbtree\ formalizes the process by which both players
-garble entire subtrees of branches starting from a single seed.
+We thus start by definining a procedure, \gbtree~(\Cref{fig:gbtree}),
+which specifically performs this `low level' task.
+
 Specifically, \gbtree\ recursively descends through the
-tree, using a PRF to derive child seeds from the parent seed, and at the
+tree, uses a PRF to derive child seeds from the parent seed, and at the
 leaves garbles the branches.
 As the recursion propagates back up the tree, the procedure stacks the
 garblings together.
 %
-As it recursively descends, this algorithm tracks two integers $i$ and
+This algorithm tracks two integers $i$ and
 $j$, denoting the range of branches circuits $\cir_i - \cir_j$ that are to
 be stacked together.
 Our other algorithms use a similar strategy, and all such algorithms
@@ -262,24 +287,39 @@ maintain an invariant that $i,j$ refers to a valid node in the binary
 branching tree over the $b$ branches.
 
 
-We note two trivial properties of \gbtree, recalling that we ignore
-the number of inputs/outputs and consider branches of constant size.
-First, it is immediate that \gbtree\ runs in linear time:
+We note two performance properties of \gbtree, recalling that we ignore
+the number of inputs/outputs and consider branches with maximum
+garbling size $\nmat$.
 \begin{lemma}\label{lemma:gbtreetime}
   For all vectors of circuits $\vec \cir$, all $i, j \in \mathbb{N}$
   such that $i \leq j$, and all $seed \in \{0, 1\}^\kappa$,
   $\gbtree(\vec \cir, i, j, seed)$ invokes $\gGb$ $j - i + 1$ times.
 \end{lemma}
-In other words, the algorithm garbles each branch once.
+\begin{proof}
+  Immediate. The procedure only invokes $\gGb$ at the base case.
+\end{proof}
+In other words, the algorithm garbles each branch only once.
 
 \begin{lemma}\label{lemma:gbtreetime}
-  For all vectors of circuits $\vec \cir$, all $i, j \in \mathbb{N}$
+  If $\Gb$ runs in $O(\nmat)$ space,
+  then for all vectors of circuits $\vec \cir$, all $i, j \in \mathbb{N}$
   such that $i \leq j$, and all $seed \in \{0, 1\}^\kappa$,
-  $\gbtree(\vec \cir, i, j, seed)$ runs in $O(1)$ space.
+  $\gbtree(\vec \cir, i, j, seed)$ runs in $O(\nmat \log (j-i+1))$ space.
 \end{lemma}
 \begin{proof}
-Immediate from the fact that (1) the leaves yield a single garbling
-and (2) the inner tree nodes eagerly stack material together.
+  In the base case, $\gbtree$ invokes $\gb$. By assumption, this runs
+  within our space requirement, and generates a garbling of maximum
+  size $\nmat$.
+  %
+  In the general case, $\gbtree$ recursively invokes itself twice.
+  Thus, after the first call has finished, we must store the
+  intermediate result $M_L$.
+  %
+  Thus, at each recursive call site, we store a string of size
+  $O(\nmat)$.
+  Because each recursive call divides the range of considered circuits
+  in half, the recursive tree has depth $O(\log(j-i+1))$.
+  Hence, the total required storage is $O(\nmat \log(j-i+1))$.
 \end{proof}
 
 \begin{figure}
@@ -305,10 +345,10 @@ and (2) the inner tree nodes eagerly stack material together.
     seed,}\\
     &~~~~~~\codecomment{unstack, and recursively evaluate the left
     subtree.}\\
-    &~~~~~~\mat_R \gets \gbtree(\vec{\cir}, \sfrac{j}{2}+1, j, es_{\sfrac{j}{2}+1, j})\\
+    &~~~~~~\mat_R, \cdot \gets \gbtree(\vec{\cir}, \sfrac{j}{2}+1, j, es_{\sfrac{j}{2}+1, j})\\
     &~~~~~~\evcond'(\mat \oplus \mat_R, i, \sfrac{j}{2})\\
     &~~~~~~\codecomment{Symmetrically evaluate the right subtree.}\\
-    &~~~~~~\mat_L \gets \gbtree(\vec{\cir}, i, \sfrac{j}{2}, es_{i,\sfrac{j}{2}})\\
+    &~~~~~~\mat_L, \cdot \gets \gbtree(\vec{\cir}, i, \sfrac{j}{2}, es_{i,\sfrac{j}{2}})\\
     &~~~~~~\evcond'(\mat \oplus \mat_L, \sfrac{j}{2}+1, j)\\
     &~~\codecomment{Start recursive process from the top of the tree.}\\
     &~~\evcond'(M_{cond}, 0, b-1)\\
@@ -332,47 +372,81 @@ and (2) the inner tree nodes eagerly stack material together.
     &\gbcond(\vec{\cir}, S):\\
     &~~b \gets | \vec{\cir} |\\
     &~~\codecomment{Recursively derive all `good' seeds for the entire tree.}\\
-    &~~s \gets \mathtt{DeriveSeedTree}(S)\\
-    &~~\codecomment{Uniformly sample an input encoding for the conditional.}\\
-    &~~e \gets \mathtt{UniformEncoding}(S)\\
-    &~~\codecomment{Split encoding into encoding of active branch
-    index and rest of encoding.}\\
+    &~~s \gets \mathtt{DeriveSeedTree}(S, b)\\
+    &~~\codecomment{Sample an input encoding for the conditional.}\\
+    &~~e \gets \genprojection(S, n)\\
+    &~~\codecomment{Parse encoding into encoding of active branch
+    index and encoding of rest of input.}\\
     &~~e_\aid, e' \gets e\\
     &~~\codecomment{Garble \gadget\ based on the encoding of \aid.}\\
     &~~\codecomment{This outputs material as well as the tree of all
     `bad' seeds $s'$.}\\
     &~~\mat_\gadget, s' \gets \gadget.\mathtt{Gb}(e_\aid, s)\\
-    &~~\mat_{dem}, \bot_{in} \gets \gbdem(e_\aid, e')\\
-    &~~\codecomment{We define a recursive subprocedure that garbles $\cir_i - \cir_j$.}\\
-    &~~\gbcond'(i, j, \vec{\mat}):\\
-    &~~~~\codecomment{Recursively garble $\cir_i - \cir_j$ \emph{and}
-    compute all possible garbage outputs.}\\
-    &~~~~\codecomment{$\vec{\mat}$ is a vector of the bad garblings of
-      all sibling roots of the current node.}\\
-    &~~~~\cif~i = j:\\
-    &~~~~~~\mat, \cdot, \vec{d}_i \gets \gb(\vec{\cir}[i], s_{i})\\
-    &~~~~~~acc \gets \mat\\
-    &~~~~~~\cfor~k \in 0..|\log b|:\\
-    &~~~~~~~~\codecomment{Emulate all possible bad evaluations of $\cir_i$.}\\
-    &~~~~~~~~acc \gets acc \oplus \vec{\mat}[k]\\
-    &~~~~~~~~\bot_{out}[i][k] \gets \mid \gEv(\vec{\cir}[i], acc,
-    \bot_{in}[k])\\
-    &~~~~~~\creturn~M\\
-    &~~~~\celse:\\
-    &~~~~~~\mat_R \gets \gbtree(\vec{\cir}, \sfrac{j}{2}+1, j, s_{\sfrac{j}{2}+1, j})\\
-    &~~~~~~\mat_R' \gets \gbtree(\vec{\cir}, \sfrac{j}{2}+1, j, s'_{\sfrac{j}{2}+1, j})\\
-    &~~~~~~\mat_L \gets \gbcond'(i, \sfrac{j}{2}, (\mat_R \oplus \mat_R') \mid \vec{\mat})\\
-    &~~~~~~\mat_L' \gets \gbtree(\vec{\cir}, i, \sfrac{j}{2}, s'_{i, \sfrac{j}{2}})\\
-    &~~~~~~\cdot \gets \gbcond'(\sfrac{j}{2}+1, j, (\mat_L \oplus \mat_L') \mid \vec{\mat})\\
-    &~~~~~~\creturn~\mat_L \oplus \mat_R\\
-    &~~\mat_{cond} \gets \gbcond'(0, b-1, [~])\\
-    &~~\mat_{mux} \gets \gbmux(e_\aid, d, \vec{d}, \bot_{out})\\
+    &~~\codecomment{Construct the stacked material and input encodings for each branch.}\\
+    &~~M_{cond}, e_{cond} \gets \gbtree(\vec{\cir}, 0, b-1, s_{0, b-1})\\
+    &~~\codecomment{The demux conditionally translates the input encoding $e'$}\\ 
+    &~~\codecomment{to one of the branch encodings in $e_{cond}$ based on $e_\aid$.}\\
+    &~~\mat_{dem}, \Lambda_{in} \gets \gbdem(e_\aid, e', e_{cond})\\
+    &~~\codecomment{Compute all possible garbage outputs.}\\
+    &~~\Lambda_{out} \gets \computegarbage(\vec{\cir}, M_{cond}, \Lambda_{in}, s, s')\\
+    &~~\codecomment{The demultiplexer collects garbage outputs.}\\
+    &~~\mat_{mux} \gets \gbmux(e_\aid, d, \vec{d}, \Lambda_{out})\\
     &~~\creturn~(\mat_\gadget \mid \mat_{dem} \mid \mat_{cond} \mid \mat_{mux}, e, d)
   \end{align*}
   \caption{%
     The algorithm for garbling a conditional vector.
-    Given $b$ branches, \gbcond returns (1) the stacked material, (2)
+    Given $b$ branches, \gbcond\ returns (1) the stacked material, (2)
     the input encoding string, (3) all $b$ output decoding strings,
     and (4) all $b\log b$ possible garbage output label vectors.
+  }
+\end{figure}
+
+\begin{figure}
+  \begin{align*}
+    &\computegarbage(\vec{\cir}, \mat, \Lambda_{in}, s, s'):\\
+    &~~\codecomment{We first define a recursive subprocedure.}\\
+    &~~\computegarbage'(i, j, \mat_{i,j}, \vec{\mat}'):\\
+    &~~~~\codecomment{Compute all possible garbage outputs from
+    branches $\cir_i-\cir_j$.}\\
+    &~~~~\codecomment{$\vec{\mat}'$ is a vector of the bad garblings of
+      all sibling roots of the current node.}\\
+    &~~~~\cif~i = j:\\
+    &~~~~~~\codecomment{Base case: loop over all possible garbage material}\\
+    &~~~~~~\codecomment{and accumulate garbage outputs into
+    $\Lambda_{out}$.}\\
+    &~~~~~~acc \gets \mat_{i,i}\\
+    &~~~~~~\cfor~k \in 0..|\log b|:\\
+    &~~~~~~~~\codecomment{Emulate all possible bad evaluations of $\cir_i$.}\\
+    &~~~~~~~~acc \gets acc \oplus \vec{\mat}'[k]\\
+    &~~~~~~~~\Lambda_{out}[i][k] \gets \gEv(\vec{\cir}[i], acc, \Lambda_{in}[k])\\
+    &~~~~\celse:\\
+    &~~~~~~k \gets \halfway(i, j)\\
+    &~~~~~~\codecomment{Compute the good material for both subtrees.}\\
+    &~~~~~~\mat_{i, k}, \cdot \gets \gbtree(\vec{\cir}, i, k, s_{i, k})\\
+    &~~~~~~\mat_{k+1, j} \gets \mat_{i, j} \oplus \mat_{i, k}\\
+    &~~~~~~\codecomment{Compute the bad material for both subtrees.}\\
+    &~~~~~~\mat_{i, k}' \gets \gbtree(\vec{\cir}, i, k, s'_{i, k})\\
+    &~~~~~~\mat_{k+1, j}' \gets \gbtree(\vec{\cir}, k+1, j, s'_{k+1, j})\\
+    &~~~~~~\codecomment{Recursively compute all garbage outputs.}\\
+    &~~~~~~\computegarbage'(i, k, (\mat_{k+1,j} \oplus \mat_{k+1,j}') \mid \vec{\mat}')\\
+    &~~~~~~\computegarbage'(k+1, j, (\mat_{i,k} \oplus \mat_{i,k}') \mid \vec{\mat}')\\
+    \\
+    &~~b \gets |\vec{\cir}|\\
+    &~~\codecomment{Start the recursive process using the top level material $\mat$}\\
+    &~~\codecomment{and using the empty vector of bad sibling material.}\\
+    &~~\computegarbage'(0, b-1, \mat, [~])\\
+    &~~\creturn~\Lambda_{out}
+  \end{align*}
+  \caption{%
+    \computegarbage\ allows \G\ to compute the possible garbage output labels
+    from evaluation of inactive branches.
+    Specifically, the algorithm takes as arguments (1) the vector of
+    conditional branches $\vec{\cir}$, (2) the `good' material for the
+    conditional $M$, (3) the garbage input labels $\Lambda_{in}$, (4)
+    the tree of `good' seeds (i.e. the seeds used by \G\ to generate
+    $M$) $s$, and (5) the tree of `bad' seeds $s'$.
+    The algorithm outputs $\Lambda_{out}$, the vector (length $b$) of
+    vectors (each length $\log b$) of output labels from each
+    branch.
   }
 \end{figure}
