@@ -234,7 +234,7 @@ infrastructure needed to host our contribution.
 We briefly discuss most relevant details of these 
 %less interesting 
 algorithms before returning
-to an extended discussion of \evcond\ and \gbcond~(c.f. \Cref{sec:approach-cond}).
+to an extended discussion of \evcond\ and \gbcond~(c.f. \Cref{sec:approach-cond}):
 
 \begin{itemize}
   \item \textbf{Projectivity.} \ourschemelong\
@@ -258,6 +258,8 @@ to an extended discussion of \evcond\ and \gbcond~(c.f. \Cref{sec:approach-cond}
     We thus implement a \emph{translation} component ($\evtranslate$
     and $\gbtranslate$) that implements via garbled rows
     straightforward translation from one encoding to another.
+    \dave{Add note about standard model and PRF to implement
+    translation}
 \end{itemize}
 
 \subsection{Algorithms for Handling of Conditionals}\label{sec:approach-cond}
@@ -269,9 +271,9 @@ $\ourscheme.\gGb$ respectively.
 Note, our presentation is a formalization of the discussion in
 \Cref{sec:techOverview}; the following explores the technical aspects
 of our construction, but the reader should refer to
-\Cref{sec:techOverview} for high level intuition.
+\Cref{sec:techOverview} for unifying high level intuition.
 
-\subsubsection{Garbling Subtrees}
+\subsubsection{Garbling Subtrees.}
 \begin{figure}
   \begin{align*}
     &\gbtree(\vec{\cir}, i, j, seed):\\
@@ -304,25 +306,35 @@ of our construction, but the reader should refer to
 \end{figure}
 
 Recall, we organize the $b$ branches into a binary branching tree.
-Both \evcond\ and \gbcond\ frequently perform a common task:
-they garble all branches in an entire subtree and stack together all
-material.
+% Both \evcond\ and \gbcond\ frequently perform a common task:
+% they garble all branches in an entire subtree and stack together all
+% material.
+For \emph{each} internal node of the tree, both \evcond\ and \gbcond\
+perform a common task: they garble all branches in the entire subtree
+rooted at that node and stack together all material.
 %
 We thus start by definining a procedure, \gbtree~(\Cref{fig:gbtree}),
-which specifically performs this `low level' task.
+which specifically performs this basic task.
 
 Specifically, \gbtree\ recursively descends through the
-tree, uses a PRF to derive child seeds from the parent seed, and at the
+subtree starting from its root, uses a PRF to derive child seeds from the parent seed, and at the
 leaves garbles the branches.
 As the recursion propagates back up the tree, the procedure stacks the
 garblings together.
 %
-This algorithm tracks two integers $i$ and
-$j$, denoting the range of branches circuits $\cir_i - \cir_j$ that are to
+The recursion tracks two integers $i$ and
+$j$, denoting the range of branches $\cir_i..\cir_j$ that are to
 be stacked together.
-Our other algorithms use a similar strategy, and all such algorithms
-maintain an invariant that $i,j$ refers to a valid node in the binary
-branching tree over the $b$ branches.
+\evcond\ and \gbcond\ use a similar strategy, and all three algorithms
+maintain an invariant that $i,j$ refers to a valid node $\node_{i,j}$ in the binary
+branching tree over the $b$ branches (c.f. \Cref{fig:gbtree} for an
+example).
+%
+Note that because \evcond\ and \gbcond\ invoke \gbtree\ at
+\emph{every} node, this entails that both procedures garble
+each branch $\cir_i$ more than once, but with different seeds.
+As discussed in \Cref{sec:techOverview}, this repeated garbling is key
+to reducing the total number of possible garbage outputs.
 
 
 We note two performance properties of \gbtree, recalling that we ignore
@@ -330,7 +342,7 @@ the number of inputs/outputs and consider branches with maximum
 garbling size $\nmat$.
 \begin{lemma}\label{lemma:gbtreetime}
   Let $\vec{\cir}$ be a vector of $b$ circuits,
-  let $i, j \in \mathbb{N}$ satisfy $i \leq j$,
+  let $i, j \in \{0, b-1\}$ satisfy $i \leq j$,
   and let $seed \in \{0, 1\}^\kappa$ be an arbitrary string.
   Then $\gbtree(\vec \cir, i, j, seed)$ invokes $\gGb$ $j - i + 1$ times.
 \end{lemma}
@@ -338,10 +350,15 @@ garbling size $\nmat$.
   Immediate. The procedure only invokes $\gGb$ at the base case.
 \end{proof}
 In other words, the algorithm garbles each branch only once.
+Note that while \Cref{lemma:gbtreetime} (and also
+\Cref{lemma:gbtreespace}) holds for all $i, j$ we are
+only concerned with it holding for $i, j$ that represent valid nodes
+in the binary branching tree of circuits.
+
 
 \begin{lemma}\label{lemma:gbtreespace}
   Let $\vec{\cir}$ be an arbitrary vector of $b$ circuits,
-  let $i, j \in \mathbb{N}$ satisfy $i \leq j$,
+  let $i, j \in \{0, b-1\}$ satisfy $i \leq j$,
   and let $seed \in \{0, 1\}^\kappa$ be a arbitrary string.
   If $\Gb$ runs in $O(\nmat)$ space,
   then $\gbtree(\vec \cir, i, j, seed)$ runs in $O(\nmat \log (j-i+1))$ space.
