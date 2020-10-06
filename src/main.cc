@@ -99,9 +99,9 @@ int main(int argc, char** argv) {
   /* /1* } *1/ */
   /* /1* std::cout << experiment(conditional(cs)) << '\n'; *1/ */
 
-  for (std::size_t i = 0; i <= 14; ++i) {
+  /* for (std::size_t i = 0; i <= 14; ++i) { */
     std::vector<Circuit> cs;
-    for (std::size_t j = 0; j < (1 << i); ++j) {
+    for (std::size_t j = 0; j < (1 << 14); ++j) {
       cs.push_back(sha_netlist);
     }
     if (cs.size() == 1) {
@@ -111,7 +111,7 @@ int main(int argc, char** argv) {
       std::cout << experiment(conditional(cs)) << '\n';
       /* experiment(conditional(cs)); */
     }
-  }
+  /* } */
 
 
 /*   PRG prg; */
