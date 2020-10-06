@@ -34,7 +34,7 @@ In this work, we present a new construction for SGC that incurs
 only $O(b \log b)$ computation for both players while
 retaining the important communication improvement of \HK.
 %
-The construction also features improved space complexity: While \HK
+The construction also features improved space complexity: while \HK
 requires the generator to store $O(b)$ intermediate garblings, our
 construction requires only $O(\log b)$ space.
 %
@@ -101,7 +101,8 @@ efficient and secure evaluation of such programs.
 
 % In this work, we do not attempt to systematize the possible SGC-based
 % optimizations of generic flow control.
-In this work, we do not further explore the space of program refactorings.
+In this work, we do not further explore program refactorings as an
+optimization.
 % consideration 
 % , but instead provide a
 % powerful approach for handling conditionals, even if they have high
@@ -128,7 +129,7 @@ starting from seeds, each branch $\cir_i$.
 He then \emph{stacks} these $b$ garbled circuits, yielding only a
 single piece of material proportional to the longest branch: $M =
 \bigoplus_i \gcir_i$.\footnote{Note,~\HK, as do we in this work,  pad each GC
-material $\gcir_i$ with randomness before stacking.  This ensures all
+material $\gcir_i$ with uniform bits before stacking.  This ensures all
 $\gcir_i$ are of the same length.}
 Because garblings are expanded from short seeds, the
 seeds are compact representations of the garblings.
@@ -170,11 +171,12 @@ obtained in branch evaluation.}
 \HK collect garbage without
 interaction using a garbled gadget called a \emph{multiplexer}.
 %
-The multiplexer can be non-interactively and straight-forwardly constructed by \G,
+The multiplexer can be non-interactively constructed by \G,
 but only if he \emph{knows all possible garbage labels}.
-Once this is satisfied, it is easy to see how \G can produce a gadget
-(e.g., an appropriately wired set of garbled translation tables)
-that eliminates garbage and propagates true values.
+Once this is satisfied, it is easy for \G to produce a gadget
+(e.g., appropriate garbled translation tables)
+that eliminates garbage and propagates the active branch's output
+labels.
 
 
 {\bf \G's Uncertainty.}
@@ -185,7 +187,7 @@ To see how this can be done,
  consider \G's knowledge and uncertainty about the garbled evaluation.
  There are three sources of \G's uncertainty:
 \begin{itemize}
-  \item Input values to each inactive branch.
+  \item The input values to each inactive branch.
     This is the largest source of uncertainty (the number of
     possibilities are exponential in the number of input wires), but
     the easiest to handle.  \HK introduce a simple trick:
@@ -196,9 +198,12 @@ To see how this can be done,
   \item \E's guess of value of \truth, which we denote by \guess.
 \end{itemize}
 
-In total, there are $b^2$ possible sets of labels ($b(b-1)$ garbage sets of labels and $b$ valid sets of labels)  that the evaluator
-could arrive at: one for each combination of $(\truth,\guess)$, the  actually taken  and
-the incorrectly guessed branches.
+In total, there are $b^2$ $(\truth, \guess)$ combinations.
+Crucially, each of these combinations leads to \E\ evaluating using a
+\emph{unique combination of a circuit and material}.
+Hence, there are $b^2$ possible sets of labels ($b(b-1)$ garbage sets of labels and $b$ valid sets of labels)  that the evaluator
+could arrive at: one for each combination of $(\truth,\guess)$, the
+active and the incorrectly guessed branches.
 %
 
 
@@ -227,7 +232,7 @@ This is the source of the $O(b^2)$ computation.
 proportional to the entire circuit.
 Instead, communication proportional to only the longest program execution
 path suffices.
-However, this improved communication comes at a cost:
+However, their improved communication comes at a cost:
 for a conditional $b$ branches, the players
 use $O(b^2)$ computation. 
 
@@ -254,13 +259,14 @@ Our contributions include:
   \item Improved space complexity.
     For $b$ branches, our algorithms require $O(\log b)$ space, an
     improvement from \HK's $O(b)$ requirement.
-    % , both in terms of memory required for
-    % garbling, and in the number of accesses.   This is much more
-    % efficient than~\HK...
-    \vlad{compare to HK20.  Probably worth
-    writing a subsection.}
   \item High concrete performance.
-   \vlad{concrete numbers, report implementation stats}
+    In total, the players together garble or evaluate the $b$ branches
+    a total of $\frac{7}{2} b\log b + 2b$ times.
+    %
+    These concrete results translate to implementation performance: for fewer
+    than $16$ branches, our wall-clock runtime is similar to that
+    of \HK. At higher branching factors, we clearly outperform prior
+    work (see \Cref{sec:eval}).
   \item
     A formalization in the \cite{CCS:BelHoaRog12} framework (as
     modified by \HK) proved
@@ -279,8 +285,6 @@ Our contributions include:
 
 \subsection{When to use \ourschemelong: a high-level costs consideration}
 \label{sec:whentouse}
-\dave{title? this doesn't seem accurate}
-\vlad{proposed candidate}
 
 We now informally discuss a broad question of
 practical importance:
@@ -304,7 +308,7 @@ in the optimization space.
 Program transformations, such as described
 in~\Cref{sec:motivationHighB}, also play a crucial role.
 %
-Further, these variables are not independent:
+These variables are not independent:
 some program transformations may lead to a blowup in the number of
 branches.
 While SGC alleviates the communication overhead of this blowup, the
@@ -338,8 +342,9 @@ the conservative side,  we choose $100$Mbps as
 ``typical'' available bandwidth.
 %
 
-On the other hand, computation is a much more available resource.  Today a commodity laptop has four physical cores. Of course, higher-end computing devices, such as desktop CPUs and GPUs have higher numbers of cores and/or per-core processing power,
-resulting in yet higher GC computation-to-transmission ratio.  Precomputation, if available, can also be seen as a way to increase available compute resourse.
+On the other hand, computation is a much more available resource.
+Today, a commodity laptop has four physical cores. Of course, higher-end computing devices, such as desktop CPUs and GPUs have higher numbers of cores and/or per-core processing power,
+resulting in yet higher GC computation-to-transmission ratio.  Precomputation, if available, can also be seen as a way to increase available compute resource.
 Crucially, stacked garbling,  even when using our more sophisticated SGC algorithms, is highly parallelizable.
 %f the GC includes conditional branching, 
 It is easy to
@@ -382,29 +387,29 @@ improve over standard GC.
 This is easy to see.  Indeed, we evaluate a given \cir\ as-is.  \G and \E together 
 run a more computationally demanding  process, garbling and evaluating 
 %and efficiently combining
-branches exactly $3.5 b \log b + 2b$ total times ($2.5 b \log b + b$ garblings and $ b \log b + b$  evaluations).  Consider a
+branches exactly $\frac{7}{2} b \log b + 2b$ total times ($\frac{5}{2} b \log b + b$ garblings and $ b \log b + b$  evaluations).  Consider a
 conditional with $b$ branches.  Classic GC will transmit $b$ branches.
 During this time, \G and \E could have instead performed $60 b$ branch garbling/evaluations. 
-\ourschemelong  garbles/evaluates $3.5 b \log b$ branches.  Thus,  the point where
+\ourschemelong  garbles/evaluates $\frac{7}{2} b \log b$ branches.  Thus,  the point where
 computation crosses over to become the bottleneck is obtained by
-solving $3.5b \log b > 60 b$, the solution to which is $b \gtrapprox 2^{17} = 131072$
+solving $\frac{7}{2}b \log b > 60 b$, the solution to which is $b \gtrapprox 2^{17} = 131072$
 branches.  Of course, this is a ``rule-of-thumb'' estimate and is based on the conservative assumptions discussed above.
 
-Note that if instead a full 1Gbps channel is available (i.e. $10\times$ of our network resource assumption),  to arrive at the same cross over  point, we would need ten times more cores than our computational resource assumption.  That equates to $20$ laptop cores; such power is available on mainstream servers.
+Note that if instead a full 1Gbps channel is available (i.e. $10\times$ of our network resource assumption),  to arrive at the same cross over  point, we would need ten times more cores than our computational resource assumption.  That equates to $20$ cores; such power is available on mainstream servers.
 
 We conclude that applying \ourschemelong\ improves wall clock
 time for nearly all reasonable baseline circuits and settings.
 
 
 \paragraph{Limits on circuit transformations imposed by computational costs.}
-Above we established that \ourschemelong\ is almost always
+Above, we established that \ourschemelong\ is almost always
 better than standard GC for circuits with branching.
 %
 It is harder to provide heuristics or
 even rough suggestions regarding which circuit transformations (cf.
 in~\Cref{sec:motivationHighB}) to apply, and how aggressively
 they should be applied in conjunction with \ourschemelong\ secure evaluation.  We
-emphasize that our computational performance improvement of SGC opens
+emphasize that our computational improvement opens
 a {\em much} wider optimization space than what was possible with the
 prior scheme~\HK.  We leave detailed investigation into this direction
 as exciting future work.

@@ -77,20 +77,20 @@ int main(int argc, char** argv) {
   th.join();
 
 
-  int n = atoi(argv[1]);
+  /* int n = atoi(argv[1]); */
 
 
-  std::vector<Circuit> cs;
-  for (std::size_t i = 0; i < n; ++i) {
-    cs.push_back(sha_netlist);
-  }
-  if (cs.size() == 1) {
-    /* std::cout << experiment(cs[0]) << '\n'; */
-    experiment(cs[0]);
-  } else {
-    /* std::cout << experiment(conditional(cs)) << '\n'; */
-    experiment(conditional(cs));
-  }
+  /* std::vector<Circuit> cs; */
+  /* for (std::size_t i = 0; i < n; ++i) { */
+  /*   cs.push_back(sha_netlist); */
+  /* } */
+  /* if (cs.size() == 1) { */
+  /*   /1* std::cout << experiment(cs[0]) << '\n'; *1/ */
+  /*   experiment(cs[0]); */
+  /* } else { */
+  /*   /1* std::cout << experiment(conditional(cs)) << '\n'; *1/ */
+  /*   experiment(conditional(cs)); */
+  /* } */
 
 
 
@@ -98,17 +98,20 @@ int main(int argc, char** argv) {
   /* /1*   cs.push_back(sha_netlist); *1/ */
   /* /1* } *1/ */
   /* /1* std::cout << experiment(conditional(cs)) << '\n'; *1/ */
-  /* for (std::size_t i = 1; i <= 64; ++i) { */
-  /*   /1* std::cout << i << " ##################\n"; *1/ */
-  /*   cs.push_back(sha_netlist); */
-  /*   if (cs.size() == 1) { */
-  /*     /1* std::cout << experiment(cs[0]) << '\n'; *1/ */
-  /*     experiment(cs[0]); */
-  /*   } else { */
-  /*     /1* std::cout << experiment(conditional(cs)) << '\n'; *1/ */
-  /*     experiment(conditional(cs)); */
-  /*   } */
-  /* } */
+
+  for (std::size_t i = 0; i <= 14; ++i) {
+    std::vector<Circuit> cs;
+    for (std::size_t j = 0; j < (1 << i); ++j) {
+      cs.push_back(sha_netlist);
+    }
+    if (cs.size() == 1) {
+      std::cout << experiment(cs[0]) << '\n';
+      /* experiment(cs[0]); */
+    } else {
+      std::cout << experiment(conditional(cs)) << '\n';
+      /* experiment(conditional(cs)); */
+    }
+  }
 
 
 /*   PRG prg; */

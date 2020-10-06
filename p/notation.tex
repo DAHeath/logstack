@@ -12,10 +12,12 @@ Our notation is mostly consistent with the notation of~\HK.
 	she, her, hers, etc.
   \item `$\cir$' is a circuit. \inpsize(\cir) computes the number of
     input wires to $\cir$.
-	\item Lowercase variables, e.g. $x, y$, refer to \emph{unencrypted} wire values.
-	That is, $x$ and $y$ are two different Boolean values held by two different wires.
-	\item Uppercase variables, e.g. $X, Y$, refer to wire labels which are the encryption of a wire value.
-	E.g., $X$ is the encryption of the value $x$.
+  \item $x \mid y$ denotes the concatenation of strings $x$ and
+    $y$.
+	% \item Lowercase variables, e.g. $x, y$, refer to \emph{unencrypted} wire values.
+	% That is, $x$ and $y$ are two different Boolean values held by two different wires.
+	% \item Uppercase variables, e.g. $X, Y$, refer to wire labels which are the encryption of a wire value.
+	% E.g., $X$ is the encryption of the value $x$.
 	% \item This work discusses \emph{projective} garbling schemes, where each wire
 	% has two labels. When the corresponding truth value for a label is known, we place the value as a superscript.
 	% For example, we use $X^0$ to refer to the encryption of the bit $0$ on wire $x$.
@@ -39,8 +41,8 @@ Our notation is mostly consistent with the notation of~\HK.
 	% \item The variables $n$ and $m$ respectively denote the number of input
 	% wires and output wires of a given circuit.
 	\item Variables that represent vectors are written in bold.
-	For example, $\vec{x}$ is a vector.
-	We access indexes of vectors using bracket notation: $\vec{x}[0]$ accesses the $0$th index of $\vec{x}$.
+	E.g., $\vec{x}$ is a vector.
+	We index vectors using bracket notation: $\vec{x}[0]$ accesses the $0$th index of $\vec{x}$.
 \item In this work, we extensively use binary branching trees.
   Suppose $t$ is such a tree. We use subscript notation $t_i$ to denote the
   $i$th leaf of $t$.
@@ -61,11 +63,13 @@ Our notation is mostly consistent with the notation of~\HK.
 	% \item $\lambda$ denotes the empty string.
 \end{itemize}
 
-In this work, we evaluate GCs with input labels that are generated independently of the GC.
+In this work, we evaluate GCs against with input labels that are generated independently of the GC.
 I.e., these independent labels do not match the GC.
 We call such labels {\em garbage labels}.
 During GC evaluation,  garbage labels propagate and must eventually  be obliviously dropped in favor of valid labels.
 We call  the process of canceling out garbage labels {\em garbage collection}.
 
-\paragraph{Assumptions.} We assume a function $H$ modeled as a random oracle (RO).  Our main~\Cref{constr:} \ourschemelong is proven in the standard model. However, higher efficiency of both base schemes and our gadgets can be achieved under the RO assumption.
+\paragraph{Assumptions.} We assume a random oracle (RO).  
+\ourschemelong is secure in the standard model. However, higher
+efficiency of both the underlying scheme and of our garbled gadgets can be achieved under the RO assumption.
 

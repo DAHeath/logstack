@@ -1,11 +1,11 @@
 \section{Correctness/Security Proofs}\label{sec:proof}
 
-We now prove the relevant properties of \ourscheme, in particular
+We now prove the relevant properties of \ourschemelong, in particular
 showing that it is correct and secure.
 We formalize our theorems in the~\cite{CCS:BelHoaRog12} framework,
 which requires a candidate garbling scheme to be \textbf{correct},
 \textbf{oblivious}, \textbf{private}, and \textbf{authentic}.
-This section shows that \ourscheme\ satisfies these properties.
+This section shows that \ourschemelong\ satisfies these properties.
 
 In addition, \HK\ introduced a new property, \textbf{stackability}, which
 formalizes the class of garbling schemes whose garblings can be
@@ -30,17 +30,17 @@ We prove security given a strongly stackable scheme.
 the state-of-the-art half-gates technique~\cite{EC:ZahRosEva15}.
 We further argue that such schemes either are strongly stackable without
 modification or can be easily adjusted.
-Hence, our implementation can securely use half-gates as its underlying
+Hence, our implementation can assume a RO and use half-gates as its underlying
 scheme to achieve high performance.
 
-We also show that \ourscheme\ is itself strongly stackable, giving
-flexibility in usage: while by design \ourscheme\ handles vectors
+We also show that \ourschemelong\ is itself strongly stackable, giving
+flexibility in usage: while by design \ourschemelong\ handles vectors
 of conditional branches, we also support arbitrarily nested
 conditional control flow without modifying the source program.
 %
 We note that this nested usage \emph{does not} give $O(b\log b)$
 computation, and so vectorized branches should favored where possible.
-% Because \ourscheme\ is strongly stackable, it is trivially
+% Because \ourschemelong\ is strongly stackable, it is trivially
 % \textbf{oblivious}~\HK,
 % and so we do not discuss obliviousness further.
 
@@ -51,7 +51,7 @@ computation, and so vectorized branches should favored where possible.
 \begin{definition}[Correctness]\label{def:correct}
   A garbling scheme is \textbf{correct} if for
   all circuits $\cir$,
-  all input strings $\cirinp$ of length $n$,
+  all input strings $\cirinp$ of length $\inpsize(\cir)$,
   and all pseudorandom seeds $S$:
   \[
     \gDe(d, \gEv(\cir, \mat,\gEn(e,\cirinp))) = \gev(\cir,\cirinp)
@@ -62,13 +62,13 @@ computation, and so vectorized branches should favored where possible.
 That is, a correct scheme implements the semantics specified by \gev.
 
 \begin{theorem}\label{theorem:correctness}
-  If \underscheme\ is correct, then \ourscheme\ is correct.
+  If \underscheme\ is correct, then \ourschemelong\ is correct.
 \end{theorem}
 \begin{proof}
   By induction on structure of $\cir$.
   \begin{itemize}
-    \item Suppose \cir\ is a netlist. Then since \ourscheme\ delegates
-      to the correct scheme \underscheme, \ourscheme\ is trivially
+    \item Suppose \cir\ is a netlist. Then since \ourschemelong\ delegates
+      to the correct scheme \underscheme, \ourschemelong\ is trivially
       correct.
     \item Suppose \cir\ is a sequence $\sequential(\cir_0, \cir_1)$.
       By induction, both $\cir_0$ and $\cir_1$ correctly propagate
@@ -77,7 +77,7 @@ That is, a correct scheme implements the semantics specified by \gev.
       translate output labels from $\cir_0$ to $\cir_1$. But this is
       the role of the translator component, which is trivially correct
       as it is implemented by garbled rows~\HK.
-    \item Suppose \cir\ is the conditional $\conditional(\vec \cir)$.
+    \item Suppose \cir\ is a conditional $\conditional(\vec \cir)$.
       Consider an arbitrary execution where the branch $\cir_\act$ is
       active.
       %
@@ -119,18 +119,19 @@ That is, a correct scheme implements the semantics specified by \gev.
       %
       With all possible garbage output labels available, garbage
       collection becomes the straightforward implementation of garbled
-      rows. In particular, consider a single corresponding output wire
-      from each branch.
-      %
-      The multiplexer first XORs together these labels.
-      Now, it uses \act\ to construct garbled rows that hold all
-      possible garbage values for this wire.
-      Thus, depending on \act, \gEv\ will decrypt exactly the garbage
-      values that were XORed into the overall sum.
-      %
-      XORing these with the overall sum leaves only the valid output.
+      rows.
+      %In particular, consider a single corresponding output wire
+      %from each branch.
+      %%
+      %The multiplexer first XORs together these labels.
+      %Now, it uses \act\ to construct garbled rows that hold all
+      %possible garbage values for this wire.
+      %Thus, depending on \act, \gEv\ will decrypt exactly the garbage
+      %values that were XORed into the overall sum.
+      %%
+      %XORing these with the overall sum leaves only the valid output.
   \end{itemize}
-  \ourscheme\ is correct.
+  \ourschemelong\ is correct.
 \end{proof}
 
 \subsection{Security}
@@ -207,14 +208,14 @@ $\lkey(A^1)$ are unrelated.
 This is achieved by requiring that the concatenation of these two
 strings is indistinguishable from a random string of the same length.
 This allows us to circumvent a problem: the \HK definition allowed labels in the underlying
-scheme to be arbitrarily related to one another.
+scheme to be arbitrarily related.
 More precisely, while point 1 requires that any particular set of labels seen by
 \E\ look random, it does not require that \emph{all labels together}
 look random.
 %
 This was problematic, because the output labels of the
 underlying scheme were used to implement garbled tables, meaning that
-the two (possibly related) labels were both used as PRF keys.
+the two possibly related labels were both used as PRF keys.
 %
 Of course, using related PRF keys is outside the scope of the standard
 PRF security definition.
@@ -229,9 +230,9 @@ This added requirement on the underlying scheme allows us to push our
 proofs through in the standard model.
 
 
-We note that standard schemes are compatible with strong stackability:
+Standard schemes are compatible with strong stackability:
 if the scheme is stackable and has randomly chosen output labels, it
-trivially satisfies this point.
+trivially satisfies our definition.
 %
 Free XOR based schemes~\cite{ICALP:KolSch08} assume that all
 pairs of labels are separated by a fixed constant $\Delta$, and so
@@ -240,19 +241,19 @@ schemes such that the final output gates return independent labels.
 %
 As a final note, while our scheme is secure in the standard model, we
 of course adopt any additional security assumptions from the chosen
-underlying scheme: e.g., instantiating \ourscheme\ with the efficient
+underlying scheme: e.g., instantiating \ourschemelong\ with the efficient
 Half Gates scheme~\cite{EPRINT:ZahRosEva14} requires us to assume the
 existence of a correlation robust hash function.
 
 \begin{theorem}\label{thm:strongstack}
-  If \underscheme\ is strongly stackable, then \ourscheme\ is strongly stackable.
+  If \underscheme\ is strongly stackable, then \ourschemelong\ is strongly stackable.
 \end{theorem}
 \begin{proof}
   By induction on the structure of \cir.
   We say `$x$ looks random' to denote that $x$ is indistinguishable from a uniform string of the same length.
   \begin{itemize}
     \item Suppose \cir\ is a netlist.
-      Then $\ourscheme$ delegates to \underscheme,
+      Then $\ourschemelong$ delegates to \underscheme,
       which is assumed to be strongly stackable.
     \item Suppose \cir\ is a sequence $\sequential(\cir_0, \cir_1)$.
       By induction,
@@ -285,7 +286,7 @@ existence of a correlation robust hash function.
       Like the translator component (see discussion of sequences
       above), both TODO
   \end{itemize}
-  \ourscheme\ is stackable.
+  \ourschemelong\ is strongly stackable.
 \end{proof}
 
 \begin{definition}[Obliviousness]\label{def:obliviousness}
@@ -314,7 +315,7 @@ immediate facts:
   Every strongly stackable scheme is oblivious.
 \end{lemma}
 \begin{theorem}\label{thm:oblivious}
-  If \underscheme\ is strongly stackable, \ourscheme\ is oblivious.
+  If \underscheme\ is strongly stackable, \ourschemelong\ is oblivious.
 \end{theorem}
 
 \begin{definition}[Authenticity]\label{def:authenticity}
@@ -336,7 +337,7 @@ immediate facts:
 \end{definition}
 
 \begin{theorem}\label{thm:authenticity}
-  If \underscheme\ is authentic, then \ourscheme\ is authentic.
+  If \underscheme\ is authentic, then \ourschemelong\ is authentic.
 \end{theorem}
 \begin{proof}
 \end{proof}
@@ -360,12 +361,13 @@ immediate facts:
 \end{definition}
 
 \begin{theorem}
-  If \underscheme\ is private and strongly stackable, then \ourscheme\ is private.
+  If \underscheme\ is private and strongly stackable, then
+  \ourschemelong\ is private.
 \end{theorem}
 \begin{proof}
   By induction on structure of $\cir$.
   \begin{itemize}
-    \item Suppose \cir\ is a netlist. Then \ourscheme\ delegates to
+    \item Suppose \cir\ is a netlist. Then \ourschemelong\ delegates to
       \underscheme\ which is assumed private.
     \item Suppose \cir\ is a sequence $\sequential(\cir_0, \cir_1)$.
       Note that the garbling of $\cir_0$ is independent of
@@ -409,6 +411,6 @@ immediate facts:
       uniform strings.
       Thus, this view is indistinguishable from the real view.
   \end{itemize}
-  \ourscheme\ is private.
+  \ourschemelong\ is private.
 \end{proof}
 

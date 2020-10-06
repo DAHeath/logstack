@@ -19,7 +19,7 @@
   $O(b^2)$ to $O(b \log b)$
    with essentially {\em no} increase in communication.
    % \vlad{our gadget is slightly larger than HK.}
-  We observe that the primary cause of the increased computation of~\HK is the
+  That the primary cause of \HK's increased computation is the
   oblivious collection of \emph{garbage labels} that emerge during the
   oblivious evaluation of inactive branches.
   Garbage is collected by a \emph{multiplexer} component that is
@@ -31,7 +31,7 @@
   Our construction is also more {\em space
   efficient}: \HK algorithms require $O(b)$ space, while ours use only
   $O(\log b)$ space.
-  This space efficiency allows even modest setups to handle huge numbers of branches.
+  This space efficiency allows even modest setups to handle large numbers of branches.
   % require storing material of each of $b^2$
   % circuits, we only need $O(|C| \log b)$ RAM.  \vlad{correct?  Also,
   % number of RAM accesses?}
@@ -45,7 +45,7 @@
 %\vlad{removed LB claims}
 
 \smallskip
-\HK assumes random oracle (RO).
+\HK assumes a random oracle (RO).
 We track the source of this need,
 formalize a simple and natural added assumption on the base garbling
 scheme,
@@ -62,5 +62,9 @@ and hence can be implemented with high efficiency.
 
 \smallskip	
 We implemented \ourschemelong (in the RO model, based on half-gates
-garbling) and report on performance.  It improves over \HK\ by factor xx.
+garbling) and report on performance.
+In terms of wall-clock time, our performance is comparable to \HK's
+for fewer than $16$ branches; for larger branching factors, our
+approach clearly outperforms \HK.
+% It improves over \HK\ by factor xx.
 \end{abstract}
