@@ -79,13 +79,10 @@ b$-bit integer that points to the active branch.
 \subsubsection{Actions and gadgets of \G.}
 
 \begin{figure}[t!]\centering\framebox{%
-\begin{minipage}{1.05\linewidth}
+\begin{minipage}{0.97\linewidth}
 \begin{itemize}
-  \item \textsc{Inputs:} \gadget takes as input the active branch id
-    \aid\ and
-    the number of branches $b$.
-  \item \textsc{Outputs:}
-    \gadget outputs a sequence of evaluator seeds that form a binary branching tree:
+  \item \textsc{Inputs:} the active branch id \aid\ and the number of branches $b$.
+  \item \textsc{Outputs:} a sequence of evaluator seeds that form a binary branching tree:
   \[
     \es_{0, b-1}, \es_{0, \frac{b-1}{2}}, \es_{\frac{b-1}{2}+1,b-1},
     \ldots, \es_0, \es_1,\ldots \es_{b-1}
