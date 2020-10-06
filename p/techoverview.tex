@@ -40,13 +40,20 @@ Consider a binary tree where the leaves are the $b$ branches
 $\cir_0,...,\cir_{b-1}$.  The tree provides an infrastructure to group branches and to unify processing.
 
 
-Fix one of $b$ choices for \guess.  In contrast with~\HK, which then considers $b$ choices for \truth independently from \guess, we define \truth\ {\em in relation} to \guess, and consider fewer \truth options.  Namely,
+Fix one of $b$ choices for \guess.  In contrast with~\HK, which then considers $b$ choices for \truth independently from \guess, we define \truth\ {\em in relation} to \guess, and consider fewer \truth options.
+Namely,
 % for each tree level $i$, 
 we  let \truth  denote the sibling subtree of \guess that contains the
 active branch (cf. notation~\Cref{sec:intuition}). 
 Given a fixed incorrect \guess, there are only $\log b$ choices for
 \truth.\footnote{We focus on garbage collection and
 consider only incorrect guesses;  managing output labels of the correctly guessed branches is straightforward and cheap.}
+While we have redefined \truth, the active branch ID \aid\ continues
+to point to the single active branch.
+%
+Our garbled gadgets compute functions of \aid.
+% In contrast to \HK, where \truth\ and the active branch ID \aid\ are
+% the same, our \truth\ is a subtree \emph{containing} \aid.
 
 For concreteness,
 %in our discussion we 
@@ -107,7 +114,12 @@ b$-bit integer that points to the active branch.
 }\label{fig:sortinghat}
 \end{figure}
 
-In the context of the example in~\Cref{fig:seed-tree}, \G  garbles branches  $\cir_0,...,\cir_7$ as follows.  \G chooses a random
+In the context of the example in~\Cref{fig:seed-tree}, \G  garbles
+branches  $\cir_0,...,\cir_7$ as follows.
+Recall, the active branch ID \aid\ is available to \G\ in form of
+garbled labels.
+% Given the labels corresponding to the active branch ID \aid,
+\G chooses a random
 seed for the root of the tree (denoted $s_{0,7}$ for the $8$-leaf tree
 in~\Cref{fig:seed-tree}), and uses it to pseudorandomly derive seeds
 for each node of the tree.  This is done in the standard manner, e.g.,
@@ -140,7 +152,8 @@ that we call \gadget.\footnote{%
   In J.K. Rowling's Harry Potter universe, the `sorting hat' is a
   magical object that assigns new students to different school houses
   based on personality.
-  Our \gadget\ `sorts' nodes of trees into two categories: those that
+  Our \gadget\ `sorts' nodes of trees into two categories based on
+  \aid: those that
   are `good' (i.e., sibling roots of the active branch) and those that
   are `bad'.
 }

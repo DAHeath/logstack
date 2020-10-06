@@ -48,9 +48,11 @@ Our notation is mostly consistent with the notation of~\HK.
   $i$th leaf of $t$.
   We use pairs of indexes to denote internal nodes of the tree.
   I.e., $t_{i, j}$ is the root of the subtree containing the leaves
-  $t_i - t_j$. $t_{i,i}$ (i.e. the node
+  $t_i .. t_j$. $t_{i,i}$ (i.e. the node
   containing only $i$) and $t_i$ both refer to the leaf: $t_{i,i} =
   t_i$.
+  It is sometimes convenient to refer to a tree by its root node
+  $\node_{i, j}$ or, when clear from context, simply by $\node$.
 	% \item We work with explicit pseudorandom seeds.
 	% % We write $a \drawnfrom{S} A$ to indicate that we pseudorandomly draw a value from the domain $A$ using the seed $S$ as a source of randomness and store the result in $a$.
 	% When a seed $S$ is used to draw multiple values, we assume that
