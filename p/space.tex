@@ -1,0 +1,80 @@
+\subsection{Memory Efficiency of \ourschemelong}
+\label{sec:memoryEfficiency}
+
+The \HK approach forces \G\ to store many intermediate
+garblings: for conditionals with $b$ branches he requires $O(b)$ space.
+In contrast, \ourschemelong\ has low space requirements: its
+algorithms run in $O(\log b)$ space.
+%
+We briefly discuss why \HK requires linear space and how our approach
+improves this.
+
+In the \HK approach, \E obtains $b-1$ \emph{good} seeds for all but the
+active branch and a bad seed for the active branch.
+%
+When \E\ then makes a particular \guess, she attempts to uncover the
+material for \guess\ by XORing the stacked material (sent by \G) with
+$b-1$ reconstructed materials; she `unstacks' her $b-1$ materials
+corresponding to all branches that are not equal to \guess.
+%
+Recall that \G\ must emulate \E\ for all combinations of $(\truth,
+\guess)$ where $\truth \neq \guess$ to compute garbage outputs.
+%
+The most intuitive way for him to proceed (\HK improves on this space
+consumption by factor $2\times$) is for him to once and for all garble all circuits using the `good'
+seeds and garble all circuits using the `bad' seeds, and to
+store all materials in two large vectors.
+Let $\mat_i$ be the good material for a branch $\cir_i$ and let $\mat'_i$ be
+the bad material.
+%
+Now let $j = \truth$ and $k = \guess$.
+To emulate all possible bad evaluations, \G\ must evaluate $\cir_k$
+using the material $\mat_k \oplus \mat_j \oplus \mat_j'$:
+i.e., he emulates \E\ when correctly unstacking all material except $M_k$
+(which she will not even attempt to unstack because she wishes to
+evaluate $\cir_k$) and $M_j$ (which she attempts to unstack, but fails
+and instead adds $\mat_j'$).
+%
+Because \G\ must consider all combinations of $j$ and $k$, it is not
+clear how \G\ can compute all values $\mat_k \oplus \mat_j \oplus
+\mat_j'$ without either (1) storing all intermediate garblings in
+$O(b)$ space or (2) repeatedly garbling each branch at great cost.
+\HK sensibly opts for the former.
+
+In constrast, because of \ourschemelong's binary branching tree
+structure, we can eagerly stack material together as soon as it is constructed
+in order to save space.
+%
+As an example, consider again the example in \Cref{fig:gbtree} where
+\E\ guesses that $\cir_0$ is active.
+%
+Recall, she garbles the entire right subtree starting from the
+seed for node $\node_{4, 7}$, and \G\ emulates this same behavior with
+the bad seed.
+%
+For both players, the material corresponding to individual circuits, say
+$M_4$ corresponding to $\cir_4$, is \emph{not interesting or useful}.
+Only the stacked material $\mat_4 \oplus .. \oplus\mat_7$ is useful for
+guessing $\cir_0$ (and more generally for guessing all circuits in the subtree
+$\node_{0, 3}$).
+Thus, instead of storing all material separately, the players both XOR
+material for subtrees together as soon as it is available.
+This trick is the basis for our low space requirement.
+
+There is one caveat to this trick:
+The `good' garbling of each branch $\cir_i$ \emph{is} useful throughout \G's
+emulation of \E.
+Hence, the straightforward procedure would be for \G\ to once and for
+all compute the good garblings of each branch and store them in a
+vector, consuming $O(b)$ space.
+%
+This is viable, and indeed has lower constants than presented
+elsewhere in this work: \G\ would invoke \gGb\ only $b \log b + b$ times.
+%
+We instead trade in some concrete time complexity in favor of
+dramatically improved space complexity.
+\G\ garbles the branches using good seeds an extra $\frac{1}{2} b\log
+b$ times, and hence calls \gGb\ a total of $\frac{3}{2} b \log b + b$
+times.
+These extra calls to $\gGb$ allow \G\ to avoid storing a large vector
+of materials, and our algorithms run in $O(\log b)$ space.

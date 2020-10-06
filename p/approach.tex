@@ -278,7 +278,9 @@ of our construction, but the reader should refer to
 \Cref{sec:techOverview} for unifying high level intuition.
 
 \subsubsection{Garbling Subtrees.}
-\begin{figure}[t]
+\begin{figure}[t!]\centering\framebox{%
+\begin{minipage}{0.97\linewidth}
+% \begin{figure}[t]
   \begin{align*}
     &\gbtree(\vec{\cir}, i, j, seed):\\
     &~~\cif~i = j:\\
@@ -300,6 +302,7 @@ of our construction, but the reader should refer to
     &~~\codecomment{Simple helper for splitting range of branches (approximately) in half.}\\
     &~~\creturn~i+\left\lfloor \frac{j-i}{2} \right\rfloor\\
   \end{align*}
+\end{minipage}}
   \caption{%
     The helper algorithm \gbtree\ starts from a single seed
     at the root of a subtree $\node_{i,j}$, derives all seeds in the
