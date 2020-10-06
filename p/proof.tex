@@ -346,7 +346,7 @@ immediate facts:
   A garbling scheme is \textbf{authentic} if for
   all circuits \cir,
   all inputs $\cirinp$ of length $n$,
-  and all poly-time adversaries \adv 
+  and all poly-time adversaries \adv\
   the following probability is negligible in $\kappa$:
   \[
     \pr{\gcirout' \neq \gEv(\cir, \mat,\gcirinp)
@@ -364,6 +364,54 @@ immediate facts:
   If \underscheme\ is authentic, then \ourschemelong\ is authentic.
 \end{theorem}
 \begin{proof}
+  By induction on the structure of the circuit $\cir$.
+  We proceed backwards across $\cir$, at
+  each step showing that $\adv$ cannot obtain valid labels
+  except by running the previous parts of the circuit.
+  \begin{itemize}
+    \item Suppose $\cir$ is a netlist. \ourschemelong delegates to
+      \underscheme which is assumed authentic.
+    \item Suppose $\cir$ is a sequence $\sequential(\cir_0, \cir_1)$.
+      By induction, \adv\ cannot obtain valid
+      output from $\cir_1$ except by running $\gEv$.
+      %
+      Furthermore, the intervening translator gadget is authentic: it
+      is constructed by masking the translator output label with a PRF call
+      keyed at the respective translator input label.
+      %
+      Thus, \adv\ cannot compute a translator output label without providing
+      a corresponding input label from the output of $\cir_0$.
+      %
+      Finally, $\cir_0$ inductively preserves authenticity.
+      %
+      Thus, the sequence is authentic.
+    \item Suppose $\cir$ is a conditional $\conditional(\cir_0, \cir_1)$.
+      %
+      First, we examine the mux. Using the same argument as for the
+      translator (the mux is built using a PRF), valid output cannot be obtained except by running $\evmux$ on valid inputs.
+
+      Inputs to the mux component are constructed by evaluating
+      each branch $\cir_i$.
+      %
+      By induction $\cir_\aid$ is authentic, and so $\adv$ cannot
+      obtain output labels from the active circuit without providing
+      corresponding input labels.
+      %
+      Note, each circuit $\cir_{i \neq \aid}$ is not supported by our
+      inductive argument, since we operate on these circuits with
+      garbage labels and material.
+      %
+      However, because the output of the multiplexer is masked by a
+      PRF call on outputs from \emph{each} branch, it suffices that
+      $\cir_\aid$ is authentic.
+
+      Finally, consider the demultiplexer. $\adv$ cannot construct valid
+      input to $\cir_\aid$ except by running $\evdem$: the demux is built
+      using a PRF.
+      %
+      Thus, the overall conditional is authentic.
+  \end{itemize}
+  \ourscheme is authentic.
 \end{proof}
 
 \begin{definition}[Privacy]\label{def:privacy}
@@ -385,13 +433,13 @@ immediate facts:
 \end{definition}
 
 \begin{theorem}
-  If \underscheme\ is private and strongly stackable, then
+  If \underscheme\ is private, authentic, and strongly stackable, then
   \ourschemelong\ is private.
 \end{theorem}
 \begin{proof}
   By induction on structure of $\cir$.
   \begin{itemize}
-    \item Suppose \cir\ is a netlist. Then \ourschemelong\ delegates to
+    \item Suppose \cir\ is a netlist. \ourschemelong\ delegates to
       \underscheme\ which is assumed private.
     \item Suppose \cir\ is a sequence $\sequential(\cir_0, \cir_1)$.
       Note that the garbling of $\cir_0$ is independent of
@@ -402,6 +450,10 @@ immediate facts:
       of $\cir_1$ (its garbled rows include labels from the input
       encoding of $\cir_1$), the information related to $\cir_1$ is
       masked by secure evaluation of a PRF.
+      %
+      Furthermore, because $\cir_0$ is authentic, there is no feasible
+      way for \adv\ to compute input labels to $\cir_1$ that cannot be
+      simulated.
       %
       Thus, the following simulator suffices:
       \begin{align*}
@@ -431,9 +483,15 @@ immediate facts:
       outputs $(\mat, \gcirinp, d)$.
       Note, labels in $d$ are chosen by the secure evaluation of a PRF
       when constructing the final layer of garbled rows in the multiplexer.
-      Thus, these labels are computationally indistinguishable from
-      uniform strings.
-      Thus, this view is indistinguishable from the real view.
+      Furthermore, the active branch $\cir_\aid$ is authentic, and
+      hence \adv\ cannot compute inputs to the multiplexer from this
+      branch that cannot be simulated.
+      %
+      Thus, undecryptable multiplexer rows are securely simulated by
+      random bits.
+      % Thus, these labels are computationally indistinguishable from
+      % uniform strings.
+      $(\mat, \gcirinp, d)$ is indistinguishable from the real view.
   \end{itemize}
   \ourschemelong\ is private.
 \end{proof}
