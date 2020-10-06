@@ -274,7 +274,7 @@ existence of a correlation robust hash function.
       input label for $\cir_1$ which, by induction, looks random.
       %
       Therefore, the ciphertexts constructed by $\gbtranslate$
-      look random, so the translation component preserves strong stackability.
+      look random, so the translation gadget preserves strong stackability.
     \item Suppose \cir\ is a conditional $\conditional(\vec \cir)$.
       By induction, each branch $\cir_i \in \vec \cir$ is strongly
       stackable.
@@ -283,8 +283,32 @@ existence of a correlation robust hash function.
       %
       It remains to show that \gadget, the demultiplexer, and the multiplexer
       preserve stackability.
-      Like the translator component (see discussion of sequences
-      above), both TODO
+      Like the translator (see discussion of sequences
+      above), these gadgets are constructed using a PRF, and hence
+      their material looks random.
+      %
+      An additional important detail is that \gadget\ outputs good
+      seeds only for the sibling subroots of the active branch \aid.
+      Recall that the good seed for each node in the binary branching
+      tree is derived from its parent's seed, so it may seem there is
+      a possibility that \E can check if seeds are related to one
+      another.
+      %
+      However, because \gadget\ gives only good seeds corresponding to
+      sibling roots of a fixed branch, all seeds seen by \E\ are
+      unrelated.
+      %
+      Finally, \E\ reconstructs, via seeds, the good garbling of each
+      circuit $\cir_{i\neq\aid}$. Thus, she sees the input encoding
+      for each branch $\cir_{i\neq\aid}$.
+      %
+      Thus, it may seem that \E\ can compare input encodings for
+      branches with that branches input labels.
+      %
+      However, the demultiplexer computes, based on \aid, garbage inputs
+      unrelated to each of these encodings, and hence the outputs of
+      the demultiplexer and the garblings of each branch are
+      unrelated.
   \end{itemize}
   \ourschemelong\ is strongly stackable.
 \end{proof}
