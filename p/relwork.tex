@@ -10,13 +10,21 @@ We focus our comparison to prior work on~\HK, and then review other related work
 
 
 \paragraph{Comparison with~\HK.}
-While the protocol of~\HK is concretely efficient, its quadratic computational cost presents a  limitation in settings where branching factor $b$ is beyond $5$ or, perhaps, $10$.  This estimate is based on the fact that on a commodity laptop and 1Gbps network, GC generation (and also evaluation by \E) is only about $24\times$ faster than its network transmission (cf. discussion in~\Cref{sec:whentouse}).  Even in very favorable for~\HK settings, where communication is {\em much} more constrained than computation, applying \HK to branching with factors beyond $\approx 20$ or $30$ is not likely to improve total computation time.  Our work pushes this boundary significantly, as discussed in~\Cref{sec:whentouse}. \vlad{depending on our numbers, we could cite~\HK relatively low reported performance.}
+As discussed in~\Cref{sec:motivationHighB}, programs with conditionals with high branching factor may be a result of program transformations aimed at optimizing GC/SGC performance.  
+While the protocol of~\HK is concretely efficient, its quadratic computational cost presents a  limitation even in settings with  relatively  modest branching factor $b$.  This significantly limits the scope of program transformations which will be effective for SGC.
 
-Above we only discussed the garbling costs in terms of the number of circuits processed (i.e. garbled or evaluated).  Crucially, memory management is a significant performance factor in GC in general, and in particular in~\HK garbling.  Indeed, retrieving an already-garbled material from RAM may take similar or longer time than regarbling from scratch while operating in cache.
 
-In addition to significantly improving computation cost (i.e. number of calls to \Gb\ and \Ev), our approach offers {\em dramatically} better memory utilization, as we discuss in~\Cref{sec:ourContrib}.  Quadratic construction of~\HK requires keeping track of a quadratic number of garbled circuits \vlad{to check}, while only XXX GCs are in memory at a time.  We discuss this aspect in technical detail in~\Cref{sec:memoryEfficiency}.
+Our work achives total computational cost proportional to $3.5 b \log b$, and  effectively removes the computational overhead of the SGC technique as a constraining consideration\footnote{We stress that  branches must still be garbled, and extreme program transformations, such as stacking {\em all} possible program control flows, may be impractical computationally due to the exponential number of possible branches.}, as discussed in~\Cref{sec:whentouse}. 
 
-In sum, as discussed at length in~\Cref{sec:whentouse,sec:memoryEfficiency}, we essentially eliminate the concern of increased computation due to Stacked Garbling for standard settings (1 Gbps network, commodity laptop computing device), and open the door to the possibility of applying a large class of efficiency-improving program transformations on the evaluated program.
+%Above we only discussed the garbling costs in terms of the number of circuits processed (i.e. garbled or evaluated).  
+Crucially, memory management is a significant performance factor in GC in general, and in particular in~\HK garbling.  Indeed, retrieving an already-garbled material from RAM may take similar or longer time than regarbling from scratch while operating in cache.
+In addition to significantly improving computation cost (i.e. number of calls to \Gb\ and \Ev), our approach offers {\em dramatically} better memory utilization, as we discuss in~\Cref{sec:ourContrib}.  Quadratic construction of~\HK requires keeping a quadratic number of garbled circuits in RAM.  For larger circuits this may quickly overwhelm a typical machine.  For example, a $1$M AND-gate circuit occupies $32$MB in RAM.  For $16$ branches, this results in $16^2\cdot32$MB = $8,192$MB, surpassing RAM of a typical laptop and either crashing or drastically reducing performance due to disk swapping.  In contrast, our RAM consumption in the above setting is ??? MB. Even in the case of thousands or millions of branches of $1$M gates, we will be comfortably within standard laptop RAM sizes: \vlad{GIVE EXAMPLE}.   We discuss this aspect in technical detail in~\Cref{sec:memoryEfficiency}.
+
+This analysis is reflected in the charts presented in the Evaluation (\Cref{sec:evaluation}).   
+
+In sum, as discussed at length in~\Cref{sec:whentouse,sec:memoryEfficiency,sec:evaluation}, we essentially eliminate the concern of increased computation due to Stacked Garbling for typical settings 
+%(1 Gbps network, commodity laptop computing device)
+and open the door to the possibility of applying a large class of efficiency-improving program transformations on the evaluated program.
 
 
 
@@ -26,7 +34,7 @@ In sum, as discussed at length in~\Cref{sec:whentouse,sec:memoryEfficiency}, we 
  
  
 \paragraph{Universal circuits.}
-\vlad{needs adjustments as we address wider branching and UC potentially catches up better than \HK.}
+
 We use cryptographic techniques to reduce the cost of conditionals.  Our focus is the reduction of communication to that corresponding to the longest branch (SGC), while keeping the computational cost low.
 A related direction attempts to instead reduce such 2PC cost by choosing alternate Boolean circuit representations.
 Universal circuits (UCs) can be \emph{programmed} to implement any circuit in the entire universe of circuits of a given size $n$~\cite{STOC:Valiant76}.
@@ -36,12 +44,13 @@ recent work achieves size $\approx 4.5 |C| \log |C|$~\cite{EPRINT:LipMohSad16,EC
 UCs implement conditionals by programming the UC to be the taken branch. 
 When the GC generator knows the evaluated branch, the cost of UC programming is free as the generator directly programs the UC; otherwise programming can be acheived by transferring the right garbled table via OT, as, e.g., proposed in~\cite{AC:KenKolWil17}.   This causes further $\approx 5\times$ overhead.
 
-There are several shortcomings of this approach.  Firstly,  $5\cdot 4.5 |C| \log |C|$ (and even $4.5 |C| \log |C|$) is a significant {\em communication} cost, compared to our cost $|C|$.  For example, even for branches with only $2^{10}$ gates, the UC is $4.5 \cdot 10 = 45$ times larger than a single branch. 
+There are several shortcomings of this approach.  Firstly,  $5\cdot 4.5 |C| \log |C|$ %(and even $4.5 |C| \log |C|$ cost of the free programming case) 
+is a significant {\em communication} cost, compared to our cost $|C|$.  For example, even for branches with only $2^{10}$ gates, the UC is $5 \cdot 4.5 \cdot 10 = 225$ times larger than a single branch. 
 For typical conditionals it is often much cheaper to separately encrypt and send each branch. 
 Further, general branching implementation for GC proposed in~\cite{AC:KenKolWil17} is not constant-round, and requires a round of communiction for every sequential conditional.
 
 
-%Focusing specifically on branching,~\cite{AC:KenKolWil17} proposed a generalization of UCs called \emph{set} universal circuits ($\cal S$-UCs).
+Focusing specifically on branching,~\cite{AC:KenKolWil17} proposed a generalization of UCs called \emph{set} universal circuits ($\cal S$-UCs).
 An $\cal S$-UC implements a fixed set of circuits $\cal S$ rather than an entire size-$n$ universe.
 \cite{AC:KenKolWil17} focuses on the special case where $|\cal S|$ is small, capturing the case where $\cal S$ is a set of conditional branches.
 Their approach applies heuristics to embed $\cal S$ into one programmable circuit.
@@ -56,7 +65,7 @@ However, some sets did not improve over their original representations.  Our wor
 Kolesnikov~\cite{AC:Kolesnikov18} was the first to separate the GC {\em material} from the topology and proposed improved GC branching for the case when the generator \G knows the executed branch.  A subsequent work~\cite{EC:HeaKol20} considers a complementary setting where the GC evaluator \E knows the executed branch, and uses it to construct efficient ZK proofs for circuits with branching.
 Our work follows the line of work initated by~\cite{AC:Kolesnikov18,EC:HeaKol20}; it is general 2PC and is constant-round.
 
-
+Designing efficient garbling schemes under standard assumptions (i.e. using only PRFs) is an extremely valuable research direction.  Most recent work~\cite{CCS:GLNP15} impressively implements garbled table generation and evaluation with the speed similar to that under fixed-key AES.  Additionally, unable to use Free XOR~\cite{ICALP:KolSch08}, which requires circularity assumptions~\cite{TCC:CKKZ12}, ~\cite{CCS:GLNP15} implement XOR gates with one garbled row and AND gates with two rows.
 
 
 
