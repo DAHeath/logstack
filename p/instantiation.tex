@@ -1,6 +1,28 @@
 \section{Instantiation}\label{sec:instantiation}
 
-\begin{itemize}
-  \item If there is an implementation, explain the details here.
-  \item If there is an experiment, explain how it was performed here.
-\end{itemize}
+We implemented  \ourscheme in $\sim1500$ lines of C++ and used it to instantiate a semihonest 2PC protocol.
+We instantiated \underscheme\ using the half-gates
+technique~\cite{EC:ZahRosEva15}, allowing high
+concrete performance.
+Our implementation thus relies on non-standard assumptions.
+%
+We use computational security parameter $\kappa=127$; the $128$th bit is reserved for point and permute.
+
+Our implementation spawns additional threads to make use of inherent
+parallelism available in $\gbcond$ and $\evcond$.
+
+In the following section, we discuss an experimental evaluation of our
+implementation.
+All experiments were performed on a MacBook Pro laptop with an Intel
+Dual-Core i5 3.1 GHz processor and 8GB of RAM.
+%
+Our chosen benchmark involves the two players securely computing a
+conditional composition of many copies of the SHA-256 circuit.
+%
+It is, of course, unrealistic that a conditional would have the same
+circuit in each branch. However, we choose this benchmark because
+SHA-256 evaluations have become somewhat of a community standard and because our
+goal is only to analyze \ourschemelong's performance.
+%
+We ensure that our implementation does not cheat: it cannot recognize
+that the branches are the same and hence cannot shortcut the evaluation.
