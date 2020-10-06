@@ -31,6 +31,10 @@ double experiment(const Circuit& c) {
     }));
   }
 
+  /* std::cout << (genChannel->counter + evalChannel->counter) << '\n'; */
+  /* genChannel->counter = 0; */
+  /* evalChannel->counter = 0; */
+
   return std::accumulate(results.begin(), results.end(), 0.0)/results.size();
 }
 
@@ -66,27 +70,45 @@ int main(int argc, char** argv) {
 
 
   std::thread th { [&] {
-    genChannel = new emp::NetIO(nullptr, 55556);
+    genChannel = new emp::NetIO(nullptr, 55556, true);
   }};
   sleep(1);
-  evalChannel = new emp::NetIO("127.0.0.1", 55555);
+  evalChannel = new emp::NetIO("127.0.0.1", 55555, true);
   th.join();
 
 
+  int n = atoi(argv[1]);
+
+
   std::vector<Circuit> cs;
-  /* for (std::size_t i = 0; i < 128; ++i) { */
-  /*   cs.push_back(sha_netlist); */
-  /* } */
-  /* std::cout << experiment(conditional(cs)) << '\n'; */
-  for (std::size_t i = 1; i <= 64; ++i) {
-    /* std::cout << i << " ##################\n"; */
+  for (std::size_t i = 0; i < n; ++i) {
     cs.push_back(sha_netlist);
-    if (cs.size() == 1) {
-      std::cout << experiment(cs[0]) << '\n';
-    } else {
-      std::cout << experiment(conditional(cs)) << '\n';
-    }
   }
+  if (cs.size() == 1) {
+    /* std::cout << experiment(cs[0]) << '\n'; */
+    experiment(cs[0]);
+  } else {
+    /* std::cout << experiment(conditional(cs)) << '\n'; */
+    experiment(conditional(cs));
+  }
+
+
+
+  /* /1* for (std::size_t i = 0; i < 128; ++i) { *1/ */
+  /* /1*   cs.push_back(sha_netlist); *1/ */
+  /* /1* } *1/ */
+  /* /1* std::cout << experiment(conditional(cs)) << '\n'; *1/ */
+  /* for (std::size_t i = 1; i <= 64; ++i) { */
+  /*   /1* std::cout << i << " ##################\n"; *1/ */
+  /*   cs.push_back(sha_netlist); */
+  /*   if (cs.size() == 1) { */
+  /*     /1* std::cout << experiment(cs[0]) << '\n'; *1/ */
+  /*     experiment(cs[0]); */
+  /*   } else { */
+  /*     /1* std::cout << experiment(conditional(cs)) << '\n'; *1/ */
+  /*     experiment(conditional(cs)); */
+  /*   } */
+  /* } */
 
 
 /*   PRG prg; */
