@@ -186,6 +186,7 @@ With our syntax established, we are ready to present our algorithms.
   Definitions for each algorithm are listed in \Cref{fig:scheme}.
 \end{construction}
 
+\vlad{all properties are undefined.  Should we postpone theorem 1?  Or just add a forward pointer?}
 Theorems and lemmas that follow imply the following core theorems:
 \begin{theorem}
   Let $\underscheme$ be a garbling scheme that is
@@ -200,17 +201,17 @@ Theorems and lemmas that follow imply the following core theorems:
   Let $\underscheme$ be a garbling scheme satisfying the following
   property:
   \begin{itemize}
-    \item Let $\cir$ be an arbitrary circuit and let $\nmat$ be the size of
+    \item Let $\cir$ be an arbitrary circuit and let $s$ be the size of
       material generated invoking $\underscheme.\gGb$ on $\cir$.
-      Then both $\underscheme.\gEv$ and $\underscheme.\gGb$, invoked
-      on $\cir$, run in $O(\nmat)$ time and $O(\nmat)$ space.
+      Let both $\underscheme.\gEv$ and $\underscheme.\gGb$, invoked
+      on $\cir$, run in $O(s)$ time and $O(s)$ space.
   \end{itemize}
   Then \Cref{ourconstr} instantiated with $\underscheme$ satisfies the
   following property.
   \begin{itemize}
-    \item Let $\vec{\cir}$ be an arbitrary vector of $b$ circuits. Let $\nmat$ be
+    \item Let $\vec{\cir}$ be  vector of $b$ arbitrary circuits. Let $\nmat$ be
       the maximum size of the garblings constructed by calling
-      $\underscheme.\gGb$ on each of these $b$ branches.
+      $\underscheme.\gGb$ on each of these $b$ circuits.
       Then both $\ourscheme.\gEv$ and $\ourscheme.\gGb$, invoked on
       $\conditional(\vec{\cir})$, run in
       $O(\nmat b \log b)$ time and $O(\nmat \log b$) space.
