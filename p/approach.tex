@@ -262,8 +262,13 @@ to an extended discussion of \evcond\ and \gbcond~(c.f. \Cref{sec:approach-cond}
     We thus implement a \emph{translation} component ($\evtranslate$
     and $\gbtranslate$) that implements via garbled rows
     straightforward translation from one encoding to another.
-    \dave{Add note about standard model and PRF to implement
-    translation}
+    %
+    Our scheme securely implements the translator, and all other
+    gadgets, using a PRF (\HK used an RO).
+    %
+    This simplification is possible because of the stronger
+    property, strong stackability, that we require
+    of the underlying garbling scheme~(see \Cref{sec:proof}).
 \end{itemize}
 
 \subsection{Algorithms for Handling of Conditionals}\label{sec:approach-cond}
@@ -584,19 +589,9 @@ lemma for arbitrary numbers of branches:
   \gbtree~(\Cref{lemma:gbtreespace}).
 \end{proof}
 
-\subsubsection{Garbling Conditionals}
-
-\begin{lemma}\label{lemma:gbcondtime}
-\end{lemma}
-\begin{proof}
-\end{proof}
-
-\begin{lemma}\label{lemma:gbcondspace}
-\end{lemma}
-\begin{proof}
-\end{proof}
-
-\begin{figure}[t]
+\subsubsection{Garbling Conditionals.}
+\begin{figure}[t!]\centering\framebox{%
+\begin{minipage}{0.97\linewidth}
   \begin{align*}
     &\gbcond(\vec{\cir}, S):\\
     &~~b \gets | \vec{\cir} |\\
@@ -604,8 +599,8 @@ lemma for arbitrary numbers of branches:
     &~~s \gets \mathtt{DeriveSeedTree}(S, b)\\
     &~~\codecomment{Sample an input encoding for the conditional.}\\
     &~~e \gets \genprojection(S, n)\\
-    &~~\codecomment{Parse encoding into encoding of active branch
-    index and encoding of rest of input.}\\
+    &~~\codecomment{Parse encoding into encoding of $\aid$
+    and encoding of rest of input.}\\
     &~~e_\aid\mid e' \gets e\\
     &~~\codecomment{Garble \gadget\ based on the encoding of \aid.}\\
     &~~\codecomment{This outputs material as well as the tree of all
@@ -620,15 +615,18 @@ lemma for arbitrary numbers of branches:
     &~~\Lambda_{out} \gets \computegarbage(\vec{\cir}, M_{cond}, \Lambda_{in}, s, s')\\
     &~~\codecomment{The demultiplexer collects garbage outputs.}\\
     &~~\mat_{mux} \gets \gbmux(e_\aid, d, \vec{d}, \Lambda_{out})\\
-    &~~\creturn~(\mat_\gadget \mid \mat_{dem} \mid \mat_{cond} \mid \mat_{mux}, e, d)
-  \end{align*}
+    &~~\creturn~(\mat_\gadget \mid \mat_{dem} \mid \mat_{cond} \mid
+    \mat_{mux}, e, d)\\
+\end{align*}
+\end{minipage}}
   \caption{%
     The algorithm for garbling a conditional vector.
     Given $b$ branches, \gbcond\ returns (1) the stacked material, (2)
     the input encoding string, (3) all $b$ output decoding strings,
     and (4) all $b\log b$ possible garbage output label vectors.
-  }
+  }\label{fig:gbcond}
 \end{figure}
+
 
 \begin{figure}
   \begin{align*}
@@ -644,7 +642,7 @@ lemma for arbitrary numbers of branches:
     &~~~~~~\codecomment{and accumulate garbage outputs into
     $\Lambda_{out}$.}\\
     &~~~~~~acc \gets \mat_{i,i}\\
-    &~~~~~~\cfor~k \in 0..|\log b|:\\
+    &~~~~~~\cfor~k \in 0..|\vec{\mat}'|-1:\\
     &~~~~~~~~\codecomment{Emulate all possible bad evaluations of $\cir_i$.}\\
     &~~~~~~~~acc \gets acc \oplus \vec{\mat}'[k]\\
     &~~~~~~~~\Lambda_{out}[i][k] \gets \gEv(\vec{\cir}[i], acc, \Lambda_{in}[k])\\
@@ -677,5 +675,122 @@ lemma for arbitrary numbers of branches:
     The algorithm outputs $\Lambda_{out}$, the vector (length $b$) of
     vectors (each length $\log b$) of output labels from each
     branch.
-  }
+  }\label{fig:computegarbage}
 \end{figure}
+
+Finally, we formalize \G's procedure for handling vectors of
+conditional branches, \gbcond~(\Cref{fig:gbcond}).
+%
+\begin{enumerate}
+  \item \gbcond\ starts by recursively deriving a binary branching tree of
+good seeds by calling $\mathtt{DeriveSeedTree}$. This call just uses a PRF
+to recursively derive seeds using the standard trick.
+%
+\item \gbcond\ invokes $\genprojection$ to select a uniform input
+encoding $e$: $e$ is the vector of pairs of labels that are
+valid input labels for the overall conditional.
+%
+\item \gbcond\ uses $\gadget.\gGb$ to compute garbled rows for
+  $\gadget$ and also to compute all possible `bad' seeds: \G\ needs
+  these bad seeds to emulate \E\ when making a bad guess.
+%
+\item \gbcond\ uses $\gbtree$ to compte the stacked material
+$\mat_{cond}$ starting from the root of the seed tree.
+$\mat_{cond}$ is the long string that \G\ ultimately sends to \E.
+%
+\item \gbcond\ calls $\gbdem$ to compute the demultiplexer garbled
+  rows.  This call also returns the garbage input labels for each
+  branch; essential information that allows \G\ to emulate \E.
+\end{enumerate}
+With this accomplished, \gbcond's remaining task is to encrypt the
+garbage collecting multiplexer.
+However, as we have argued throughout this work, it is not clear how
+this can be achieved unless \G\ \emph{knows all garbage outputs} that
+\E\ might compute.
+%
+Thus, \gbcond\ first invokes \computegarbage
+(\Cref{fig:computegarbage}, a procedure which
+emulates all of \E's bad guesses.
+
+\computegarbage\ delegates to the recursive subprocedure
+\computegarbage'. This recursive procedure walks down the tree,
+maintaining two key variables: (1) $\mat_{i,j}$ holds the correct
+material for the current subtree $\node_{i,j}$ and (2) $\vec{\mat}'$
+holds a vector of bad materials of the incorrectly garbled sibling
+roots of $\node_{i,j}$.
+%
+In the general case, these variables are simply appropriately updated
+via calls to $\gbtree$.
+In the base case, the garbage materials for all sibling roots are now
+available.
+Additionally, all garbage inputs into each branch are available in the
+vector $\Lambda_{in}$.
+%
+Thus, in the base case we can compute all garbage outputs for each
+branch by calling \gEv\ on the proper combinations of garbage material
+and labels.
+%
+We store all garbage outputs into the vector $\Lambda_{out}$, which is
+returned by the overall procedure, and then ultimately used by
+\gbcond\ to call $\gbmux$.
+
+\paragraph{Efficiency:} Like \evcond, we start with a concrete claim
+of conditionals branching factors that are powers of two:
+\begin{lemma}\label{lemma:gbcondtime}
+  Let $b = 2^k$ for $k \in \mathbb{N}$.
+  Let $\vec{\cir}$ be a vector of $b$ circuits and $S \in \{0,
+  1\}^\kappa$ be a string.
+  $\gbcond(\vec{\cir}, S)$ calls \gGb\ $\frac{3}{2}b \log b + b$ times and calls
+  $\gEv$ $b\log b$ times.
+\end{lemma}
+\begin{proof}
+  First, we handle the $b$ \gGb\ calls. These $b$ calls arise from the
+  top-level call to $\gbtree$ in $\gbcond$.
+  The remaining $\frac{3}{2} b \log b$ calls come from
+  \computegarbage.
+  %
+  Our argument is similar to that of \Cref{lemma:evcondtime}:
+  at each level of the binary branching tree, $\computegarbage$ calls
+  $\gGb$ $\frac{3}{2}b$ times (via each node's three calls to \gbtree\
+  on half of the node's ancestors).
+  Since there are $\log b$ levels in the tree, $\computegarbage$ calls
+  \gGb\ a total of $\frac{3}{2}b \log b$ times.
+
+  All calls to $\gEv$ also arise from $\computegarbage$.
+  In particular, $\gEv$ calls occur in the base case (reached once per
+  branch).
+  Each branch is evaluated $\log b$ times: once per appropriate
+  combination of garbage material. Since each leaf has $\log b$
+  sibling roots, the vector $\vec{\mat}'$ has $\log b$ members.
+  %
+  Hence, we invoke $\gEv$ a total of $b \log b$ times.
+\end{proof}
+
+By essentially the same argument, the following asymptotic claims holds
+for conditionals with arbitrary branching factors:
+\begin{lemma}\label{lemma:gbcondtime-general}
+  Let $\vec{\cir}$ be a vector of $b$ circuits and $S \in \{0,
+  1\}^\kappa$ be a string.
+  $\gbcond(\vec{\cir}, S)$ calls \gGb\ $O(b \log b)$ times and calls
+  $\gEv$ $O(b\log b)$ times.
+\end{lemma}
+
+Finally, \gbcond\ runs in logarithmic space:
+\begin{lemma}\label{lemma:gbcondspace}
+  Let $\vec{\cir}$ be a vector of $b$ circuits and $S \in \{0, 1\}^\kappa$ be a string.
+  If $\gGb$ runs in $O(\nmat)$ space, then
+  $\gbcond(\vec{\cir}, S)$ runs in $O(\nmat \log b)$ space.
+\end{lemma}
+\begin{proof}
+  Like $\evcond$, \gbcond\ largely consumes space due to calls to
+  $\gbtree$. However, by \Cref{lemma:gbtreespace}, each of these calls
+  runs in $O(\nmat \log b)$ space.
+  %
+  Additionally, \computegarbage\ maintains a vector of material
+  $\vec{\mat}'$.
+  However, this vector's size is bounded by the depth of the tree: we
+  concatenate one material to the vector at each recursive call
+  site.
+  Hence, $\vec{\mat}'$ holds $O(\log b)$ elements and hence has
+  $O(\nmat \log b)$ size.
+\end{proof}
