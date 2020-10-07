@@ -140,6 +140,8 @@ follows the line of work initated
 by~\cite{AC:Kolesnikov18,EC:HeaKol20}; it is general 2PC and is
 constant-round.
 
+As discussed in~\HK, an interactive protocol, such as the output selection protocol of~\cite{AC:Kolesnikov18}, may be used for computationally efficient (linear in $b$) garbage collection.  However, a communication round is added for each exit of the conditional.  In many scenarios a non-interactive GC 2PC is preferred, which is the focus of this work.
+
 Designing efficient garbling schemes under standard assumptions (i.e.
 using only PRFs) is a valuable research direction.  The most
 recent work~\cite{CCS:GLNP15} impressively implements garbled table
