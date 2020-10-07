@@ -310,12 +310,15 @@ focus only on branching and leave the handling of low level gates to
 another \emph{underlying} garbling scheme, \underscheme.
 \HK\ assumes nothing about \underscheme except that it satisfies the standard
 \cite{CCS:BelHoaRog12} properties, as well as their {\em stackability} property.
-Assuming only  these properties does not preclude \underscheme's
-labels being related to each other, which presents problems in the
+However, they do not preclude \underscheme's
+labels from being related to each other, which presents problems in the
 standard model. \HK handles the possible use of related keys by using
-a RO to construct their garbled gadgets.
+a RO.
 
-We introduce a stronger requirement on \underscheme, which we call {\em strong stackability}.  Informally, it additionally requires that {\em all} output labels of \underscheme used in key derivation look uniformly random.  We show that this is sufficient for security in the standard model.
+We introduce a stronger requirement on \underscheme, which we call
+{\em strong stackability}.  Informally, we additionally require that
+{\em all} output labels of \underscheme
+uniformly random.  This is sufficient to prove security in the standard model.
 
 Of course, RO-based security theorems and proofs also work (and we explicitly claim them), and our gadgets could be slightly optimized in a natural manner under this assumption.
 

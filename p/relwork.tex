@@ -77,53 +77,12 @@ efficiency-improving program transformations on the evaluated program.
 
 
 \paragraph{Universal circuits.}
-
-We use cryptographic techniques to reduce the cost of conditionals.
-Our focus is the reduction of communication to that corresponding to
-the longest branch (SGC), while keeping the computational cost low.
-A related direction attempts to instead reduce such 2PC cost by
-choosing alternate Boolean circuit representations.  Universal
-circuits (UCs) can be \emph{programmed} to implement any circuit in
-the entire universe of circuits of a given size
-$n$~\cite{STOC:Valiant76}.  Researchers continue to search for smaller
-UC constructions; recent work achieves size $\approx 4.5 |C| \log
-|C|$~\cite{EPRINT:LipMohSad16,EC:KisSch16,AC:GunKisSch17,EPRINT:ZYZL19,EPRINT:AGKS19}.
-%
-UCs implement conditionals by programming the UC to be the taken
-branch.  When the GC generator knows the evaluated branch, the cost of
-UC programming is free as the generator directly programs the UC;
-otherwise programming can be achieved by transferring the right
-garbled table via OT, as, e.g., proposed in~\cite{AC:KenKolWil17}.
-This causes further $\approx 5\times$ overhead.
-
-There are several shortcomings of this approach.  Firstly,  $5\cdot
-4.5 |C| \log |C|$ %(and even $4.5 |C| \log |C|$ cost of the free
-programming case) is a significant {\em communication} cost, compared
-to our cost $|C|$.  For example, even for branches with only $2^{10}$
-gates, the UC is $5 \cdot 4.5 \cdot 10 = 225$ times larger than a
-single branch.  For typical conditionals it is often much cheaper to
-separately encrypt and send each branch.  Further, general branching
-implementation for GC proposed in~\cite{AC:KenKolWil17} is not
-constant-round, and requires a round of communiction for every
-sequential conditional.
-
-
-Focusing specifically on branching,~\cite{AC:KenKolWil17} proposed a
-generalization of UCs called \emph{set} universal circuits ($\cal
-S$-UCs).  An $\cal S$-UC implements a fixed set of circuits $\cal S$
-rather than an entire size-$n$ universe.  \cite{AC:KenKolWil17}
-focuses on the special case where $|\cal S|$ is small, capturing the
-case where $\cal S$ is a set of conditional branches.  Their approach
-applies heuristics to embed $\cal S$ into one programmable circuit.
-\cite{AC:KenKolWil17} reports the performance of this heuristic for
-specific sets of circuits, achieving up to $6\times$ GC size reduction
-for $32$ branches.  However, some sets did not improve over their
-original representations.  Our work always achieves size reduction to
-that of the single (largest) branch. In the~\cite{AC:KenKolWil17}
-example, we achieve up to $32\times$ GC size reduction for $32$
-branches and requires no per-gate overhead, which is significant
-in~\cite{AC:KenKolWil17} (about $22$ garbled rows per gate).  
-
+An alternate technique for handling conditional branching is to
+implement a \emph{universal circuit} that can represent any branch in
+the conditional.
+We discuss universal circuits in more detail in Supplementary Material.
+In short, SGC is a more practical approach to conditional branching in
+most scenarios.
 
 \paragraph{Other related work.}
 
@@ -131,33 +90,27 @@ in~\cite{AC:KenKolWil17} (about $22$ garbled rows per gate).
 %computation, but are not GC/constant-round 2PC.  
 
 Kolesnikov~\cite{AC:Kolesnikov18} was the first to separate the GC
-{\em material} from the topology and proposed improved GC branching
-for the case when the generator \G knows the executed branch.  A
-subsequent work~\cite{EC:HeaKol20} considers a complementary setting
-where the GC evaluator \E knows the executed branch, and uses it to
+{\em material} from circuit topology.
+This separation was used to improve GC branching
+given that the GC generator \G knows the active branch.
+Subsequently, \cite{EC:HeaKol20} considered a complementary setting
+where the GC evaluator \E knows the active branch, and used it to
 construct efficient ZK proofs for circuits with branching.  Our work
-follows the line of work initated
+follows the line of work initiated
 by~\cite{AC:Kolesnikov18,EC:HeaKol20}; it is general 2PC and is
 constant-round.
 
-As discussed in~\HK, an interactive protocol, such as the output selection protocol of~\cite{AC:Kolesnikov18}, may be used for computationally efficient (linear in $b$) garbage collection.  However, a communication round is added for each exit of the conditional.  In many scenarios a non-interactive GC 2PC is preferred, which is the focus of this work.
+As discussed in~\HK, interaction, such as via the output
+selection protocol of~\cite{AC:Kolesnikov18}, can be used to collect
+garbage efficiently (computation linear in $b$).
+However, a communication round is added for each conditional branch.
+In many scenarios, non-interactive 2PC (such as what we achieve) is preferred.
 
 Designing efficient garbling schemes under standard assumptions (i.e.
-using only PRFs) is a valuable research direction.  The most
-recent work~\cite{CCS:GLNP15} impressively implements garbled table
+using only PRFs) is a valuable research direction.
+\cite{CCS:GLNP15} impressively implements garbled table
 generation and evaluation with the speed similar to that of
 fixed-key AES.
 Additionally, \cite{CCS:GLNP15} cannot use the Free XOR technique~\cite{ICALP:KolSch08}, which requires circularity
 assumptions~\cite{TCC:CKKZ12}, but nevertheless implement XOR Gates
 with only one garbled row and AND gates with two rows.
-
-
-
-\ignore{\item The conditional branches are \emph{nested}.  That is,
-  instead of organizing $b$ branches as a vector, we organize them
-  into a binary tree.  Suppose \E guesses that a particular branch
-  $\cir_i$ is taken, while in fact $\cir_j$, a member of a different
-  subtree, is taken.  The key idea of our approach is that we ensure
-  that when \ev garbles the entire subtree containg $\cir_j$ but not
-  $\cir_i$, she computes the same material, regardless of
-$j$.\todo{intuition still unclear} }

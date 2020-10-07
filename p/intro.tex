@@ -30,7 +30,7 @@ hence must pay $O(b^2)$ total computation.
 In contrast, standard garbling uses computation linear in the number
 of branches.
 
-In this work, we present a new construction for SGC that incurs
+In this work, we present a new SGC construction that incurs
 only $O(b \log b)$ computation for both players while
 retaining the important communication improvement of \HK.
 %
@@ -39,8 +39,8 @@ requires the generator to store $O(b)$ intermediate garblings, both \E and \G in
 construction use only $O(\log b)$ space.
 %
 Finally, the construction features low constants and hence opens the
-door to using SGC even in the presence of very high branching factors
-without computation becoming prohibitive.
+door to using SGC even in the presence of high branching factors
+without prohibitive computation.
 % Next, we argue that
 % efficient  support for high branching factor has wide applications in
 % MPC.
@@ -306,12 +306,12 @@ Since
 (4) SGC improves communication for programs with conditional behavior,
 SGC plays an important role in answering this question.
 %
-Of course, the chosen cryptographic technique is not the only variable
+Of course, the cryptographic technique is not the only variable
 in the optimization space.
 Program transformations, such as described
 in~\Cref{sec:motivationHighB}, also play a crucial role.
 %
-These variables are not independent:
+These variables are related:
 some program transformations may lead to a blowup in the number of
 branches.
 While SGC alleviates the communication overhead of this blowup, the
@@ -326,8 +326,9 @@ using \ourschemelong over standard GC will \emph{almost always improve
   performance.}
 The rest of this section argues this claim.
 
-\paragraph{Assumption: computation vs communication.} 
-To discuss the best strategy for applying \ourschemelong, we establish
+% \paragraph{Assumption: computation vs communication.} 
+\paragraph{Computation vs communication.} 
+To discuss how to best apply \ourschemelong, we establish
 approximate relative costs of GC computation and communication. 
 
  Based
@@ -391,7 +392,9 @@ approximated speed ratio of GC generation/transmission, and with a few caveats
 described next, using \ourschemelong\ for branching will {\em always}
 improve over standard GC. 
 
-This is easy to see.  Indeed, we evaluate a given \cir\ as-is.  \G and \E together 
+This is easy to see.
+% Indeed, we evaluate a given \cir\ as-is.
+\G and \E together 
 run a more computationally demanding  process, garbling and evaluating 
 %and efficiently combining
 branches exactly $\frac{7}{2} b \log b + 2b$ total times ($\frac{5}{2} b \log b + b$ garblings and $ b \log b + b$  evaluations).  Consider a
