@@ -40,8 +40,8 @@ Our notation is mostly consistent with the notation of~\HK.
 	% for branch $\cir_0$.
 	% \item The variables $n$ and $m$ respectively denote the number of input
 	% wires and output wires of a given circuit.
-	\item Variables that represent vectors are written in bold.
-	E.g., $\vec{x}$ is a vector.
+	\item Variables that represent vectors are denoted  
+	 $\vec{x}$.
 	We index vectors using bracket notation: $\vec{x}[0]$ accesses the $0$th index of $\vec{x}$.
 \item In this work, we extensively use binary branching trees.
   Suppose $t$ is such a tree. We use subscript notation $t_i$ to denote the
@@ -51,27 +51,28 @@ Our notation is mostly consistent with the notation of~\HK.
   $t_i .. t_j$. $t_{i,i}$ (i.e. the node
   containing only $i$) and $t_i$ both refer to the leaf: $t_{i,i} =
   t_i$.
-  It is sometimes convenient to refer to a tree by its root node
+  It is sometimes convenient to refer to a (sub)tree by its root node
   $\node_{i, j}$ or, when clear from context, simply by $\node$.
 	% \item We work with explicit pseudorandom seeds.
 	% % We write $a \drawnfrom{S} A$ to indicate that we pseudorandomly draw a value from the domain $A$ using the seed $S$ as a source of randomness and store the result in $a$.
 	% When a seed $S$ is used to draw multiple values, we assume that
 	% each draw uses a nonce to ensure independent randomness.
 	% For simplicity, we leave the counter implicit.
-	\item We write $a \drawnfrom{} A$ to denote that $a$ is drawn
-    uniformly from the set $A$.
+	\item We write $a \drawnfrom{} S$ to denote that $a$ is drawn
+    uniformly from the set $S$.
 	\item $\indist$ denotes computational indistinguishability.
 	\item $\kappa$ denotes the computational security parameter and can be understood as the length of encryption keys (e.g. 128).
 	% \item $\lambda$ denotes the empty string.
 \end{itemize}
 
-In this work, we evaluate GCs against with input labels that are generated independently of the GC.
-I.e., these independent labels do not match the GC.
+In this work, we evaluate GCs  with input labels that are generated independently of the GC material and do not match the GC.
 We call such labels {\em garbage labels}.
-During GC evaluation,  garbage labels propagate and must eventually  be obliviously dropped in favor of valid labels.
-We call  the process of canceling out garbage labels {\em garbage collection}.
+During GC evaluation,  garbage labels propagate to the output wires and must eventually  be obliviously dropped in favor of valid labels.
+We call the process of canceling out output garbage labels {\em garbage collection}.
 
-\paragraph{Assumptions.} We assume a random oracle (RO).  
+\paragraph{Assumptions.}  
 \ourschemelong is secure in the standard model. However, higher
-efficiency of both the underlying scheme and of our garbled gadgets can be achieved under the RO assumption.
+efficiency of both the underlying scheme \underscheme and of our garbled gadgets can be achieved under the RO assumption.  Our implementation uses half-gates as \underscheme, and relies on random oracle (RO).
 
+
+%We assume a random oracle (RO). 
