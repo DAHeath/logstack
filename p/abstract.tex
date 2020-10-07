@@ -17,9 +17,9 @@
   %We extend  \HK 
   Our scheme \ourschemelong  reduces stacked garbling computation from
   $O(b^2)$ to $O(b \log b)$
-   with essentially {\em no} increase in communication.
+   with {\em no} increase in communication.
    % \vlad{our gadget is slightly larger than HK.}
-  That the primary cause of \HK's increased computation is the
+  The primary cause of \HK's increased computation is the
   oblivious collection of \emph{garbage labels} that emerge during the
   oblivious evaluation of inactive branches.
   Garbage is collected by a \emph{multiplexer} component that is
@@ -62,9 +62,8 @@ and hence can be implemented with high efficiency.
 
 \smallskip	
 We implemented \ourschemelong (in the RO model, based on half-gates
-garbling) and report on performance.
-In terms of wall-clock time, our performance is comparable to \HK's
-for fewer than $16$ branches; for larger branching factors, our
+garbling) and report performance.
+In terms of wall-clock time and for fewer than $16$ branches, our performance is comparable to \HK's; for larger branching factors, our
 approach clearly outperforms \HK.
 For example, given $256$ branches, our approach is $64\times$ faster.
 % It improves over \HK\ by factor xx.

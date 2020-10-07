@@ -199,7 +199,7 @@ To see how this can be done,
 \end{itemize}
 
 In total, there are $b^2$ $(\truth, \guess)$ combinations.
-Crucially, each of these combinations leads to \E\ evaluating using a
+Crucially, each of these combinations leads to \E\ evaluating a
 \emph{unique combination of a circuit and material}.
 Hence, there are $b^2$ possible sets of labels ($b(b-1)$ garbage sets of labels and $b$ valid sets of labels)  that the evaluator
 could arrive at: one for each combination of $(\truth,\guess)$, the
@@ -212,7 +212,7 @@ garbage collecting multiplexer, the \HK generator assumes an all-zero
 inputs for each
 inactive branch and emulates ``in his head'' \E's evaluation of all possible (\truth,\guess) combinations.
 % must construct all $b(b-1)$ sets of garbage labels,
-This requires that \G\ evaluate (i.e. call \Ev) $b(b-1)$ times on garbage material.
+This requires that \G\ evaluate $b(b-1)$ times on garbage material.
 This is the source of the $O(b^2)$ computation.
 
 
@@ -334,7 +334,7 @@ network bandwidth of a $1$ Gbps channel.
 However, while 1Gbps is a typical speed in the LAN setting, WAN
 speeds are much lower, e.g. $100$Mbps.  Other network speeds
 (bluetooth, cellular) are lower still.
-Further, even on a LAN and even in a data center, typically we should
+Even on a LAN and even in a data center, typically we should
 not assume that our MPC application is allowed to consume the entire
 channel bandwidth. Rather, we should aim to use as small a fraction of
 the bandwidth as possible.  Based on this discussion, and erring on
@@ -343,19 +343,21 @@ the conservative side,  we choose $100$Mbps as
 %
 
 On the other hand, computation is a much more available resource.
-Today, a commodity laptop has four physical cores. Of course, higher-end computing devices, such as desktop CPUs and GPUs have higher numbers of cores and/or per-core processing power,
-resulting in yet higher GC computation-to-transmission ratio.  Precomputation, if available, can also be seen as a way to increase available compute resource.
+Today, commodity laptops have four physical cores. Of course, higher-end computing devices, such as desktop CPUs and GPUs have higher numbers of cores and/or per-core processing power,
+resulting in yet higher GC computation-to-transmission ratio.
+Precomputation, if available, can also be seen as a way to increase
+the available compute resource.
 Crucially, stacked garbling,  even when using our more sophisticated SGC algorithms, is highly parallelizable.
 %f the GC includes conditional branching, 
 It is easy to
-engage \emph{many} cores in parallel  to achieve the proportional performance improvement.
+engage \emph{many} cores in parallel  to achieve proportional performance improvement.
 %(handling of conditional branchesis \emph{highly} parallelizable, even when using our more sophisticated SGC algorithms).
 %
 Based on this discussion, and erring on the conservative side, we choose $2$ physical cores as a lower end of ``typical'' available computational power. 
 
-Calculating the ratio for a typical setting with $2$ cores and $100$Mbps channel, we arrive at 
-%Engaging $4$ cores, a typical configuration on a mid-range laptop, would imply up to
-$\approx 60 \times$ higher GC generation speed vs transmission.
+Given a typical setting with $2$ cores and a
+$100$Mbps channel, we arrive at an approximation that GC computation
+is $\approx 60 \times$ faster than GC transmission.
 %
 
 %
@@ -369,8 +371,10 @@ $\approx 60 \times$ higher GC generation speed vs transmission.
 
 
 
-\paragraph{Evaluation approach.}  It is natural to approach this
-evaluation by considering a {\em baseline circuit} against which we
+\paragraph{Assumption: fixed target circuit}
+To gain a foothold on answering our broad question, we start by ruling
+out program transformations and consider only cryptographic protocols.
+Thus, we consider a fixed {\em baseline circuit} against which we
 measure SGC and \ourschemelong\ performance.    That is, our baseline is a
 circuit \cir\ with conditionals, to which we apply garbling scheme
 directly, and to which we do not apply any program transformations.
@@ -379,8 +383,8 @@ with base scheme half-gates~\cite{EC:ZahRosEva15}.
 
 
 
-\paragraph{Rule of thumb: Always apply \ourscheme.}  Assuming the
-speed ratio of GC generation/transmission, and with a few caveats
+\paragraph{Rule of thumb: Always apply \ourschemelong.}  Assuming our
+approximated speed ratio of GC generation/transmission, and with a few caveats
 described next, using \ourschemelong\ for branching will {\em always}
 improve over standard GC. 
 
