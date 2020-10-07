@@ -29,7 +29,7 @@ than $12$GB of space to run this experiment.
 
 \paragraph{Total wall-clock time} is complete metric, and as such, it conveys a bigger, less nuanced picture.  We plot three charts for 1-64 branches (100, 300 and 1000 Mbps) comparing each of the three approaches.  We explore more extreme conditionals of up to 8192 branches in the 100Mbps setting.
 
-In the 1Gbps network setting, as expected, na\"ive half-gates leads.  As discussed in~\Cref{sec:whentouse}, two cores (our laptop) indeed cannot keep up with the available network capacity.  However, doubling number of course already puts us ahead of na\"ive, and any further computation boost correspondingly further improves \ourschemelong vs na\"ive.  We are about $3\times$ faster than \stack.
+In the 1Gbps network setting, as expected, na\"ive half-gates leads.  As discussed in~\Cref{sec:whentouse}, two cores (our laptop) indeed cannot keep up with the available network capacity.  However, doubling number of cores already puts us ahead of na\"ive, and any further computation boost correspondingly further improves \ourschemelong vs na\"ive.  We are about $3\times$ faster than \stack.
 
 In the 300Mbps network setting we are already always better than na\"ive.  Because we range over the same number of branches (up to $64$) we are the same factor $\approx 3\times$ faster than \stack.
 
