@@ -185,7 +185,7 @@ With our syntax established, we are ready to present our algorithms.
 \end{construction}
 
 \Cref{ourconstr} is proved correct and secure in \Cref{sec:proof}.
-Theorems and lemmas in this section imply the following efficiency theorem:
+Theorems and lemmas in the current section imply the following efficiency theorem:
 % \begin{theorem}
 %   Let $\underscheme$ be a garbling scheme that is
 %       \textbf{correct}, \textbf{strongly stackable},
@@ -260,7 +260,7 @@ to an extended discussion of \evcond\ and \gbcond~(c.f. \Cref{sec:approach-cond}
     input encoding of $\cir_1$.
     %
     We thus implement a \emph{translation} component ($\evtranslate$
-    and $\gbtranslate$) that implements via garbled rows
+    and $\gbtranslate$) that implements via garbled rows a
     straightforward translation from one encoding to another.
     %
     Our scheme securely implements the translator, and all other
@@ -287,14 +287,15 @@ of our construction, but the reader should refer to
 Before we discuss handling the body of conditionals, we briefly discuss
 entering and leaving a conditional.
 %
-That is, we describe the \emph{demultiplexer} and \emph{multiplexer}
-components.
+That is, we describe the \emph{demultiplexer} (entry) and
+\emph{multiplexer} (exit) components.
 
 The demultiplexer component is responsible for (1) forwarding the
-conditional inputs to the active branch $\cir_\aid$ and (2) forwarding
-garbage inputs to each branch $\cir_{i \neq \aid}$.
+conditional's inputs to the active branch $\cir_\aid$ and (2)
+forwarding specially prepared garbage inputs to each branch $\cir_{i \neq \aid}$.
 Precisely, the demultiplexer computes the following function for
-each input $x$ to each branch $\cir_i$:
+each wire input $x$ to each branch $\cir_i$ with respect to the active
+branch index \aid:
 \begin{align*}
 demux(x, i, \aid) =
    \begin{cases}
@@ -302,18 +303,18 @@ demux(x, i, \aid) =
      \bot, &\text{otherwise}
    \end{cases}
 \end{align*}
-where $\bot$ is an arbitrary constant value.
+where $\bot$ is a specially designated constant value.
 In the GC, the label corresponding to $\bot$ is independent yet
 indistinguishable from the corresponding $0$ and $1$ labels (for
-security, it is crucial that this value is independent).
+security, it is crucial that this label is independent).
 The demultiplexer is easily implemented by garbled rows.
 The number of required rows is proportional to the number of branches
 and the number of branch inputs.
 %
 \evcond\ and \gbcond\ make use of \evdem\ and \gbdem, procedures which
-implement the above function inside GC.
+implement the above function via GC.
 Although we do not, for simplicity, formally describe these, we
-emphasize they are the straightforward implementation of garbled rows.
+emphasize they are a straightforward implementation of garbled rows.
 
 The multiplexer is central to our approach.
 It non-interactively eliminates garbage outputs from inactive
@@ -328,21 +329,19 @@ The multiplexer computes the following function:
 \begin{align*}
   mux(x_0, ..., x_{b-1}, \aid) = x_\aid
 \end{align*}
-Given that (1) each value $x_{i\neq \aid}$ is a fixed constant, at
-least with respect to a given \aid, (a
-property that we carefully arrange via the demultiplexer) and (2) \G\
+Given that (1) each value $x_{i\neq \aid}$ is a fixed constant $\bot$, at
+least with respect to a given \aid\ (a
+property that we carefully arrange via the demultiplexer), and (2) \G\
 knows the value of each of these fixed constants (the central point of
-our work), then the above function is easily implemented as a
+our work), then the above $mux$ function is easily implemented as a
 collection of garbled rows.
 The number of required rows is proportional to the number of branches
-and the number of conditional outputs.
+and the number of the conditional's outputs.
 \evcond\ and \gbcond\ make use of \evmux\ and \gbmux, procedures which
-implement the above function inside GC.
-Like the demultiplexer, we do not formalize these procedures in
-detail, but their implementation is the straightforward handling of
+implement the above function via GC.
+As with the demultiplexer, we do not formalize these procedures in
+detail, but their implementation is a straightforward handling of
 garbled rows.
-
-
 
 \subsubsection{Garbling Subtrees.}
 \begin{figure}[t!]\centering\framebox{%
@@ -387,7 +386,13 @@ For \emph{each} internal node of the tree, both \evcond\ and \gbcond\
 perform a common task: they garble all branches in the entire subtree
 rooted at that node and stack together all material.
 %
-We thus start by definining a procedure, \gbtree~(\Cref{fig:gbtree}),
+Indeed, they garble these subtrees according to seeds given by the
+\gadget, formally defined in \Cref{fig:sortinghat}. Like the
+demultiplexer and multiplexer, the GC implementation of \gadget\ is
+a straightforward handling of garbled rows: we assume procedures
+$\gadget.\gEv$ and $\gadget.\gGb$ which implement this handling.
+%
+We thus start by defining a procedure, \gbtree~(\Cref{fig:gbtree}),
 which specifically performs this basic task.
 
 Specifically, \gbtree\ recursively descends through the
