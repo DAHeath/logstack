@@ -101,14 +101,13 @@ The more typical $100$Mbps setting shows the advantage of SGC.
 Both \stack and \ourschemelong handily beat na\"ive.
 
 Finally, we experimented with large branching factors.
-\ourschemelong scales well and we ran up to $8192$ branches as it
+\ourschemelong scales well; we ran up to $8192$ branches as it
 was sufficient to show a trend.  Due to its logarithmic memory
 utilization, \ourschemelong would run on a practically
-arbitrary number of circuits.  In contrast, \stack exhibited a much
-more limited scaling capacity.  We ran up to $512$ branches with
+arbitrary number of branches.  In contrast, \stack exhibited limited scaling.  We ran up to $512$ branches with
 \stack, enough to show a trend, and after which our experiments
-started to take too long.   \ourschemelong garbled a
-$512$-branch conditional in $\approx 32s$, while \stack took $\approx
-470s$,  $15\times$ slower than \ourschemelong.
+started to take too long.   \ourschemelong ran 2PC for a
+$1024$-branch conditional in $\sim 67s$, while \stack took $\sim
+2050s$,  $\sim 31\times$ slower than \ourschemelong.
 
 
