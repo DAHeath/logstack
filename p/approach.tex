@@ -262,8 +262,13 @@ to an extended discussion of \evcond\ and \gbcond~(c.f. \Cref{sec:approach-cond}
     We thus implement a \emph{translation} component ($\evtranslate$
     and $\gbtranslate$) that implements via garbled rows
     straightforward translation from one encoding to another.
-    \dave{Add note about standard model and PRF to implement
-    translation}
+    %
+    Our scheme securely implements the translator, and all other
+    gadgets, using a PRF (\HK used an RO).
+    %
+    This simplification is possible because of the stronger
+    property, strong stackability, that we require
+    of the underlying garbling scheme~(see \Cref{sec:proof}).
 \end{itemize}
 
 \subsection{Algorithms for Handling of Conditionals}\label{sec:approach-cond}
