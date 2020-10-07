@@ -378,7 +378,7 @@ garbled rows.
   }\label{fig:gbtree}
 \end{figure}
 
-Recall, we organize the $b$ branches into a binary branching tree.
+Recall, we organize the $b$ branches into a binary tree.
 % Both \evcond\ and \gbcond\ frequently perform a common task:
 % they garble all branches in an entire subtree and stack together all
 % material.
@@ -386,15 +386,17 @@ For \emph{each} internal node of the tree, both \evcond\ and \gbcond\
 perform a common task: they garble all branches in the entire subtree
 rooted at that node and stack together all material.
 %
-Indeed, they garble these subtrees according to seeds given by the
+These subtrees are garbled according to seeds given by the
 \gadget, formally defined in \Cref{fig:sortinghat}. Like the
 demultiplexer and multiplexer, the GC implementation of \gadget\ is
 a straightforward handling of garbled rows: we assume procedures
 $\gadget.\gEv$ and $\gadget.\gGb$ which implement this handling.
 %
-We thus start by defining a procedure, \gbtree~(\Cref{fig:gbtree}),
-which specifically performs this basic task.
 
+We start by defining a procedure, \gbtree~(\Cref{fig:gbtree}),
+which specifically performs the basic task of garbling and stacking an entire
+subtree.
+%
 Specifically, \gbtree\ recursively descends through the
 subtree starting from its root, uses a PRF to derive child seeds from the parent seed, and at the
 leaves garbles the branches.
@@ -406,7 +408,7 @@ $j$, denoting the range of branches $\cir_i..\cir_j$ that are to
 be stacked together.
 \evcond\ and \gbcond\ use a similar strategy, and all three algorithms
 maintain an invariant that $i,j$ refers to a valid node $\node_{i,j}$ in the binary
-branching tree over the $b$ branches (c.f. \Cref{fig:gbtree} for an
+tree over the $b$ branches (c.f. \Cref{fig:gbtree} for an
 example).
 %
 Note that because \evcond\ and \gbcond\ invoke \gbtree\ at
@@ -418,33 +420,33 @@ can compute.
 
 
 Note two performance properties of \gbtree, recalling that we ignore
-inputs/outputs and consider branches with maximum
+input/output sizes and consider branches with maximum
 garbling size $\nmat$.
 \begin{lemma}\label{lemma:gbtreetime}
   Let $\vec{\cir}$ be a vector of $b$ circuits,
   let $i, j \in \{0, b-1\}$ satisfy $i \leq j$,
   and let $seed \in \{0, 1\}^\kappa$ be an arbitrary string.
-  Then $\gbtree(\vec \cir, i, j, seed)$ invokes $\gGb$ $j - i + 1$ times.
+  Then $\gbtree(\vec \cir, i, j, seed)$ invokes $\ourscheme.\gGb$ $j - i + 1$ times.
 \end{lemma}
 \begin{proof}
-  Immediate. The procedure only invokes $\gGb$ at the base case.
+  Immediate. The procedure only invokes $\ourscheme.\gGb$ at the base case.
 \end{proof}
-In other words, the algorithm garbles each branch only once.
+The algorithm garbles each branch only once.
 Note that while \Cref{lemma:gbtreetime} (and also
-\Cref{lemma:gbtreespace}) holds for all $i, j$ we are
+\Cref{lemma:gbtreespace}) holds for all $i, j$, we are
 only concerned with it holding for $i, j$ that represent valid nodes
-in the binary branching tree of circuits.
+in the binary tree of circuits.
 
 
 \begin{lemma}\label{lemma:gbtreespace}
   Let $\vec{\cir}$ be a vector of $b$ circuits,
   let $i, j \in \{0, b-1\}$ satisfy $i \leq j$,
   and let $seed \in \{0, 1\}^\kappa$ be a arbitrary string.
-  If $\Gb$ runs in $O(\nmat)$ space,
+  If $\ourscheme.\Gb$ runs in $O(\nmat)$ space,
   then $\gbtree(\vec \cir, i, j, seed)$ runs in $O(\nmat \log (j-i+1))$ space.
 \end{lemma}
 \begin{proof}
-  In the base case, $\gbtree$ invokes $\gb$. By assumption, this runs
+  In the base case, $\gbtree$ invokes $\ourscheme.\gb$. By assumption, this runs
   within our space requirement, and generates a garbling of maximum
   size $\nmat$.
   %
@@ -509,22 +511,25 @@ in the binary branching tree of circuits.
     $\cir_\aid$) results in valid outputs.
     The multiplexer collects garbage and propagates output from
     $\cir_\aid$.
-    \evcond\ involves $b \log b$ calls to \gGb (via \gbtree), and each
+    \evcond\ involves $b \log b$ calls to \gGb\ (via \gbtree), and each
     branch evaluation is done with respect to the garbling of that
     branch's sibling subtrees.
   }\label{fig:evcond}
 \end{figure}
 
-We now formalize the procedure by which \E\ handles a vector of
-conditionals, \evcond~(\Cref{fig:evcond}).
+We now formalize the procedure \evcond\ by which \E\ handles a vector of
+conditionals~(\Cref{fig:evcond}).
 %
-\evcond\ primarily delegates to a recursive subprocedure \evcond'.
+The core of \evcond\ is delegated to a recursive subprocedure $\evcond'$.
+$\evcond'$ carefully manages material and uses the garblings of sibling
+subtrees to evaluate each branch while limiting the possible number of
+garbage outputs.
 Other than this delegation, \evcond\ simply invokes $\gadget.\gEv$
 to obtain her seeds, invokes \evdem\ to propagate valid inputs to $\cir_\aid$,
 and, after evaluating all branches, invokes $\evmux$ to collect
 garbage outputs from all $\cir_{i \neq \aid}$.
 %
-\evcond' is a formalization of the high level procedure described in
+$\evcond'$ is a formalization of the high level procedure described in
 \Cref{sec:techOverview}: \E\ recursively descends through the tree,
 constructing and unstacking garblings of subtrees in the general case.
 %
@@ -535,25 +540,23 @@ material except $\mat_\aid$ (because she has good seeds for the
 sibling roots of \aid), and hence evaluates correctly.
 %
 All other cases $i \neq \aid$ will lead to garbage outputs that \G\
-must compute.
+must also compute.
 
 \paragraph{Efficiency:} In terms of time complexity, we start by examining the \emph{concrete}
 efficiency on conditionals with $2^k$ branches for some $k$.
 %
-Of course, the following proof generalizes to a asymptotic efficiency
-regardless of the number of branches, but we include the concrete
-proof to emphasize the low constants involved.
+After, we discuss a generalization to arbitrary numbers of branches.
 
 \begin{lemma}\label{lemma:evcondtime}
   Let $b = 2^k$ for some $k \in \mathbb{N}$.
   Let $\vec{\cir}$ be a vector of $b$ circuits, $\mat$ be a string of
   length $\nmat$, and $\gcirinp$ be a vector of labels of length
   $\inpsize(\conditional(\vec{\cir}))$.
-  $\evcond(\vec{\cir}, \mat, \gcirinp)$ calls \gGb\ $b \log b$ times
-  and calls \gEv\ $b$ times.
+  $\evcond(\vec{\cir}, \mat, \gcirinp)$ calls $\ourscheme.\gGb$ $b \log b$ times
+  and calls $ourscheme.\gEv$ $b$ times.
 \end{lemma}
 \begin{proof}
-  First, it is trivial that \gEv\ is called $b$ times: the
+  First, it is trivial that $\ourscheme.\gEv$ is called $b$ times: the
   procedure is called only at the base case, which is reached once per
   leaf.
 
@@ -561,15 +564,15 @@ proof to emphasize the low constants involved.
   subtree of half of the current branches.
   %
   For example, at the root \gbtree\ is called on every branch, which, by
-  \Cref{lemma:gbtreetime}, implies $b$ calls to \Gb.
-  Now consider a binary branching tree whose leaves are the $b$
+  \Cref{lemma:gbtreetime}, implies $b$ calls to $\ourscheme.\Gb$.
+  Now consider a binary tree whose leaves are the $b$
   branches and whose internal nodes each correspond to
   a recursive invocation of $\evcond'$.
   At every level of the tree, each internal node garbles every
   leaf below it, via \gbtree.
-  Hence, every level of the tree entails $b$ calls to \Gb.
-  Since the binary branching tree has $\log b$ levels, there are $b
-  \log b$ total calls to \Gb.
+  Hence, every level of the tree entails $b$ calls to $\ourscheme.\Gb$.
+  Since the binary tree has $\log b$ levels, there are $b
+  \log b$ total calls to $\ourscheme.\Gb$.
 \end{proof}
 
 By essentially exactly the same argument, one can prove the following
@@ -578,10 +581,11 @@ lemma for arbitrary numbers of branches:
   Let $\vec{\cir}$ be a vector of $b$ circuits, $\mat$ be a string of
   length $\nmat$, and $\gcirinp$ be a vector of labels of length
   $\inpsize(\conditional(\vec{\cir}))$.
-  $\evcond(\vec{\cir}, \mat, \gcirinp)$ calls \gGb\ $O(b \log b)$ times
-  and calls \gEv\ $b$ times.
+  $\evcond(\vec{\cir}, \mat, \gcirinp)$ calls $\ourscheme.\gGb$ $O(b \log b)$ times
+  and calls $\ourscheme.\gEv$ $b$ times.
 \end{lemma}
 
+The following lemma formalizes \evcond's logarithmic space complexity:
 \begin{lemma}\label{lemma:evcondspace}
   Let $\vec{\cir}$ be a vector of $b$ circuits, $\mat$ be a string of
   length $\nmat$, and $\gcirinp$ be a vector of labels of length
@@ -687,17 +691,24 @@ Finally, we formalize \G's procedure for handling vectors of
 conditional branches, \gbcond~(\Cref{fig:gbcond}).
 %
 \begin{enumerate}
-  \item \gbcond\ starts by recursively deriving a binary branching tree of
+  \item \gbcond\ starts by recursively deriving a binary tree of
 good seeds by calling $\mathtt{DeriveSeedTree}$. This call just uses a PRF
-to recursively derive seeds using the standard trick.
+to recursively derive seeds in the standard manner.
 %
 \item \gbcond\ invokes $\genprojection$ to select a uniform input
 encoding $e$: $e$ is the vector of pairs of labels that are
 valid input labels for the overall conditional.
+Our use of $\genprojection$ is straightforward and similar to that of
+\HK.
+% $\genprojection$ is semantically and technically the same as defined
+% in \HK.
 %
-\item \gbcond\ uses $\gadget.\gGb$ to compute garbled rows for
-  $\gadget$ and also to compute all possible `bad' seeds: \G\ needs
-  these bad seeds to emulate \E\ when making a bad guess.
+\item \gbcond\ uses $\gadget.\gGb$ to garble the \gadget\
+  functionality of \Cref{fig:sortinghat}.
+  As input, \gbcond\ provides the tree of good seeds $s$ and the encoding
+  of the active branch id $e_\aid$ and as output \G\ receives the tree
+  of all bad seeds.
+  \gbcond\ needs these bad seeds to emulate \E\ making a bad guess.
 %
 \item \gbcond\ uses $\gbtree$ to compte the stacked material
 $\mat_{cond}$ starting from the root of the seed tree.
@@ -755,7 +766,7 @@ of conditionals branching factors that are powers of two:
   \computegarbage.
   %
   Our argument is similar to that of \Cref{lemma:evcondtime}:
-  at each level of the binary branching tree, $\computegarbage$ calls
+  at each level of the binary tree, $\computegarbage$ calls
   $\gGb$ $\frac{3}{2}b$ times (via each node's three calls to \gbtree\
   on half of the node's ancestors).
   Since there are $\log b$ levels in the tree, $\computegarbage$ calls
