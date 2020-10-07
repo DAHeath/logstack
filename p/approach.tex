@@ -277,6 +277,58 @@ Note, our presentation is a formalization of the discussion in
 of our construction, but the reader should refer to
 \Cref{sec:techOverview} for unifying high level intuition.
 
+\subsubsection{Demultiplexer and Multiplexer.}
+
+Before we discuss handling the body of conditionals, we briefly discuss
+entering and leaving a conditional.
+%
+That is, we describe the \emph{demultiplexer} and \emph{multiplexer}
+components.
+
+The demultiplexer component is responsible for (1) forwarding the
+conditional inputs to the active branch $\cir_\aid$ and (2) forwarding
+garbage inputs to each branch $\cir_{i \neq \aid}$.
+Precisely, the demultiplexer computes the following function for
+each input $x$ to each branch $\cir_i$:
+\begin{align*}
+demux(x, i, \aid) =
+   \begin{cases}
+     x,& \text{if $i = \aid$}\\
+     \bot, &\text{otherwise}
+   \end{cases}
+\end{align*}
+where $\bot$ is an arbitrary constant value.
+In the GC, the label corresponding to $\bot$ is independent yet
+indistinguishable from the corresponding $0$ and $1$ labels (for
+security, it is crucial that this value is independent).
+The demultiplexer is easily implemented by garbled rows.
+The number of required rows is proportional to the number of branches
+and the number of branch inputs.
+
+The multiplexer is central to our approach.
+It non-interactively eliminates garbage outputs from inactive
+branches.
+%
+Despite its central role, if \G\ knows the garbage
+outputs from each branch, the multiplexer's implementation is simple.
+%
+Specifically, suppose each branch $\cir_i$ has an output $x_i$ that
+should propagate if that branch is active.
+The multiplexer computes the following function:
+\begin{align*}
+  mux(x_0, ..., x_{b-1}, \aid) = x_\aid
+\end{align*}
+Given that (1) each value $x_{i\neq \aid}$ is a fixed constant, at
+least with respect to a given \aid, (a
+property that we carefully arrange via the demultiplexer) and (2) \G\
+knows the value of each of these fixed constants (the central point of
+our work), then the above function is easily implemented as a
+collection of garbled rows.
+The number of required rows is proportional to the number of branches
+and the number of conditional outputs.
+
+
+
 \subsubsection{Garbling Subtrees.}
 \begin{figure}[t!]\centering\framebox{%
 \begin{minipage}{0.97\linewidth}
@@ -387,10 +439,7 @@ in the binary branching tree of circuits.
   Hence, the total required storage is $O(\nmat \log(j-i+1))$.
 \end{proof}
 
-\subsubsection{Gadgets}
-TODO
-
-\subsubsection{Evaluating Conditionals}
+\subsubsection{Evaluating Conditionals.}
 
 \begin{figure}
   \begin{align*}
