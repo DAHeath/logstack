@@ -349,10 +349,8 @@ garbled rows.
 % \begin{figure}[t]
   \begin{align*}
     &\gbtree(\vec{\cir}, i, j, seed):\\
-    &~~\cif~i = j:\\
-    &~~~~\codecomment{Base case of $1$ branch.}\\
-    &~~~~M, e, \cdot \gets \gb(\vec\cir[i], seed)\\
-    &~~~~\creturn~M, e\\
+    &~~\cif~i = j: ~~~\codecomment{Base case of $1$ branch.}\\
+    &~~~~\creturn~\gb(\vec\cir[i], seed)\\
     &~~\celse:\\
     &~~~~\codecomment{Expand child seeds using PRF.}\\
     &~~~~seed_L \gets F_{seed}(0)\\
@@ -360,9 +358,9 @@ garbled rows.
     &~~~~\codecomment{Recursively garble both child trees and stack
     material.}\\
     &~~~~k \gets \halfway(i, j)\\
-    &~~~~M_L, e_L \gets \gbtree(\vec{\cir}, i, k, seed_L)\\
-    &~~~~M_R, e_R \gets \gbtree(\vec{\cir}, k + 1, j, seed_R)\\
-    &~~~~\creturn~(M_L \oplus M_R, e_L \mid e_R)\\
+    &~~~~M_L, e_L, d_L \gets \gbtree(\vec{\cir}, i, k, seed_L)\\
+    &~~~~M_R, e_R, d_R \gets \gbtree(\vec{\cir}, k + 1, j, seed_R)\\
+    &~~~~\creturn~(M_L \oplus M_R, e_L \mid e_R, d_L \mid d_R)\\
     \\
     &\halfway(i, j):\\
     &~~\codecomment{Simple helper for splitting range of branches (approximately) in half.}\\
@@ -373,8 +371,8 @@ garbled rows.
     The helper algorithm \gbtree\ starts from a single seed
     at the root of a subtree $\node_{i,j}$, derives all seeds in the
     subtree, garbles all branches in the subtree, and stacks (using
-    XOR) all resultant material. The procedure also returns the input
-    encodings for all branches.
+    XOR) all resultant material. The procedure also returns the
+    input/output encodings for all branches.
   }\label{fig:gbtree}
 \end{figure}
 
@@ -401,7 +399,7 @@ Specifically, \gbtree\ recursively descends through the
 subtree starting from its root, uses a PRF to derive child seeds from the parent seed, and at the
 leaves garbles the branches.
 As the recursion propagates back up the tree, the procedure stacks the
-garblings together.
+branch materials together (and concatenates the branch encodings).
 %
 The recursion tracks two integers $i$ and
 $j$, denoting the range of branches $\cir_i..\cir_j$ that are to
@@ -415,7 +413,7 @@ Note that because \evcond\ and \gbcond\ invoke \gbtree\ at
 \emph{every} node, this entails that both procedures garble
 each branch $\cir_i$ more than once, but with different seeds.
 As discussed in \Cref{sec:techOverview}, this repeated garbling is key
-to reducing the total number of possible garbage outputs that \E\
+to reducing the total number of garbage outputs that \E\
 can compute.
 
 
@@ -492,10 +490,10 @@ in the binary tree of circuits.
     seed,}\\
     &~~~~~~\codecomment{unstack, and recursively evaluate the left
     subtree.}\\
-    &~~~~~~\mat_{k+1,j}, \cdot \gets \gbtree(\vec{\cir}, k+1, j, \es_{k+1, j})\\
+    &~~~~~~\mat_{k+1,j}, \cdot, \cdot \gets \gbtree(\vec{\cir}, k+1, j, \es_{k+1, j})\\
     &~~~~~~\evcond'(i, k, \mat_{i, j} \oplus \mat_{k+1,j})\\
     &~~~~~~\codecomment{Symmetrically evaluate the right subtree.}\\
-    &~~~~~~\mat_{i, k}, \cdot \gets \gbtree(\vec{\cir}, i, k, \es_{i,k})\\
+    &~~~~~~\mat_{i, k}, \cdot, \cdot \gets \gbtree(\vec{\cir}, i, k, \es_{i,k})\\
     &~~~~~~\evcond'(k+1, j, \mat_{i, j} \oplus \mat_{i, k})\\
     \\
     &~~\codecomment{Start recursive process from the top of the tree.}\\
@@ -606,8 +604,9 @@ The following lemma formalizes \evcond's logarithmic space complexity:
     &~~b \gets | \vec{\cir} |\\
     &~~\codecomment{Recursively derive all `good' seeds for the entire tree.}\\
     &~~s \gets \mathtt{DeriveSeedTree}(S, b)\\
-    &~~\codecomment{Sample an input encoding for the conditional.}\\
-    &~~e \gets \genprojection(S, n)\\
+    &~~\codecomment{Sample input/output encodings for the conditional.}\\
+    &~~e \gets \genprojection(S, \inpsize(\conditional(\vec{\cir})))\\
+    &~~d \gets \genprojection(S, \outsize(\conditional(\vec{\cir})))\\
     &~~\codecomment{Parse encoding into encoding of $\aid$
     and encoding of rest of input.}\\
     &~~e_\aid\mid e' \gets e\\
@@ -616,14 +615,14 @@ The following lemma formalizes \evcond's logarithmic space complexity:
     `bad' seeds $s'$.}\\
     &~~\mat_\gadget, s' \gets \gadget.\mathtt{Gb}(e_\aid, s)\\
     &~~\codecomment{Construct the stacked material and input encodings for each branch.}\\
-    &~~M_{cond}, e_{cond} \gets \gbtree(\vec{\cir}, 0, b-1, s_{0, b-1})\\
+    &~~M_{cond}, e_{cond}, d_{cond} \gets \gbtree(\vec{\cir}, 0, b-1, s_{0, b-1})\\
     &~~\codecomment{The demux conditionally translates the input encoding $e'$}\\ 
     &~~\codecomment{to one of the branch encodings in $e_{cond}$ based on $e_\aid$.}\\
     &~~\mat_{dem}, \Lambda_{in} \gets \gbdem(e_\aid, e', e_{cond})\\
     &~~\codecomment{Compute all possible garbage outputs.}\\
     &~~\Lambda_{out} \gets \computegarbage(\vec{\cir}, M_{cond}, \Lambda_{in}, s, s')\\
     &~~\codecomment{The demultiplexer collects garbage outputs.}\\
-    &~~\mat_{mux} \gets \gbmux(e_\aid, d, \vec{d}, \Lambda_{out})\\
+    &~~\mat_{mux} \gets \gbmux(e_\aid, d, d_cond, \Lambda_{out})\\
     &~~\creturn~(\mat_\gadget \mid \mat_{dem} \mid \mat_{cond} \mid
     \mat_{mux}, e, d)\\
 \end{align*}
@@ -658,11 +657,11 @@ The following lemma formalizes \evcond's logarithmic space complexity:
     &~~~~\celse:\\
     &~~~~~~k \gets \halfway(i, j)\\
     &~~~~~~\codecomment{Compute the good material for both subtrees.}\\
-    &~~~~~~\mat_{i, k}, \cdot \gets \gbtree(\vec{\cir}, i, k, s_{i, k})\\
+    &~~~~~~\mat_{i, k}, \cdot, \cdot \gets \gbtree(\vec{\cir}, i, k, s_{i, k})\\
     &~~~~~~\mat_{k+1, j} \gets \mat_{i, j} \oplus \mat_{i, k}\\
     &~~~~~~\codecomment{Compute the bad material for both subtrees.}\\
-    &~~~~~~\mat_{i, k}' \gets \gbtree(\vec{\cir}, i, k, s'_{i, k})\\
-    &~~~~~~\mat_{k+1, j}' \gets \gbtree(\vec{\cir}, k+1, j, s'_{k+1, j})\\
+    &~~~~~~\mat_{i, k}', \cdot, \cdot \gets \gbtree(\vec{\cir}, i, k, s'_{i, k})\\
+    &~~~~~~\mat_{k+1, j}', \cdot, \cdot \gets \gbtree(\vec{\cir}, k+1, j, s'_{k+1, j})\\
     &~~~~~~\codecomment{Recursively compute all garbage outputs.}\\
     &~~~~~~\computegarbage'(i, k, (\mat_{k+1,j} \oplus \mat_{k+1,j}') \mid \vec{\mat}')\\
     &~~~~~~\computegarbage'(k+1, j, (\mat_{i,k} \oplus \mat_{i,k}') \mid \vec{\mat}')\\
