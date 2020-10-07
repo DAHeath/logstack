@@ -61,7 +61,7 @@ Correct garbling schemes ensure that the garbled functions \gGb, \gEn,
 
 Before we present our garbling scheme \ourschemelong, we introduce the
 formal syntax of the circuits it manipulates.
-Because our focus is conditional branching, we assume the existence of
+Because our focus is conditional branching, we assume
 an \emph{underlying garbling scheme} \underscheme.
 \underscheme\ is responsible for handling the collections of low level
 gates (typically AND and XOR gates) that we refer to as \emph{netlists}.
@@ -304,6 +304,11 @@ security, it is crucial that this value is independent).
 The demultiplexer is easily implemented by garbled rows.
 The number of required rows is proportional to the number of branches
 and the number of branch inputs.
+%
+\evcond\ and \gbcond\ make use of \evdem\ and \gbdem, procedures which
+implement the above function inside GC.
+Although we do not, for simplicity, formally describe these, we
+emphasize they are the straightforward implementation of garbled rows.
 
 The multiplexer is central to our approach.
 It non-interactively eliminates garbage outputs from inactive
@@ -326,6 +331,11 @@ our work), then the above function is easily implemented as a
 collection of garbled rows.
 The number of required rows is proportional to the number of branches
 and the number of conditional outputs.
+\evcond\ and \gbcond\ make use of \evmux\ and \gbmux, procedures which
+implement the above function inside GC.
+Like the demultiplexer, we do not formalize these procedures in
+detail, but their implementation is the straightforward handling of
+garbled rows.
 
 
 
@@ -451,7 +461,7 @@ in the binary branching tree of circuits.
     &~~\codecomment{Parse material for gadgets and body of conditional.}\\
     &~~\mat_\gadget \mid \mat_{dem} \mid \mat_{cond} \mid \mat_{mux} \gets \mat\\
     &~~\codecomment{Run $\gadget$ to compute all of \E's seeds.}\\
-    &~~es \gets \gadget.\mathtt{Ev}(\aid, \mat_\gadget)\\
+    &~~\es \gets \gadget.\mathtt{Ev}(\aid, \mat_\gadget)\\
     &~~\codecomment{Run the demultiplexer to compute input for each
     branch $\cir_i$.}\\
     &~~\vec{X}_{cond} \gets \evdem(\aid, X, \mat_{dem})\\
@@ -470,10 +480,10 @@ in the binary branching tree of circuits.
     seed,}\\
     &~~~~~~\codecomment{unstack, and recursively evaluate the left
     subtree.}\\
-    &~~~~~~\mat_{k+1,j}, \cdot \gets \gbtree(\vec{\cir}, k+1, j, es_{k+1, j})\\
+    &~~~~~~\mat_{k+1,j}, \cdot \gets \gbtree(\vec{\cir}, k+1, j, \es_{k+1, j})\\
     &~~~~~~\evcond'(i, k, \mat_{i, j} \oplus \mat_{k+1,j})\\
     &~~~~~~\codecomment{Symmetrically evaluate the right subtree.}\\
-    &~~~~~~\mat_{i, k}, \cdot \gets \gbtree(\vec{\cir}, i, k, es_{i,k})\\
+    &~~~~~~\mat_{i, k}, \cdot \gets \gbtree(\vec{\cir}, i, k, \es_{i,k})\\
     &~~~~~~\evcond'(k+1, j, \mat_{i, j} \oplus \mat_{i, k})\\
     \\
     &~~\codecomment{Start recursive process from the top of the tree.}\\
@@ -492,15 +502,32 @@ in the binary branching tree of circuits.
     \evcond\ involves $b \log b$ calls to \gGb (via \gbtree), and each
     branch evaluation is done with respect to the garbling of that
     branch's sibling subtrees.
-  }
+  }\label{fig:evcond}
 \end{figure}
 
-TODO explain \evcond.
+We now formalize the procedure by which \E\ handles a vector of
+conditionals, \evcond~(\Cref{fig:evcond}).
+%
+\evcond\ primarily delegates to a recursive subprocedure \evcond'.
+Other than this delegation, \evcond\ simply invokes $\gadget.\gEv$
+to obtain her seeds, invokes \evdem\ to propagate valid inputs to $\cir_\aid$,
+and, after evaluating all branches, invokes $\evmux$ to collect
+garbage outputs from all $\cir_{i \neq \aid}$.
+%
+\evcond' is a formalization of the high level procedure described in
+\Cref{sec:techOverview}: \E\ recursively descends through the tree,
+constructing and unstacking garblings of subtrees in the general case.
+%
+When she finally reaches the leaf nodes, she simply evaluates.
+%
+In the base case $i = \aid$, she will have correctly unstacked all
+material except $\mat_\aid$ (because she has good seeds for the
+sibling roots of \aid), and hence evaluates correctly.
+%
+All other cases $i \neq \aid$ will lead to garbage outputs that \G\
+must compute.
 
-
-Next, we examine the efficiency properties of \evcond.
-
-In terms of time complexity, we start by examining the \emph{concrete}
+\paragraph{Efficiency:} In terms of time complexity, we start by examining the \emph{concrete}
 efficiency on conditionals with $2^k$ branches for some $k$.
 %
 Of course, the following proof generalizes to a asymptotic efficiency
