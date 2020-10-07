@@ -16,13 +16,6 @@ implementation.
 All experiments were performed on a MacBook Pro laptop with an Intel
 Dual-Core i5 3.1 GHz processor and 8GB of RAM.
 %
-Our chosen benchmark involves the two players securely computing a
-conditional composition of many copies of the SHA-256 circuit.
+% Our chosen benchmark involves the two players securely computing a
+% conditional composition of many copies of the SHA-256 circuit.
 %
-It is, of course, unrealistic that a conditional would have the same
-circuit in each branch. However, we choose this benchmark because
-SHA-256 evaluations have become somewhat of a community standard and because our
-goal is only to analyze \ourschemelong's performance.
-%
-We ensure that our implementation does not cheat: it cannot recognize
-that the branches are the same and hence cannot shortcut the evaluation.

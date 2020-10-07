@@ -38,9 +38,13 @@ performance, bandwidth consumption, and memory utilization.
 All branches implement the SHA-256 netlist, which has $47726$ AND gates,
 $179584$ XOR gates, and $70666$ NOT gates.
 A GC for each branch has size $1.45$ MB.
-As discussed
-in~\Cref{sec:instantiation}, the implementations cannot
-take shortcuts due to similar branches.
+It is, of course, unrealistic that a conditional would have the same
+circuit in each branch. However, we choose this benchmark because
+SHA-256 evaluations have become somewhat of a community standard and because our
+goal is only to analyze \ourschemelong's performance.
+%
+We ensure that our implementation does not cheat: it cannot recognize
+that the branches are the same and hence cannot shortcut the evaluation.
 
 \paragraph{Total Bandwidth Consumption}  is the easiest metric to analyze.
 The communication chart in~\Cref{fig:plots} plots the communication in
