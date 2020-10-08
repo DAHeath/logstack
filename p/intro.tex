@@ -118,7 +118,7 @@ essential.
 \subsection{\HK and its $O(b^2)$ computation}
 \label{sec:bsquaredcost}
 
-Our approach is similar to \HK: we also stack material
+Our approach is similar to that of \HK: we also stack material
 to decrease communication.
 The key difference is our reduced computation.
 It is thus instructive to review \HK,
@@ -237,7 +237,7 @@ proportional to the entire circuit.
 Instead, communication proportional to only the longest program execution
 path suffices.
 However, their improved communication comes at a cost:
-for a conditional $b$ branches, the players
+for a conditional with $b$ branches, the players
 use $O(b^2)$ computation. 
 
 This is a usually a worthwhile trade-off: GC generation is usually
@@ -375,7 +375,7 @@ is $\approx 60 \times$ faster than GC transmission.
 
 
 
-\paragraph{Assumption: fixed target circuit}
+\paragraph{Assumption: fixed target circuit.}
 To gain a foothold on answering our broad question, we start by ruling
 out program transformations and consider only cryptographic protocols.
 Thus, we consider a fixed {\em baseline circuit} against which we

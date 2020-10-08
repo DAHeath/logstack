@@ -2,9 +2,11 @@
 
 
 GC is the most popular and often the fastest approach to secure two-party computation.  Until recently, it was believed that it is necessary
-to transmit the entire GC during 2PC, even for conditional branches that
-are not taken.  Recent breakthrough work~\HK showed that this folklore belief is false, and that  it is enough to only transmit GC material  proportional to the
-longest execution path rather than to the entire circuit.
+to transmit the entire GC during 2PC, even for inactive conditional
+branches.
+Recent breakthrough work~\HK showed that this folklore
+belief is false, and that  it suffices to only transmit GC material  proportional to the
+longest execution path. % rather than to the entire circuit.
 
 We focus our comparison with prior work on~\HK, and then review other
 related work, such as universal circuits and  earlier stacked garbling work.
@@ -29,26 +31,25 @@ impractical computationally due to the exponential number of
 branches.}, as discussed in~\Cref{sec:whentouse}. 
 
 %Above we only discussed the garbling costs in terms of the number of circuits processed (i.e. garbled or evaluated).  
-Crucially, memory management is a significant performance factor in GC
-in general, and in particular in~\HK garbling.  Indeed, retrieving an
+Memory management is a significant performance factor in GC
+in general, and in particular in~\HK garbling.  Retrieving an
 already-garbled material from RAM may take similar or longer time than
 regarbling from scratch while operating in cache.
-In addition to significantly improving computation cost (i.e. number
-of calls to \Gb\ and \Ev), our approach offers imporved
-memory utilization, as we discuss in~\Cref{sec:ourContrib,sec:memoryEfficiency}.
-\HK requires that a quadratic number of
+In addition to significantly improving computation (i.e. number
+of calls to \Gb\ and \Ev), our approach offers improved
+memory utilization (see~\Cref{sec:ourContrib,sec:memoryEfficiency}).
+\HK requires that a linear number of
 garbled circuits be kept in RAM.  For larger circuits this can become
-a serious problem.
+a problem.
 For example, the garbling of a $1$M AND-gate circuit
 occupies $32$MB in RAM.
-Thus, if a machine can $2$GB to the process of garbling, a maximum of
-$64$ branches of this size can be handled. Of course, this would
+If a machine can dedicate $2$GB to garbling, a maximum of
+$64$ branches of this size can be handled. This
 ignores additional constant space costs, which are not necessarily
 low.
 %
-In contrast, our approach uses only $O(\log b)$ space, and hence can
-fit the garblings of extremely large numbers of branches into memory
-easily.
+In contrast, we use only $O(\log b)$ space, and hence can
+fit the garblings of large numbers of branches into memory.
 In our experiments, we ran our implementation on a circuit with $8192$
 SHA-256 branches, a circuit that altogether holds $> 385$M AND-gates.
 Our peak memory usage was at around $100$MB (\HK would require more
@@ -107,9 +108,9 @@ In many scenarios, non-interactive 2PC (such as what we achieve) is preferred.
 
 Designing efficient garbling schemes under standard assumptions (i.e.
 using only PRFs) is a valuable research direction.
-\cite{CCS:GLNP15} impressively implements garbled table
+\cite{CCS:GLNP15} impressively implement garbled table
 generation and evaluation with speed similar to that of
 fixed-key AES.
-Additionally, \cite{CCS:GLNP15} cannot use the Free XOR technique~\cite{ICALP:KolSch08}, which requires circularity
+\cite{CCS:GLNP15} cannot use the Free XOR technique~\cite{ICALP:KolSch08}, which requires circularity
 assumptions~\cite{TCC:CKKZ12}, but nevertheless implement XOR Gates
 with only one garbled row and AND gates with two rows.

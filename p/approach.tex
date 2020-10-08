@@ -10,7 +10,7 @@ does not hide high costs.
 % \ourschemelong scales linearly with the number of gates per branch.
 While we scale with the product of the number of inputs and $b$ (and
 respectively the product of number of outputs and $b$), the
-constants are low (see \Cref{sec:eval} for evidence) of these low constants.
+constants are low (see \Cref{sec:eval} for evidence).
 Thus, inputs/outputs are of secondary concern to the circuit size,
 which is often far larger than the number of inputs/outputs.
 
@@ -277,7 +277,7 @@ With the remaining formalization out of the way, we focus
 on conditional branching. Our goal is to formalize \evcond\
 and \gbcond, the key sub-procedures invoked by $\ourscheme.\gEv$ and
 $\ourscheme.\gGb$ respectively.
-Note, our presentation is a formalization of discussion in
+Our presentation is a formalization of discussion in
 \Cref{sec:techOverview}; the following explores the technical aspects
 of our construction, but the reader should refer to
 \Cref{sec:techOverview} for unifying high level intuition.
@@ -400,7 +400,7 @@ subtree.
 subtree starting from its root, uses a PRF to derive child seeds from the parent seed, and at the
 leaves garbles the branches.
 As the recursion propagates back up the tree, the procedure stacks the
-branch materials together (and concatenates the branch encodings).
+branch materials together (and concatenates input/output encodings).
 %
 The recursion tracks two integers $i$ and
 $j$, denoting the range of branches $\cir_i..\cir_j$ that are to
@@ -618,7 +618,7 @@ $\mat_{cond}$ from the root seed.
 $\mat_{cond}$ is the material that \G\ ultimately sends to \E.
 %
 \item \gbcond\ calls $\gbdem$ to compute the demultiplexer garbled
-  rows.  This call also returns the garbage input labels for each
+  rows.  This call also returns $\Lambda_{in}$, the collection of garbage input labels for each
   branch: essential information that allows \G\ to emulate \E.
 \end{enumerate}
 With this accomplished, \gbcond's remaining task is to encrypt the

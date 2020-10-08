@@ -45,7 +45,7 @@ Our notation is mostly consistent with the notation of~\HK.
 	% wires and output wires of a given circuit.
 	\item Variables that represent vectors are denoted in bold, e.g.  $\vec{x}$.
 	We index vectors using bracket notation: $\vec{x}[0]$ accesses the $0$th index of $\vec{x}$.
-\item In this work, we extensively use binary trees.
+\item We extensively use binary trees.
   Suppose $t$ is such a tree. We use subscript notation $t_i$ to denote the
   $i$th leaf of $t$.
   We use pairs of indexes to denote internal nodes of the tree.
@@ -53,8 +53,9 @@ Our notation is mostly consistent with the notation of~\HK.
   $t_i .. t_j$. $t_{i,i}$ (i.e. the node
   containing only $i$) and $t_i$ both refer to the leaf: $t_{i,i} =
   t_i$.
-  It is sometimes convenient to refer to a (sub)tree by its root node
-  $\node_{i, j}$ or, when clear from context, simply by $\node$.
+  It is sometimes convenient to refer to a (sub)tree index abstractly.
+  For this, we write $\node_{i, j}$ or, when clear from context,
+  simply write $\node$.
 	% \item We work with explicit pseudorandom seeds.
 	% % We write $a \drawnfrom{S} A$ to indicate that we pseudorandomly draw a value from the domain $A$ using the seed $S$ as a source of randomness and store the result in $a$.
 	% When a seed $S$ is used to draw multiple values, we assume that
@@ -68,7 +69,7 @@ Our notation is mostly consistent with the notation of~\HK.
 	% \item $\lambda$ denotes the empty string.
 \end{itemize}
 
-In this work, we evaluate GCs  with input labels that are generated independently of the GC material and do not match the GC.
+We evaluate GCs  with input labels that are generated independently of the GC material and do not match the GC.
 We call such labels {\em garbage labels}.
 During GC evaluation,  garbage labels propagate to the output wires and must eventually  be obliviously dropped in favor of valid labels.
 We call the process of canceling out output garbage labels {\em garbage collection}.

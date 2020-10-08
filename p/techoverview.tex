@@ -6,7 +6,7 @@
   \centering
   \input{fig/seed-tree}
   \caption{%
-    Suppose there are $8$ branches $\cir_0$ through $\cir_7$, and
+    Suppose there are eight branches $\cir_0$ through $\cir_7$, and
     suppose \E guesses that $\cir_0$ is the taken branch.
     If the taken branch is in the subtree $\cir_4$ through $\cir_7$,
     \E will generate the same garbage material for the entire subtree,
@@ -113,7 +113,7 @@ b$-bit integer that points to the active branch.
 
 In the context of the example in~\Cref{fig:seed-tree}, \G  garbles
 branches  $\cir_0,...,\cir_7$ as follows.
-Recall, the active branch ID \aid\ is available to \G\ in form of
+Recall, the active branch ID \aid\ is available to \G\ in the form of
 garbled labels.
 % Given the labels corresponding to the active branch ID \aid,
 \G chooses a random
@@ -151,14 +151,14 @@ that we call \gadget.\footnote{%
   based on personality.
   Our \gadget\ `sorts' nodes of trees into two categories based on
   \aid: those that
-  are `good' (i.e., sibling roots \aid) and those that
+  are `good' (i.e., sibling roots of \aid) and those that
   are `bad'.
 }
 \gadget aids \E in her reconstruction of branch material. 
 \gadget takes as input labels corresponding to \aid\ and
 produces candidate seeds for each node in the tree.
 For each node \node, \gadget constructs a correct seed $s_\node$
-if and only if \node is a sibling root  of the leaf \aid
+if and only if \node is a sibling root  of the leaf \aid\
 (see \Cref{fig:sortinghat}).
 \gadget can be implemented as a collection of garbled rows.
 Importantly, since this is a fixed
@@ -200,12 +200,15 @@ there is no security loss.  We next see that the number of different
 garbage labels we must collect is small, and further that they can be
 collected efficiently.
 
-\subsubsection{Computational cost accounting.} Let us now verify that
-we indeed reduced the number of calls to \Gb\ and \Ev\ to $O(b \log
-b)$.  First consider how many such calls are
+\subsubsection{$O(b \log b)$ computational cost accounting.}
+Let \Gb\ and \Ev\ be procedures that respectively garble/evaluate a
+GC.
+% We verify the number of calls to \Gb\ and \Ev\ is $O(b \log
+% b)$.
+Consider how many such calls are
 made by \E.  Consider branch $\cir_i$.  It is garbled $\log b$ times,
 once with a seed (ultimately) derived from each seed on the path to
-the root.  Thus, total number of calls by \E to \Gb\ is $b \log b$ and
+the root.  Thus, the total number of calls by \E to \Gb\ is $b \log b$ and
 to \Ev\ is exactly $b$.  
 
 To construct the garbage collecting multiplexer, \G must obtain all possible garbage labels.  We
@@ -322,9 +325,9 @@ a RO.
 We introduce a stronger requirement on \underscheme, which we call
 {\em strong stackability}.  Informally, we additionally require that
 {\em all} output labels of \underscheme
-uniformly random.  This is sufficient to prove security in the standard model.
+are uniformly random.  This is sufficient to prove security in the standard model.
 
-Of course, RO-based security theorems and proofs also work (and we explicitly claim them), and our gadgets could be slightly optimized in a natural manner under this assumption.
+Of course, RO-based security theorems and proofs also work,  and our gadgets could be slightly optimized in a natural manner under this assumption.
 
 
 

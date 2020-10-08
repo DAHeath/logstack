@@ -1,6 +1,6 @@
 \section{\ourschemelong Correctness/Security}\label{sec:proof}
 
-We dicuss \ourschemelong's correctness and security properties.
+We discuss \ourschemelong's correctness and security properties.
 We formalize our theorems in the~\cite{CCS:BelHoaRog12} framework (as
 modified by \HK),
 which requires a candidate garbling scheme to be \textbf{correct},
@@ -16,7 +16,7 @@ In this work, we strengthen the definition of stackability.  This
 strengthening, which we call \textbf{strong stackability}, allows us to
 prove security under standard assumptions (an improvement over \HK,
 which required a random oracle assumption).
-Strong stackability is strictly stronger than stackability; all
+Strong stackability is strictly stronger than stackability: all
 strongly
 stackable schemes are stackable,
 and all lemmas that hold for stackable schemes hold also for strongly
@@ -170,8 +170,8 @@ Many standard schemes are compatible with strong stackability:
 if the scheme is stackable and has randomly chosen output labels, it
 trivially satisfies our definition.
 %
-Free XOR based schemes~\cite{ICALP:KolSch08} assume that all
-pairs of labels are separated by a fixed constant $\Delta$, and so
+Free XOR based schemes~\cite{ICALP:KolSch08} use
+pairs of labels separated by a fixed constant $\Delta$, and so
 are not \emph{a priori} strongly stackable. However, it is easy to adjust such
 schemes such that the final output gates return independent labels.
 %
@@ -267,8 +267,7 @@ that an adversary cannot compute GC output labels except by running
 
 
 Privacy ensures that \E, who is given access to
-$(\mat, \gcirinp, d)$, learns nothing about the input
-$\cirinp$ except what can be learned from the output
+$(\mat, \gcirinp, d)$, learns nothing except what can be learned from the output
 $\cirout$. I.e., \G's input is protected.
 
 We prove the following in Supplementary Material. The proof
