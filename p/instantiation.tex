@@ -1,13 +1,12 @@
 \section{Instantiation}\label{sec:instantiation}
 
 We implemented  \ourscheme in $\sim1500$ lines of C++ and used it to instantiate a semihonest 2PC protocol.
-We instantiated \underscheme\ using the half-gates
-technique~\cite{EC:ZahRosEva15}, allowing high
+We instantiated \underscheme\ using the half-gates~\cite{EC:ZahRosEva15}, allowing high
 concrete performance.
 Our implementation thus relies on non-standard assumptions.
 %
 We use computational security parameter $\kappa=127$; the $128$th bit is reserved for point and permute.
-
+%
 Our implementation spawns additional threads to make use of inherent
 parallelism available in $\gbcond$ and $\evcond$.
 

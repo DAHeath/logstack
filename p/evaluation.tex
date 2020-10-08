@@ -1,3 +1,4 @@
+\vspace{-10pt}
 \section{Experimental Evaluation}\label{sec:eval}
 
 \begin{figure}[t]
@@ -44,6 +45,7 @@ goal is only to analyze performance.
 We ensure our implementation does not cheat: it cannot recognize
 that branches are the same and hence cannot shortcut the evaluation.
 
+\vspace{-8pt}
 \paragraph{Total Bandwidth Consumption}  is the easiest metric to analyze.
 The communication chart in~\Cref{fig:plots} plots communication
 as a function of branching factor.  As expected, \stack's and
@@ -53,6 +55,7 @@ leaner than \stack because of low-level improvements to
 \ourschemelong's demultiplexer. This small improvement should not be counted
 as a significant advantage over \stack.
 
+\vspace{-8pt}
 \paragraph{Memory Utilization} was measured as a function of branching
 factor.
 We compare our scheme to \stack (half-gates memory utilization is
@@ -77,6 +80,7 @@ It would be
 infeasible to run this \stack\ experiment on our machine because it
 would exhaust our RAM.
 
+\vspace{-8pt}
 \paragraph{Total wall-clock time} to complete an end-to-end 2PC
 protocol is our most comprehensive metric.
 We plot three charts for 1 to 64
@@ -109,4 +113,5 @@ started to take too long.   \ourschemelong ran 2PC for a
 $1024$-branch conditional in $\sim 67s$, while \stack took $\sim
 2050s$,  $\sim 31\times$ slower than \ourschemelong.
 
+\vspace{-12pt}
 
