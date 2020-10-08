@@ -26,24 +26,23 @@
   }\label{fig:plots}
 \end{figure}
 
-We implemented \ourschemelong and extensively experimented with it and
-with implementations of basic half-gates~\cite{EC:ZahRosEva15} and the
+We compared our implementation
+to implementations of basic half-gates~\cite{EC:ZahRosEva15} and the
 \stack SGC of~\HK.
-Charts in \Cref{fig:plots} plot the results of our experiments.
+\Cref{fig:plots} plots the results of our experiments.
 
-We consider  the following metrics: end-to-end wall-clock time
-performance, bandwidth consumption, and memory utilization.
+We consider end-to-end wall-clock time, bandwidth consumption, and memory utilization.
 % of 2PC implemented with each of the three schemes and executed with varying number of branches. 
 All branches implement the SHA-256 netlist, which has $47726$ AND gates,
 $179584$ XOR gates, and $70666$ NOT gates.
 A GC for each branch has size $1.45$ MB.
 It is, of course, unrealistic that a conditional would have the same
 circuit in each branch. However, we choose this benchmark because
-SHA-256 evaluations have become somewhat of a community standard and because our
-goal is only to analyze \ourschemelong's performance.
+SHA-256 has become somewhat of a community standard and because our
+goal is only to analyze performance.
 %
-We ensure that our implementation does not cheat: it cannot recognize
-that the branches are the same and hence cannot shortcut the evaluation.
+We ensure our implementation does not cheat: it cannot recognize
+that branches are the same and hence cannot shortcut the evaluation.
 
 \paragraph{Total Bandwidth Consumption}  is the easiest metric to analyze.
 The communication chart in~\Cref{fig:plots} plots communication
