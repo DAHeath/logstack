@@ -43,6 +43,9 @@
 \SetKwSwitch{Switch}{Case}{Other}{switch}{:}{case}{otherwise}{}
 
 
+%\renewcommand{\vec}[1]{\boldsymbol{#1}}
+\let\vec\mathbf
+
 % theorem environments
 \newtheorem{protocol}{Protocol}%[section]
 \newtheorem{construction}{Construction}%[section]
@@ -88,7 +91,7 @@
 \input{evaluation}
 
 \bibliographystyle{alpha}
-\bibliography{bib/abbrev3,bib/crypto,custom}
+\bibliography{bib/bib,bib/abbrev3,bib/crypto,custom}
 
 \newpage
 
