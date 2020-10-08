@@ -525,7 +525,7 @@ garbage outputs from all $\cir_{i \neq \aid}$.
     &~~\codecomment{Compute all possible garbage outputs.}\\
     &~~\Lambda_{out} \gets \computegarbage(\vec{\cir}, M_{cond}, \Lambda_{in}, s, s')\\
     &~~\codecomment{The demultiplexer collects garbage outputs.}\\
-    &~~\mat_{mux} \gets \gbmux(e_\aid, d, d_cond, \Lambda_{out})\\
+    &~~\mat_{mux} \gets \gbmux(e_\aid, d, d_{cond}, \Lambda_{out})\\
     &~~\creturn~(\mat_\gadget \mid \mat_{dem} \mid \mat_{cond} \mid
     \mat_{mux}, e, d)
 \end{align*}
