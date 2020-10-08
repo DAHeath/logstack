@@ -29,7 +29,6 @@
 We implemented \ourschemelong and extensively experimented with it and
 with implementations of basic half-gates~\cite{EC:ZahRosEva15} and the
 \stack SGC of~\HK.
-We report on our findings.
 Charts in \Cref{fig:plots} plot the results of our experiments.
 
 We consider  the following metrics: end-to-end wall-clock time
@@ -47,18 +46,18 @@ We ensure that our implementation does not cheat: it cannot recognize
 that the branches are the same and hence cannot shortcut the evaluation.
 
 \paragraph{Total Bandwidth Consumption}  is the easiest metric to analyze.
-The communication chart in~\Cref{fig:plots} plots the communication in
-MB as a function of the number of branches from 1 to 64.  As expected, both \stack and
-\ourschemelong communication remains almost constant, while half-gates
+The communication chart in~\Cref{fig:plots} plots communication
+as a function of branching factor.  As expected, \stack's and
+\ourschemelong's communication remains almost constant, while half-gates'
 grows linearly and immediately dominates.  \ourschemelong is slightly
 leaner than \stack because of low-level improvements to
 \ourschemelong's demultiplexer. This small improvement should not be counted
 as a significant advantage over \stack.
 
-\paragraph{Memory Utilization} was measured as function of the number
-of branches from 1 to 64.
-We compare our scheme to \stack (half-gates memory utilization will be
-constant in the number of branches, since garblings
+\paragraph{Memory Utilization} was measured as a function of branching
+factor.
+We compare our scheme to \stack (half-gates memory utilization is
+constant, since garblings
 can be streamed across the network and immediately discarded).
 %
 Our chart shows \stack's linear and
@@ -69,13 +68,13 @@ Our chart shows \stack's linear and
 % consumption may become a bottleneck.  In contrast, our memory
 % utilization scales well both with increased branch size and the number
 % of branches.
-In settings with many branches, this improved space consumption
+In settings with many branches, improved space consumption
 is essential.
 For example, we ran \ourschemelong\ on a circuit
-with $8192$ SHA-256 branches, a circuit that altogether has $> 385$M
+with $8192$ SHA-256 branches, a circuit that has $> 385$M
 AND gates.  Our peak memory usage was $\sim 100$MB, while \HK
 would require more than $12$GB of space to run this experiment.
-Hence, it would be
+It would be
 infeasible to run this \stack\ experiment on our machine because it
 would exhaust our RAM.
 

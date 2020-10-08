@@ -19,13 +19,13 @@
   $O(b^2)$ to $O(b \log b)$
    with {\em no} increase in communication.
    % \vlad{our gadget is slightly larger than HK.}
-  The primary cause of \HK's increased computation is the
+  The cause of \HK's increased computation is the
   oblivious collection of \emph{garbage labels} that emerge during the
-  oblivious evaluation of inactive branches.
-  Garbage is collected by a \emph{multiplexer} component that is
+  evaluation of inactive branches.
+  Garbage is collected by a \emph{multiplexer} that is
   costly to generate.
   At a high level, we redesign stacking and garbage collection
-  such that we avoid quadratic behavior.
+  to avoid quadratic scaling.
 
   \smallskip
   Our construction is also more {\em space

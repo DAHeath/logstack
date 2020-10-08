@@ -64,7 +64,8 @@ Our notation is mostly consistent with the notation of~\HK.
 	\item We write $a \drawnfrom{} S$ to denote that $a$ is drawn
     uniformly from the set $S$.
 	\item $\indist$ denotes computational indistinguishability.
-	\item $\kappa$ denotes the computational security parameter and can be understood as the length of encryption keys (e.g. 128).
+	\item $\kappa$ denotes the computational security parameter and can
+    be understood as the length of PRF keys (e.g. 128).
 	% \item $\lambda$ denotes the empty string.
 \end{itemize}
 
@@ -75,7 +76,9 @@ We call the process of canceling out output garbage labels {\em garbage collecti
 
 \paragraph{Assumptions.}  
 \ourschemelong is secure in the standard model. However, higher
-efficiency of both the underlying scheme \underscheme and of our garbled gadgets can be achieved under the RO assumption.  Our implementation uses half-gates as \underscheme, and relies on random oracle (RO).
+efficiency of both the underlying scheme \underscheme and of our
+garbled gadgets can be achieved under the RO assumption.  Our
+implementation uses half-gates as \underscheme, and relies on a random oracle (RO).
 
 
 %We assume a random oracle (RO). 

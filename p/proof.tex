@@ -1,7 +1,6 @@
 \section{\ourschemelong Correctness/Security}\label{sec:proof}
 
-We now dicuss the relevant properties of \ourschemelong, in particular
-correctness and security.
+We dicuss \ourschemelong's correctness and security properties.
 We formalize our theorems in the~\cite{CCS:BelHoaRog12} framework (as
 modified by \HK),
 which requires a candidate garbling scheme to be \textbf{correct},
@@ -64,9 +63,8 @@ Material.
   where $(\mat, e, d) = \gGb(1^\kappa,\cir,S)$
 \end{definition}
 
-That is, a correct scheme implements the semantics specified by \gev.
-Proof of the following is intuitively explained in throughout this
-work and is formalized in Supplementary Material.
+A correct scheme implements the semantics specified by \gev.
+Proof of the following is formalized in Supplementary Material.
 
 \begin{theorem}\label{theorem:correctness}
   If \underscheme\ is correct, then \ourschemelong\ is correct.
@@ -168,7 +166,7 @@ This added requirement on the underlying scheme allows us to push our
 proofs through in the standard model.
 
 
-Standard schemes are compatible with strong stackability:
+Many standard schemes are compatible with strong stackability:
 if the scheme is stackable and has randomly chosen output labels, it
 trivially satisfies our definition.
 %
@@ -183,9 +181,9 @@ underlying scheme: e.g., instantiating \ourschemelong\ with the efficient
 Half Gates scheme~\cite{EC:ZahRosEva15} requires us to assume the
 existence of a circular correlation robust hash function.
 
-We formally prove the following in Supplementary Material. The proof
-utilizes the properties of the underlying scheme and of a PRF to show
-the garbling of a circuit `looks random'.
+We prove the following in Supplementary Material. The proof
+utilizes properties of \underscheme\ and of a PRF to show
+that \ourschemelong's garblings `looks random'.
 
 \begin{theorem}\label{thm:strongstack}
   If \underscheme\ is strongly stackable, then \ourschemelong\ is strongly stackable.
@@ -216,7 +214,7 @@ immediate facts:
   Every strongly stackable scheme is oblivious.
 \end{lemma}
 \begin{theorem}\label{thm:oblivious}
-  If \underscheme\ is strongly stackable, \ourschemelong\ is oblivious.
+  If \underscheme\ is strongly stackable, then \ourschemelong\ is oblivious.
 \end{theorem}
 
 \begin{definition}[Authenticity]\label{def:authenticity}
@@ -240,8 +238,8 @@ immediate facts:
 Authenticity ensures that an adversary cannot compute GC output labels
 except by running the scheme as intended.
 
-We formally prove the following in Supplementary Material. The proof
-utilizes the properties of the underlying scheme and of a PRF to show
+We prove the following in Supplementary Material. The proof
+utilizes properties of \underscheme\ and of a PRF to show
 that an adversary cannot compute GC output labels except by running
 \ourschemelong.
 
@@ -273,8 +271,8 @@ $(\mat, \gcirinp, d)$, learns nothing about the input
 $\cirinp$ except what can be learned from the output
 $\cirout$. I.e., \G's input is protected.
 
-We formally prove the following in Supplementary Material. The proof
-utilizes the properties of the underlying scheme and of a PRF to show
+We prove the following in Supplementary Material. The proof
+utilizes properties of \underscheme\ and of a PRF to show
 that \E's view can be simulated.
 % that an adversary cannot compute GC output labels except by running
 % \ourschemelong.

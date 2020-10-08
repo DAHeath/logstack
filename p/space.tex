@@ -9,7 +9,7 @@ algorithms run in $O(\log b)$ space.
 We briefly discuss why \HK requires linear space and how our approach
 improves this.
 
-In the \HK approach, \E obtains $b-1$ \emph{good} seeds for all but the
+In the \HK approach, \E obtains $b-1$ good seeds for all but the
 active branch and a bad seed for the active branch.
 %
 When \E\ then makes a particular \guess, she attempts to uncover the
@@ -17,29 +17,29 @@ material for \guess\ by XORing the stacked material (sent by \G) with
 $b-1$ reconstructed materials; she `unstacks' her $b-1$ materials
 corresponding to all branches that are not equal to \guess.
 %
-Recall that \G\ must emulate \E\ for all combinations of $(\truth,
+Recall that \G\ emulates \E\ for all combinations of $(\truth,
 \guess)$ where $\truth \neq \guess$ to compute garbage outputs.
 %
-The most intuitive way for him to proceed (\HK improves on this space
-consumption by factor $2\times$) is for him to once and for all garble all circuits using the `good'
+The most intuitive way to proceed, and the strategy \HK uses,
+is for \G\ to once and for all garble all circuits using the `good'
 seeds and garble all circuits using the `bad' seeds, and to
 store all materials in two large vectors.
 Let $\mat_i$ be the good material for a branch $\cir_i$ and let $\mat'_i$ be
 the bad material.
 %
 Now let $j = \truth$ and $k = \guess$.
-To emulate all possible bad evaluations, \G\ must evaluate $\cir_k$
+To emulate all possible bad evaluations, \G\ evaluates $\cir_k$
 using the material $\mat_k \oplus \mat_j \oplus \mat_j'$:
 i.e., he emulates \E\ when correctly unstacking all material except $M_k$
-(which she will not even attempt to unstack because she wishes to
+(which she will not attempt to unstack because she wishes to
 evaluate $\cir_k$) and $M_j$ (which she attempts to unstack, but fails
 and instead adds $\mat_j'$).
 %
-Because \G\ must consider all combinations of $j$ and $k$, it is not
+Because \G\ considers all $j, k$ combinations, it is not
 clear how \G\ can compute all values $\mat_k \oplus \mat_j \oplus
-\mat_j'$ without either (1) storing all intermediate garblings in
+\mat_j'$ without either (1) storing intermediate garblings in
 $O(b)$ space or (2) repeatedly garbling each branch at great cost.
-\HK sensibly opts for the former.
+\HK opts for the former.
 
 In contrast, because of \ourschemelong's binary tree
 structure, we can eagerly stack material together as it is constructed
@@ -62,13 +62,13 @@ material for subtrees together as soon as it is available.
 This trick is the basis for our low space requirement.
 
 There is one caveat to this trick:
-The `good' garbling of each branch $\cir_i$ \emph{is} useful throughout \G's
+the `good' garbling of each branch $\cir_i$ \emph{is} useful throughout \G's
 emulation of \E.
 Hence, the straightforward procedure would be for \G\ to once and for
 all compute the good garblings of each branch and store them in a
 vector, consuming $O(b)$ space.
 %
-This is viable, and indeed has lower constants than presented
+This is viable, and indeed has lower runtime constants than presented
 elsewhere in this work: \G\ would invoke \gGb\ only $b \log b + b$ times.
 %
 We instead trade in some concrete time complexity in favor of

@@ -10,8 +10,7 @@ does not hide high costs.
 % \ourschemelong scales linearly with the number of gates per branch.
 While we scale with the product of the number of inputs and $b$ (and
 respectively the product of number of outputs and $b$), the
-constants are low.
-See \Cref{sec:eval} for evidence of these low constants.
+constants are low (see \Cref{sec:eval} for evidence) of these low constants.
 Thus, inputs/outputs are of secondary concern to the circuit size,
 which is often far larger than the number of inputs/outputs.
 
@@ -25,9 +24,9 @@ Given branching factor $b$, \ourschemelong\ features:
   \item $O(\nmat \log b)$ space complexity.
 \end{itemize}
 
-In this section, we formalize our algorithms and give proofs of the above
-complexities. We postpone proofs of correctness and security to
-\Cref{sec:proof}.
+% In this section, we formalize our algorithms and give proofs of the above
+% complexities. We postpone proofs of correctness and security to
+% \Cref{sec:proof}.
 
 \ourschemelong\ is formalized as a \emph{garbling
 scheme}~\cite{CCS:BelHoaRog12}.
@@ -118,7 +117,7 @@ control flow.
       &~~\codecomment{How do inputs map to labels?}\\
       &~~\codecomment{This works for all projective schemes:}\\
       &~~\gcirinp \gets \emptystring\\
-      &~~\cfor~i \in 0..n\minus 1:\\
+      &~~\cfor~i \in 0..\inpsize(\cir)\minus 1:\\
       &~~~~(X^0, X^1) \gets e[i]\\
       &~~~~\cif~\cirinp[i] = 0:~\{~\gcirinp[i] \gets X^0~\}~\celse:~\{~\gcirinp[i] \gets X^1~\}\\
       &~~\creturn~\gcirinp
@@ -150,7 +149,7 @@ control flow.
       &~~\codecomment{How do labels map to outputs?}\\
       &~~\codecomment{This works for all projective schemes:}\\
       &~~\cirout \gets \lambda\\
-      &~~\cfor~i \in 0.. m\minus 1:\\
+      &~~\cfor~i \in 0.. \outsize(\cir)\minus 1:\\
       &~~~~(Y^0, Y^1) \gets d[i]\\
       &~~~~\cif~\gcirout[i] = Y^0:~\cirout[i] \gets 0\\
       &~~~~\celse~\cif~\gcirout[i] = Y^1:~\cirout[i] \gets 1\\
@@ -171,8 +170,9 @@ control flow.
     Our garbling scheme \ourschemelong.
     The included algorithms are typical except for the handling of
     conditionals.
-    \gEv\ and \gGb\ delegate the core of our approach the \evcond\ and
-    \gbcond\ respectively.
+    \gEv\ and \gGb\ delegate the core of our approach the \evcond\
+    (\Cref{fig:evcond}) and
+    \gbcond\ (\Cref{fig:gbcond}) respectively.
   }\label{fig:scheme}
 \end{figure}
 
@@ -188,7 +188,7 @@ We discuss correctness and security of \Cref{ourconstr} in
 \Cref{sec:proof}. Due to lack of space, proofs of these properties are
 in Supplementary Material.
 
-In terms of our efficiency, our scheme satisfies the following
+In terms of efficiency, \ourschemelong\ satisfies the following
 property:
 \begin{theorem}\label{thm:efficiency}
   Let $\underscheme$ be a garbling scheme satisfying the following
@@ -217,7 +217,7 @@ individually.
 
 Lemmas that support \Cref{thm:efficiency} are formally stated and proved in
 Supplementary Material.
-Proofs of these lemmas follow from inspecting our recursive procedures
+Proofs of these lemmas follow from inspecting our recursive algorithms
 and (1) counting the number of calls to the underlying scheme's
 algorithms and (2) counting the number of garblings kept in scope.
 
@@ -243,16 +243,16 @@ to an extended discussion of \evcond\ and \gbcond~(c.f. \Cref{sec:approach-cond}
 \begin{itemize}
   \item \textbf{Projectivity.} \ourschemelong\
     is a \emph{projective garbling scheme}~\cite{CCS:BelHoaRog12}.
-    This stronger definition requires that the input \emph{encoding string}
+    Projectivity requires that the input \emph{encoding string}
     $e$ and output \emph{decoding string} $d$ have a specific format:
     they must both be a vector of pairs of labels such that the left
     element of each pair is a label encoding logical $0$ and the right
-    element of each pair is a label encoding logical $1$.
+    element of each pair is a label encoding $1$.
     Thus, $\ourscheme.\gEn$ and $\ourscheme.\gDe$ are straightforward
     mappings between cleartext values and encoding/decoding strings.
-  \item \textbf{Delegation to \underscheme.} Note that
-    $\ourscheme.\gev$, $\ourscheme.\gEv$, and $\ourscheme.\gDe$ indeed
-    directly delegate to \underscheme\ in the case of a netlist.
+  % \item \textbf{Delegation to \underscheme.} Note that
+  %   $\ourscheme.\gev$, $\ourscheme.\gEv$, and $\ourscheme.\gDe$ indeed
+  %   directly delegate to \underscheme\ in the case of a netlist.
   \item \textbf{Sequences and Translation.} In a sequence of two
     circuits, all output wires of the first circuit are passed as the inputs
     to the second. Because these two circuits are garbled starting
@@ -273,11 +273,11 @@ to an extended discussion of \evcond\ and \gbcond~(c.f. \Cref{sec:approach-cond}
 
 \subsection{Algorithms for Handling of Conditionals}\label{sec:approach-cond}
 
-With the remaining formalization out of the way, we focus specifically
-on conditional branching. Our specific goal is to formalize \evcond\
+With the remaining formalization out of the way, we focus
+on conditional branching. Our goal is to formalize \evcond\
 and \gbcond, the key sub-procedures invoked by $\ourscheme.\gEv$ and
 $\ourscheme.\gGb$ respectively.
-Note, our presentation is a formalization of the discussion in
+Note, our presentation is a formalization of discussion in
 \Cref{sec:techOverview}; the following explores the technical aspects
 of our construction, but the reader should refer to
 \Cref{sec:techOverview} for unifying high level intuition.
@@ -290,12 +290,12 @@ entering and leaving a conditional.
 That is, we describe the \emph{demultiplexer} (entry) and
 \emph{multiplexer} (exit) components.
 
-The demultiplexer component is responsible for (1) forwarding the
+The demultiplexer is responsible for (1) forwarding the
 conditional's inputs to the active branch $\cir_\aid$ and (2)
 forwarding specially prepared garbage inputs to each branch $\cir_{i \neq \aid}$.
-Precisely, the demultiplexer computes the following function for
+The demultiplexer computes the following function for
 each wire input $x$ to each branch $\cir_i$ with respect to the active
-branch index \aid:
+index \aid:
 \begin{align*}
 demux(x, i, \aid) =
    \begin{cases}
@@ -305,16 +305,16 @@ demux(x, i, \aid) =
 \end{align*}
 where $\bot$ is a specially designated constant value.
 In the GC, the label corresponding to $\bot$ is independent yet
-indistinguishable from the corresponding $0$ and $1$ labels (for
-security, it is crucial that this label is independent).
+indistinguishable from the corresponding $0$ and $1$ labels:
+independence is crucial for security.
 The demultiplexer is easily implemented by garbled rows.
 The number of required rows is proportional to the number of branches
-and the number of branch inputs.
+and the conditional's number of inputs.
 %
 \evcond\ and \gbcond\ make use of \evdem\ and \gbdem, procedures which
 implement the above function via GC.
 Although we do not, for simplicity, formally describe these, we
-emphasize they are a straightforward implementation of garbled rows.
+emphasize that they are a straightforward implementation of garbled rows.
 
 The multiplexer is central to our approach.
 It non-interactively eliminates garbage outputs from inactive
@@ -347,6 +347,7 @@ garbled rows.
 \begin{figure}[t!]\centering\framebox{%
 \begin{minipage}{0.97\linewidth}
 % \begin{figure}[t]
+  \vspace{-12pt}
   \begin{align*}
     &\gbtree(\vec{\cir}, i, j, seed):\\
     &~~\cif~i = j: ~~~\codecomment{Base case of $1$ branch.}\\
@@ -364,7 +365,7 @@ garbled rows.
     \\
     &\halfway(i, j):\\
     &~~\codecomment{Simple helper for splitting range of branches (approximately) in half.}\\
-    &~~\creturn~i+\left\lfloor \frac{j-i}{2} \right\rfloor\\
+    &~~\creturn~i+\left\lfloor \frac{j-i}{2} \right\rfloor
   \end{align*}
 \end{minipage}}
   \caption{%
@@ -391,11 +392,11 @@ a straightforward handling of garbled rows: we assume procedures
 $\gadget.\gEv$ and $\gadget.\gGb$ which implement this handling.
 %
 
-We start by defining a procedure, \gbtree~(\Cref{fig:gbtree}),
-which specifically performs the basic task of garbling and stacking an entire
+We next define a procedure, \gbtree~(\Cref{fig:gbtree}),
+which performs the basic task of garbling and stacking an entire
 subtree.
 %
-Specifically, \gbtree\ recursively descends through the
+\gbtree\ recursively descends through the
 subtree starting from its root, uses a PRF to derive child seeds from the parent seed, and at the
 leaves garbles the branches.
 As the recursion propagates back up the tree, the procedure stacks the
@@ -406,11 +407,10 @@ $j$, denoting the range of branches $\cir_i..\cir_j$ that are to
 be stacked together.
 \evcond\ and \gbcond\ use a similar strategy, and all three algorithms
 maintain an invariant that $i,j$ refers to a valid node $\node_{i,j}$ in the binary
-tree over the $b$ branches (c.f. \Cref{fig:gbtree} for an
-example).
+tree over the $b$ branches.
 %
-Note that because \evcond\ and \gbcond\ invoke \gbtree\ at
-\emph{every} node, this entails that both procedures garble
+\evcond\ and \gbcond\ invoke \gbtree\ at
+\emph{every} node. This entails that both procedures garble
 each branch $\cir_i$ more than once, but with different seeds.
 As discussed in \Cref{sec:techOverview}, this repeated garbling is key
 to reducing the total number of garbage outputs that \E\
@@ -480,11 +480,6 @@ The core of \evcond\ is delegated to a recursive subprocedure $\evcond'$.
 $\evcond'$ carefully manages material and uses the garblings of sibling
 subtrees to evaluate each branch while limiting the possible number of
 garbage outputs.
-Other than this delegation, \evcond\ simply invokes $\gadget.\gEv$
-to obtain her seeds, invokes \evdem\ to propagate valid inputs to $\cir_\aid$,
-and, after evaluating all branches, invokes $\evmux$ to collect
-garbage outputs from all $\cir_{i \neq \aid}$.
-%
 $\evcond'$ is a formalization of the high level procedure described in
 \Cref{sec:techOverview}: \E\ recursively descends through the tree,
 constructing and unstacking garblings of subtrees in the general case.
@@ -497,11 +492,16 @@ sibling roots of \aid), and hence evaluates correctly.
 %
 All other cases $i \neq \aid$ will lead to garbage outputs that \G\
 must also compute.
-
+Other than the delegation to $\evcond'$, \evcond\ simply invokes $\gadget.\gEv$
+to obtain her seeds, invokes \evdem\ to propagate valid inputs to $\cir_\aid$,
+and, after evaluating all branches, invokes $\evmux$ to collect
+garbage outputs from all $\cir_{i \neq \aid}$.
+%
 
 \subsubsection{Garbling Conditionals.}
 \begin{figure}[t!]\centering\framebox{%
 \begin{minipage}{0.97\linewidth}
+  \vspace{-12pt}
   \begin{align*}
     &\gbcond(\vec{\cir}, S):\\
     &~~b \gets | \vec{\cir} |\\
@@ -527,7 +527,7 @@ must also compute.
     &~~\codecomment{The demultiplexer collects garbage outputs.}\\
     &~~\mat_{mux} \gets \gbmux(e_\aid, d, d_cond, \Lambda_{out})\\
     &~~\creturn~(\mat_\gadget \mid \mat_{dem} \mid \mat_{cond} \mid
-    \mat_{mux}, e, d)\\
+    \mat_{mux}, e, d)
 \end{align*}
 \end{minipage}}
   \caption{%
@@ -593,13 +593,13 @@ Finally, we formalize \G's procedure for handling vectors of
 conditional branches, \gbcond~(\Cref{fig:gbcond}).
 %
 \begin{enumerate}
-  \item \gbcond\ starts by recursively deriving a binary tree of
-good seeds by calling $\mathtt{DeriveSeedTree}$. This call just uses a PRF
+  \item \gbcond\ recursively derives a binary tree of
+good seeds via $\mathtt{DeriveSeedTree}$. This call uses a PRF
 to recursively derive seeds in the standard manner.
 %
-\item \gbcond\ invokes $\genprojection$ to select a uniform input
-encoding $e$: $e$ is the vector of pairs of labels that are
-valid input labels for the overall conditional.
+\item \gbcond\ invokes $\genprojection$ to select uniform input/output
+encodings $e$ and $d$: $e$ and $d$ are vectors of pairs of labels that are
+the valid input/output labels for the overall conditional.
 Our use of $\genprojection$ is straightforward and similar to that of
 \HK.
 % $\genprojection$ is semantically and technically the same as defined
@@ -608,13 +608,13 @@ Our use of $\genprojection$ is straightforward and similar to that of
 \item \gbcond\ uses $\gadget.\gGb$ to garble the \gadget\
   functionality of \Cref{fig:sortinghat}.
   As input, \gbcond\ provides the tree of good seeds $s$ and the encoding
-  of the active branch id $e_\aid$ and as output \G\ receives the tree
+  of the active branch id $e_\aid$. As output, \G\ receives the tree
   of all bad seeds.
   \gbcond\ needs these bad seeds, in addition to the good seeds he
   already knows, to emulate \E\ making a bad guess.
 %
-\item \gbcond\ uses $\gbtree$ to compute the stacked material
-$\mat_{cond}$ starting from the root of the seed tree.
+\item \gbcond\ uses $\gbtree$ to derive stacked material
+$\mat_{cond}$ from the root seed.
 $\mat_{cond}$ is the material that \G\ ultimately sends to \E.
 %
 \item \gbcond\ calls $\gbdem$ to compute the demultiplexer garbled
@@ -623,12 +623,12 @@ $\mat_{cond}$ is the material that \G\ ultimately sends to \E.
 \end{enumerate}
 With this accomplished, \gbcond's remaining task is to encrypt the
 garbage-collecting multiplexer.
-However, as we have argued throughout this work, it is not clear how
+However, it is not clear how
 this can be achieved unless \G\ \emph{knows all garbage outputs} that
 \E\ might compute.
 %
 Thus, \gbcond\ first invokes \computegarbage\
-(\Cref{fig:computegarbage}, a procedure which
+(\Cref{fig:computegarbage}), a procedure which
 emulates all of \E's bad guesses.
 
 \computegarbage\ delegates to the recursive subprocedure
@@ -646,7 +646,7 @@ considered leaf are available.
 Additionally, all garbage inputs into each branch are available in the
 vector $\Lambda_{in}$.
 %
-Thus, in the base case we can compute all garbage outputs for each
+So, at the leaves we can compute all garbage outputs for each
 branch by calling \gEv\ on the proper combinations of garbage material
 and labels.
 %
