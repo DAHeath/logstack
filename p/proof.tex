@@ -138,7 +138,7 @@ length for the next PRF application can be restored as we require
 have a similar approach.
 
 The added requirement (point 4) allows us to relax
-our security assumptions in comparison to \HK. In particular, for
+our security assumptions in comparison to \HK. For
 each projective output pair $A^0, A^1$, we require that $\lkey(A^0)$ and
 $\lkey(A^1)$ are unrelated.
 This is achieved by requiring that the concatenation of these two
@@ -150,18 +150,18 @@ More precisely, while point 1 requires that any particular set of labels seen by
 look random.
 %
 This was problematic, because the output labels of the
-underlying scheme were used to implement garbled tables, meaning that
+underlying scheme were used to implement garbled tables, so
 the two possibly related labels were both used as PRF keys.
 %
-Of course, using related PRF keys is outside the scope of the standard
+Using related keys is outside the scope of the standard
 PRF security definition.
 %
-Thus, \HK were forced to assume the existence of a random oracle in
-order to ensure possible relationships in the output decoding string
+Thus, \HK were forced to assume the existence of a random oracle
+to ensure possible relationships in the output decoding string
 did not compromise security.
 %
-However, by adding point 4, we ensure that the \emph{entire} decoding
-string `looks random', and hence all labels must be independent.
+By adding point 4, we ensure that the \emph{entire} decoding
+string `looks random', so all labels must be independent.
 This added requirement on the underlying scheme allows us to push our
 proofs through in the standard model.
 

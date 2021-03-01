@@ -109,7 +109,8 @@ control flow.
       &~~~~\ccase~\netlist(\cdot): \creturn~\underscheme.\gEv(\cir,\mat,\gcirinp)\\
       &~~~~\ccase~\sequential(\cir_0, \cir_1): \\
       &~~~~~~\mat_0\mid\mat_{tr}\mid\mat_1 \gets \mat\\
-      &~~~~~~\creturn~\ourscheme.\gEv(\cir_1, \mat_1, \evtranslate(\ourscheme.\gEv(\cir_0, \mat_0, \cirinp), \mat_{tr})\\
+      &~~~~~~\creturn~\ourscheme.\gEv(\cir_1, \mat_1,
+      \evtranslate(\ourscheme.\gEv(\cir_0, \mat_0, \gcirinp), \mat_{tr})\\
       &~~~~\ccase~\conditional(\vec \cir): \creturn~\evcond(\vec \cir,
       \mat, \gcirinp)\\
       \\
@@ -170,9 +171,9 @@ control flow.
     Our garbling scheme \ourschemelong.
     The included algorithms are typical except for the handling of
     conditionals.
-    \gEv\ and \gGb\ delegate the core of our approach the \evcond\
+    \gEv\ and \gGb\ delegate the core of our approach: \evcond\
     (\Cref{fig:evcond}) and
-    \gbcond\ (\Cref{fig:gbcond}) respectively.
+    \gbcond\ (\Cref{fig:gbcond}).
   }\label{fig:scheme}
 \end{figure}
 

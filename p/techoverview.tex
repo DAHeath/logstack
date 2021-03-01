@@ -26,8 +26,12 @@ the most interesting technical challenges and solutions.
 
 Our main contribution is the reduction of SGC computation
 from $O(b^2)$ to $O(b \log b)$.  Our constants are also
-low: together \G and \E make a total of $\frac{5}{2} b \log b + b$ calls to \Gb\
-and $b\log b + b$ calls  to \Ev.
+low: altogether \G\ issues $\frac{3}{2} b\log b + b$ calls to \Gb\ and
+$b\ log b$ calls to \Ev.
+\E\ issues $b \log b$ calls to \Gb\ and $b$ calls to $\Ev$.
+
+% \G and \E make a total of $\frac{5}{2} b \log b + b$ calls to \Gb\
+% and $b\log b + b$ calls  to \Ev.
 
 We continue the discussion from~\Cref{sec:intuition} in more detail.
 Our main task is the garbage collection of output labels of {\em
@@ -163,8 +167,7 @@ if and only if \node is a sibling root  of the leaf \aid\
 \gadget can be implemented as a collection of garbled rows.
 Importantly, since this is a fixed
 gadget, when evaluated on a node \node that is not a sibling root of
-\aid, \E will obtain a {\em single} predictable to \G\ fixed garbage
-seed. 
+\aid, \E will obtain a {\em fixed} seed that is predictable to \G. 
 % We need to ensure this garbage value is the same for every
 % \aid. This is easy to do.  Details follow:
 

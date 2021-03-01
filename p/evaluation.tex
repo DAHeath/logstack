@@ -1,5 +1,23 @@
-\vspace{-8pt}
-\section{Experimental Evaluation}\label{sec:eval}
+\section{Instantiation and Experimental Evaluation}\label{sec:eval}
+
+We implemented  \ourscheme in $\sim1500$ lines of C++ and used it to instantiate a semihonest 2PC protocol.
+We instantiated \underscheme\ using the half-gates~\cite{EC:ZahRosEva15}, allowing high
+concrete performance.
+Our implementation thus relies on non-standard assumptions.
+%
+We use computational security parameter $\kappa=127$; the $128$th bit is reserved for point and permute.
+%
+Our implementation spawns additional threads to make use of inherent
+parallelism available in $\gbcond$ and $\evcond$.
+
+% In the following section, we discuss an experimental evaluation of our
+% implementation.
+Our experiments were each performed on a MacBook Pro laptop with an Intel
+Dual-Core i5 3.1 GHz processor and 8GB of RAM.
+%
+% Our chosen benchmark involves the two players securely computing a
+% conditional composition of many copies of the SHA-256 circuit.
+%
 
 \begin{figure}[t]
   \begin{adjustwidth}{-0.13\textwidth}{-0.13\textwidth}
@@ -27,8 +45,9 @@
   }\label{fig:plots}
 \end{figure}
 
+\medskip
 We compared our implementation
-to implementations of basic half-gates~\cite{EC:ZahRosEva15} and the
+to basic half-gates~\cite{EC:ZahRosEva15} and to the
 \stack SGC of~\HK.
 \Cref{fig:plots} plots the results of our experiments.
 
@@ -45,8 +64,7 @@ goal is only to analyze performance.
 We ensure our implementation does not cheat: it cannot recognize
 that branches are the same and hence cannot shortcut the evaluation.
 
-\vspace{-8pt}
-\paragraph{Total Bandwidth Consumption}  is the easiest metric to analyze.
+\textbf{Bandwidth consumption}  is the easiest metric to analyze.
 The communication chart in~\Cref{fig:plots} plots communication
 as a function of branching factor.  As expected, \stack's and
 \ourschemelong's communication remains almost constant, while half-gates'
@@ -55,8 +73,7 @@ leaner than \stack because of low-level improvements to
 \ourschemelong's demultiplexer. This small improvement should not be counted
 as a significant advantage over \stack.
 
-\vspace{-8pt}
-\paragraph{Memory Utilization} was measured as a function of branching
+\textbf{Memory utilization} was measured as a function of branching
 factor.
 We compare our scheme to \stack (half-gates memory utilization is
 constant, since garblings
@@ -76,12 +93,11 @@ For example, we ran \ourschemelong\ on a circuit
 with $8192$ SHA-256 branches, a circuit that has $> 385$M
 AND gates.  Our peak memory usage was $\sim 100$MB, while \HK
 would require more than $12$GB of space to run this experiment.
-It would be
-infeasible to run this \stack\ experiment on our machine because it
-would exhaust our RAM.
+% It would be
+% infeasible to run this \stack\ experiment on our machine because it
+% would exhaust our RAM.
 
-\vspace{-8pt}
-\paragraph{Total wall-clock time} to complete an end-to-end 2PC
+\textbf{Wall-clock time} to complete an end-to-end 2PC
 protocol is our most comprehensive metric.
 We plot three charts for 1 to 64
 branches (on networks with 100, 300, and 1000 Mbps bandwidth) comparing each of the three approaches.
@@ -113,5 +129,5 @@ started to take too long.   \ourschemelong ran 2PC for a
 $1024$-branch conditional in $\sim 67s$, while \stack took $\sim
 2050s$,  $\sim 31\times$ slower than \ourschemelong.
 
-\vspace{-12pt}
+% \vspace{-12pt}
 
