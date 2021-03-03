@@ -42,8 +42,13 @@ conditional control flow without modifying the source program.
 We note that this nested usage \emph{does not} give $O(b\log b)$
 computation, and so vectorized branches should favored where possible.
 
+\iffull
 Due to a lack of space, we postpone most proofs to Supplementary
 Material.
+\else
+Due to a lack of space, we postpone most proofs to the full version of
+this paper.
+\fi
 % Because \ourschemelong\ is strongly stackable, it is trivially
 % \textbf{oblivious}~\HK,
 % and so we do not discuss obliviousness further.
@@ -64,7 +69,12 @@ Material.
 \end{definition}
 
 A correct scheme implements the semantics specified by \gev.
+\iffull
 Proof of the following is formalized in Supplementary Material.
+\else
+Proof of the following is formalized in the full version of
+this paper.
+\fi
 
 \begin{theorem}\label{theorem:correctness}
   If \underscheme\ is correct, then \ourschemelong\ is correct.
@@ -181,7 +191,12 @@ underlying scheme: e.g., instantiating \ourschemelong\ with the efficient
 Half Gates scheme~\cite{EC:ZahRosEva15} requires us to assume the
 existence of a circular correlation robust hash function.
 
-We prove the following in Supplementary Material. The proof
+\iffull
+We prove the following in Supplementary Material.
+\else
+We prove the following in the full version of this paper.
+\fi
+The proof
 utilizes properties of \underscheme\ and of a PRF to show
 that \ourschemelong's garblings `looks random'.
 
@@ -238,7 +253,12 @@ immediate facts:
 Authenticity ensures that an adversary cannot compute GC output labels
 except by running the scheme as intended.
 
-We prove the following in Supplementary Material. The proof
+\iffull
+We prove the following in Supplementary Material.
+\else
+We prove the following in the full version of this paper.
+\fi
+The proof
 utilizes properties of \underscheme\ and of a PRF to show
 that an adversary cannot compute GC output labels except by running
 \ourschemelong.
@@ -270,7 +290,12 @@ Privacy ensures that \E, who is given access to
 $(\mat, \gcirinp, d)$, learns nothing except what can be learned from the output
 $\cirout$. I.e., \G's input is protected.
 
-We prove the following in Supplementary Material. The proof
+\iffull
+We prove the following in Supplementary Material.
+\else
+We prove the following in the full version of this paper.
+\fi
+The proof
 utilizes properties of \underscheme\ and of a PRF to show
 that \E's view can be simulated.
 % that an adversary cannot compute GC output labels except by running

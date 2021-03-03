@@ -186,8 +186,14 @@ With our syntax established, we are ready to present our algorithms.
 \end{construction}
 
 We discuss correctness and security of \Cref{ourconstr} in
-\Cref{sec:proof}. Due to lack of space, proofs of these properties are
+\Cref{sec:proof}.
+\iffull
+Due to lack of space, proofs of these properties are
 in Supplementary Material.
+\else
+Due to lack of space, proofs of these properties are
+in the full version of this paper.
+\fi
 
 In terms of efficiency, \ourschemelong\ satisfies the following
 property:
@@ -216,8 +222,14 @@ half-gates scheme~\cite{EC:ZahRosEva15}, achieve the efficiency
 required by \Cref{thm:efficiency}, since they simply handle each gate
 individually.
 
+\iffull
 Lemmas that support \Cref{thm:efficiency} are formally stated and proved in
 Supplementary Material.
+\else
+Lemmas that support \Cref{thm:efficiency} are formally stated and
+proved in the full version of this paper.
+\fi
+
 Proofs of these lemmas follow from inspecting our recursive algorithms
 and (1) counting the number of calls to the underlying scheme's
 algorithms and (2) counting the number of garblings kept in scope.
