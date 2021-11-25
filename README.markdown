@@ -6,13 +6,6 @@ For more information, have a look at our paper ([Heath and Kolesnikov, Eurocrypt
 
 ## Building and Running
 
-First, you'll need to build and install the emp toolkit and the emp OT library: https://github.com/emp-toolkit
+First, you'll need to build and install the emp toolkit and the emp OT library: https://github.com/emp-toolkit.
 
-- `git submodule init`
-- `git submodule update`
-- `cd p`
-- `make`
-
-
-For benchmarking, we throttle the network using [Toxiproxy](https://github.com/Shopify/toxiproxy).
-Make sure to install that the software so you can run `toxiproxy-cli` on the command line.
+From here, you should be able to build and run the project.
