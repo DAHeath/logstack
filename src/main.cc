@@ -70,10 +70,10 @@ int main(int argc, char** argv) {
 
 
   std::thread th { [&] {
-    genChannel = new emp::NetIO(nullptr, 55556, true);
+    genChannel = new emp::NetIO(nullptr, 44444, true);
   }};
   sleep(1);
-  evalChannel = new emp::NetIO("127.0.0.1", 55555, true);
+  evalChannel = new emp::NetIO("127.0.0.1", 44444, true);
   th.join();
 
 
@@ -101,7 +101,7 @@ int main(int argc, char** argv) {
 
   /* for (std::size_t i = 0; i <= 14; ++i) { */
     std::vector<Circuit> cs;
-    for (std::size_t j = 0; j < (1 << 14); ++j) {
+    for (std::size_t j = 0; j < (1 << 4); ++j) {
       cs.push_back(sha_netlist);
     }
     if (cs.size() == 1) {
